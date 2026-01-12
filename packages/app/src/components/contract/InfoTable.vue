@@ -43,6 +43,14 @@
           />
         </table-body-column>
       </tr>
+      <tr>
+        <table-body-column class="contract-info-field-label">
+          {{ t("tabs.safeHarbor") }}
+        </table-body-column>
+        <table-body-column class="contract-info-field-value safe-harbor-cell">
+          <AgreementSummaryBadge :agreement="agreement" :has-agreement="hasAgreement" />
+        </table-body-column>
+      </tr>
     </template>
     <template v-if="!loading && !contract" #empty>
       <TableBodyColumn colspan="3">
@@ -65,6 +73,7 @@
 </template>
 
 <script lang="ts" setup>
+import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 import AddressLink from "@/components/AddressLink.vue";
@@ -72,18 +81,16 @@ import ContentLoader from "@/components/common/loaders/ContentLoader.vue";
 import Table from "@/components/common/table/Table.vue";
 import TableBodyColumn from "@/components/common/table/TableBodyColumn.vue";
 import CopyContent from "@/components/common/table/fields/CopyContent.vue";
+import AgreementSummaryBadge from "@/components/contract/AgreementSummaryBadge.vue";
 import ContractStateTimeline from "@/components/contract/ContractStateTimeline.vue";
+
+import useSafeHarborAgreement from "@/composables/useSafeHarborAgreement";
 
 import type { Contract } from "@/composables/useAddress";
 import type { PropType } from "vue";
 
+import { ContractState } from "@/types";
 import { shortValue } from "@/utils/formatters";
-
-enum ContractState {
-  NEW_DEPLOYMENT = "NEW_DEPLOYMENT",
-  UNDER_ATTACK = "UNDER_ATTACK",
-  PRODUCTION = "PRODUCTION",
-}
 
 // Hardcoded for now
 const contractState = ContractState.UNDER_ATTACK;
@@ -92,7 +99,7 @@ const deployedAt = Date.now() - 2 * 24 * 60 * 60 * 1000; // 2 days ago
 const attackableAt = Date.now() - 1 * 24 * 60 * 60 * 1000; // 1 days ago
 const productionAt = undefined; // Not yet in production
 
-defineProps({
+const props = defineProps({
   contract: {
     type: Object as PropType<Contract>,
     default: () => ({}),
@@ -104,6 +111,19 @@ defineProps({
 });
 
 const { t } = useI18n();
+
+const contractAddress = computed(() => props.contract?.address || "");
+const { agreement, hasAgreement, fetch: fetchAgreement } = useSafeHarborAgreement(contractAddress);
+
+watch(
+  () => props.contract?.address,
+  (address) => {
+    if (address) {
+      fetchAgreement();
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped lang="scss">
@@ -133,6 +153,10 @@ const { t } = useI18n();
 
   .contract-not-found {
     @apply px-1.5 py-2 text-gray-700;
+  }
+
+  .safe-harbor-cell {
+    @apply align-top;
   }
 }
 </style>

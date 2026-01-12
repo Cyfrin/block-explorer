@@ -73,14 +73,20 @@
       <template #tab-4-content>
         <ContractEvents :contract="contract" />
       </template>
+      <template #tab-5-content>
+        <div class="safe-harbor-tab-content">
+          <AgreementDetails v-if="hasAgreement && agreement" :agreement="agreement" />
+          <NoAgreementWarning v-else :default-terms="defaultAgreementTerms" />
+        </div>
+      </template>
     </Tabs>
   </div>
 </template>
 <script lang="ts" setup>
-import { computed, type PropType } from "vue";
+import { computed, type PropType, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { CheckCircleIcon } from "@heroicons/vue/solid";
+import { CheckCircleIcon, ShieldCheckIcon } from "@heroicons/vue/solid";
 
 import SearchForm from "@/components/SearchForm.vue";
 import BalanceTable from "@/components/balances/Table.vue";
@@ -89,12 +95,16 @@ import EmptyState from "@/components/common/EmptyState.vue";
 import Spinner from "@/components/common/Spinner.vue";
 import Tabs from "@/components/common/Tabs.vue";
 import Title from "@/components/common/Title.vue";
+import AgreementDetails from "@/components/contract/AgreementDetails.vue";
 import ContractInfoTab from "@/components/contract/ContractInfoTab.vue";
 import ContractInfoTable from "@/components/contract/InfoTable.vue";
+import NoAgreementWarning from "@/components/contract/NoAgreementWarning.vue";
 import TransactionEmptyState from "@/components/contract/TransactionEmptyState.vue";
 import ContractEvents from "@/components/event/ContractEvents.vue";
 import TransactionsTable from "@/components/transactions/Table.vue";
 import TransfersTable from "@/components/transfers/Table.vue";
+
+import useSafeHarborAgreement from "@/composables/useSafeHarborAgreement";
 
 import type { BreadcrumbItem } from "@/components/common/Breadcrumbs.vue";
 import type { Contract } from "@/composables/useAddress";
@@ -119,6 +129,24 @@ const props = defineProps({
   },
 });
 
+const contractAddress = computed(() => props.contract?.address || "");
+const {
+  agreement,
+  hasAgreement,
+  defaultAgreementTerms,
+  fetch: fetchAgreement,
+} = useSafeHarborAgreement(contractAddress);
+
+watch(
+  () => props.contract?.address,
+  (address) => {
+    if (address) {
+      fetchAgreement();
+    }
+  },
+  { immediate: true }
+);
+
 const tabs = computed(() => [
   { title: t("tabs.transactions"), hash: "#transactions" },
   { title: t("tabs.transfers"), hash: "#transfers" },
@@ -128,6 +156,11 @@ const tabs = computed(() => [
     icon: props.contract?.verificationInfo ? CheckCircleIcon : null,
   },
   { title: t("tabs.events"), hash: "#events" },
+  {
+    title: t("tabs.safeHarbor"),
+    hash: "#safe-harbor",
+    icon: hasAgreement.value ? ShieldCheckIcon : null,
+  },
 ]);
 
 const breadcrumbItems = computed((): BreadcrumbItem[] | [] => {
@@ -196,6 +229,9 @@ const transactionsSearchParams = computed(() => ({
 }
 .transaction-table-error {
   @apply text-2xl text-error-700;
+}
+.safe-harbor-tab-content {
+  @apply p-4;
 }
 </style>
 

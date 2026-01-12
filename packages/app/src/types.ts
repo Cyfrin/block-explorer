@@ -62,3 +62,53 @@ export enum TimeFormat {
   FULL = "full",
   TIME_AGO_AND_FULL = "time_ago_and_full",
 }
+
+// Safe Harbor Agreement Types
+export interface SafeHarborAgreement {
+  // Core identification - the agreement is its own smart contract
+  agreementAddress: Address;
+  protocolName: string;
+
+  // Bounty terms (machine-readable)
+  bountyPercentage: number;
+  bountyCap: bigint;
+  bountyCapToken: Address;
+  allowAnonymous: boolean;
+
+  // Scope
+  coveredContracts: Address[];
+
+  // Contacts
+  contactEmail?: string;
+  contactDiscord?: string;
+  contactTelegram?: string;
+
+  // Asset recovery
+  assetRecoveryAddress: Address;
+
+  // Commitment window
+  commitmentDeadline: number;
+
+  // Off-chain reference
+  agreementURI: string;
+
+  // Metadata
+  registeredAt: number;
+  lastModified: number;
+}
+
+export interface AgreementDocument {
+  version: string;
+  fullLegalText: string;
+  scope: {
+    description: string;
+    exclusions: string[];
+  };
+  additionalTerms?: string;
+}
+
+export enum ContractState {
+  NEW_DEPLOYMENT = "NEW_DEPLOYMENT",
+  UNDER_ATTACK = "UNDER_ATTACK",
+  PRODUCTION = "PRODUCTION",
+}
