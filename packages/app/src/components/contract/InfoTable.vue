@@ -31,6 +31,18 @@
           {{ contract.totalTransactions }}
         </table-body-column>
       </tr>
+      <tr>
+        <table-body-column class="contract-info-field-label"> Contract state </table-body-column>
+        <table-body-column class="contract-info-field-value">
+          <ContractStateTimeline
+            :state="contractState"
+            :was-under-attack="wasUnderAttack"
+            :deployed-at="deployedAt"
+            :attackable-at="attackableAt"
+            :production-at="productionAt"
+          />
+        </table-body-column>
+      </tr>
     </template>
     <template v-if="!loading && !contract" #empty>
       <TableBodyColumn colspan="3">
@@ -60,11 +72,25 @@ import ContentLoader from "@/components/common/loaders/ContentLoader.vue";
 import Table from "@/components/common/table/Table.vue";
 import TableBodyColumn from "@/components/common/table/TableBodyColumn.vue";
 import CopyContent from "@/components/common/table/fields/CopyContent.vue";
+import ContractStateTimeline from "@/components/contract/ContractStateTimeline.vue";
 
 import type { Contract } from "@/composables/useAddress";
 import type { PropType } from "vue";
 
 import { shortValue } from "@/utils/formatters";
+
+enum ContractState {
+  NEW_DEPLOYMENT = "NEW_DEPLOYMENT",
+  UNDER_ATTACK = "UNDER_ATTACK",
+  PRODUCTION = "PRODUCTION",
+}
+
+// Hardcoded for now
+const contractState = ContractState.UNDER_ATTACK;
+const wasUnderAttack = false;
+const deployedAt = Date.now() - 2 * 24 * 60 * 60 * 1000; // 2 days ago
+const attackableAt = Date.now() - 1 * 24 * 60 * 60 * 1000; // 1 days ago
+const productionAt = undefined; // Not yet in production
 
 defineProps({
   contract: {
