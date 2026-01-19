@@ -31,14 +31,14 @@
           {{ contract.totalTransactions }}
         </table-body-column>
       </tr>
-      <tr>
+      <tr v-if="contractState">
         <table-body-column class="contract-info-field-label"> Contract state </table-body-column>
         <table-body-column class="contract-info-field-value">
           <ContractStateTimeline
             :state="contractState"
             :was-under-attack="wasUnderAttack"
             :deployed-at="deployedAt"
-            :attackable-at="attackableAt"
+            :under-attack-at="underAttackAt"
             :production-at="productionAt"
           />
         </table-body-column>
@@ -84,20 +84,13 @@ import CopyContent from "@/components/common/table/fields/CopyContent.vue";
 import AgreementSummaryBadge from "@/components/contract/AgreementSummaryBadge.vue";
 import ContractStateTimeline from "@/components/contract/ContractStateTimeline.vue";
 
+import useBattlechainContractState from "@/composables/useBattlechainContractState";
 import useSafeHarborAgreement from "@/composables/useSafeHarborAgreement";
 
 import type { Contract } from "@/composables/useAddress";
 import type { PropType } from "vue";
 
-import { ContractState } from "@/types";
 import { shortValue } from "@/utils/formatters";
-
-// Hardcoded for now
-const contractState = ContractState.UNDER_ATTACK;
-const wasUnderAttack = false;
-const deployedAt = Date.now() - 2 * 24 * 60 * 60 * 1000; // 2 days ago
-const attackableAt = Date.now() - 1 * 24 * 60 * 60 * 1000; // 1 days ago
-const productionAt = undefined; // Not yet in production
 
 const props = defineProps({
   contract: {
@@ -114,12 +107,21 @@ const { t } = useI18n();
 
 const contractAddress = computed(() => props.contract?.address || "");
 const { agreement, hasAgreement, fetch: fetchAgreement } = useSafeHarborAgreement(contractAddress);
+const {
+  state: contractState,
+  wasUnderAttack,
+  deployedAt,
+  underAttackAt,
+  productionAt,
+  fetch: fetchContractState,
+} = useBattlechainContractState(contractAddress);
 
 watch(
   () => props.contract?.address,
   (address) => {
     if (address) {
       fetchAgreement();
+      fetchContractState();
     }
   },
   { immediate: true }

@@ -28,15 +28,15 @@
           </span>
           <template #content>
             <div class="promotion-tooltip">
-              If no attackable phase is registered before {{ formattedPromotionTimestamp }}, this contract will
-              automatically be promoted to production.
+              If no attack is registered before {{ formattedPromotionTimestamp }}, this contract will automatically be
+              promoted to production.
             </div>
           </template>
         </Tooltip>
       </div>
     </div>
 
-    <!-- Attackable Step (optional) -->
+    <!-- Under Attack Step (optional) -->
     <div
       v-if="showUnderAttackStep"
       class="timeline-step under-attack"
@@ -51,13 +51,13 @@
           </div>
         </div>
         <div class="timeline-connector-wrapper">
-          <div class="timeline-connector" :class="connectorClassAfterAttackable"></div>
+          <div class="timeline-connector" :class="connectorClassAfterUnderAttack"></div>
         </div>
       </div>
       <div class="step-content">
-        <span class="step-label">Attackable</span>
-        <CopyButton v-if="attackableAtISO" :value="formattedAttackableAt!" class="step-timestamp">
-          <TimeField :value="attackableAtISO" :format="TimeFormat.TIME_AGO" />
+        <span class="step-label">Under Attack</span>
+        <CopyButton v-if="underAttackAtISO" :value="formattedUnderAttackAt!" class="step-timestamp">
+          <TimeField :value="underAttackAtISO" :format="TimeFormat.TIME_AGO" />
         </CopyButton>
         <span v-if="isCurrent(ContractState.UNDER_ATTACK) && hasCountdown" class="step-countdown">
           <CopyButton :value="formattedPromotionTimestamp!">
@@ -107,16 +107,10 @@ import TimeField from "@/components/common/table/fields/TimeField.vue";
 
 import type { PropType } from "vue";
 
-import { TimeFormat } from "@/types";
+import { ContractState, TimeFormat } from "@/types";
 import { ISOStringFromUnixTimestamp, localDateFromUnixTimestamp } from "@/utils/helpers";
 
 const { t } = useI18n();
-
-enum ContractState {
-  NEW_DEPLOYMENT = "NEW_DEPLOYMENT",
-  UNDER_ATTACK = "UNDER_ATTACK",
-  PRODUCTION = "PRODUCTION",
-}
 
 const props = defineProps({
   state: {
@@ -131,7 +125,7 @@ const props = defineProps({
     type: Number,
     default: null,
   },
-  attackableAt: {
+  underAttackAt: {
     type: Number,
     default: null,
   },
@@ -152,11 +146,11 @@ const toISOString = (timestamp: number | null): string => {
 };
 
 const formattedDeployedAt = computed(() => formatTimestamp(props.deployedAt));
-const formattedAttackableAt = computed(() => formatTimestamp(props.attackableAt));
+const formattedUnderAttackAt = computed(() => formatTimestamp(props.underAttackAt));
 const formattedProductionAt = computed(() => formatTimestamp(props.productionAt));
 
 const deployedAtISO = computed(() => toISOString(props.deployedAt));
-const attackableAtISO = computed(() => toISOString(props.attackableAt));
+const underAttackAtISO = computed(() => toISOString(props.underAttackAt));
 const productionAtISO = computed(() => toISOString(props.productionAt));
 
 const promotionTimestamp = computed(() => {
@@ -165,9 +159,9 @@ const promotionTimestamp = computed(() => {
     // Auto-promotion is 7 days from deployment (this would come from backend in real impl)
     return props.deployedAt + 7 * 24 * 60 * 60 * 1000;
   }
-  if (props.state === ContractState.UNDER_ATTACK && props.attackableAt) {
-    // Production promotion is 7 days from attackable (this would come from backend in real impl)
-    return props.attackableAt + 7 * 24 * 60 * 60 * 1000;
+  if (props.state === ContractState.UNDER_ATTACK && props.underAttackAt) {
+    // Production promotion is 7 days from under attack (this would come from backend in real impl)
+    return props.underAttackAt + 7 * 24 * 60 * 60 * 1000;
   }
   return null;
 });
@@ -227,7 +221,7 @@ const connectorClassAfterNewDeployment = computed(() => {
   };
 });
 
-const connectorClassAfterAttackable = computed(() => {
+const connectorClassAfterUnderAttack = computed(() => {
   // Completed if we're in PRODUCTION
   return {
     completed: props.state === ContractState.PRODUCTION,
