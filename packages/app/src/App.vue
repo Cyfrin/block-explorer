@@ -82,6 +82,6 @@ onBeforeMount(async () => {
 
 <style lang="scss">
 .container-app {
-  @apply container pt-6;
+  @apply container mx-auto pt-6;
 }
 </style>

@@ -38,10 +38,10 @@ const iconColor = computed(() => {
   }
 
   &.warning {
-    @apply bg-warning-400 bg-opacity-50;
+    @apply bg-warning-400/50;
   }
   &.error {
-    @apply bg-error-100 bg-opacity-50 text-error-500;
+    @apply bg-error-100/50 text-error-500;
   }
 
   &.notification {

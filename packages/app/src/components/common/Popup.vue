@@ -48,7 +48,7 @@ defineProps({
 .popup-container {
   @apply relative z-[1000];
   .popup-background {
-    @apply fixed inset-0 bg-black bg-opacity-25;
+    @apply fixed inset-0 bg-black/25;
   }
   .popup-content-container {
     @apply fixed inset-0 overflow-y-auto;

@@ -17,7 +17,7 @@ import enUS from "./locales/en.json";
 
 import { useSentry } from "@/utils/logger";
 
-import "@/assets/tailwind.scss";
+import "@/assets/tailwind.css";
 
 export type MessageSchema = typeof enUS;
 

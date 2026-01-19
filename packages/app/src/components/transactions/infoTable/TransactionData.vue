@@ -163,10 +163,10 @@ const getParameterHexValues = () => {
   @apply grid w-full gap-4 text-sm;
 
   .toggle-decode-button {
-    @apply block h-10 w-fit rounded-md bg-primary-600 bg-opacity-[15%] px-4 py-2 text-primary-600 transition-colors hover:bg-opacity-10 sm:w-full;
+    @apply block h-10 w-fit rounded-md bg-primary-600/15 px-4 py-2 text-primary-600 transition-colors hover:bg-primary-600/10 sm:w-full;
   }
   .toggle-decode-button-compact {
-    @apply block h-10 w-fit rounded-md bg-primary-600 bg-opacity-[15%] px-4 py-2 text-primary-600 transition-colors hover:bg-opacity-10;
+    @apply block h-10 w-fit rounded-md bg-primary-600/15 px-4 py-2 text-primary-600 transition-colors hover:bg-primary-600/10;
   }
   .transaction-byte-data {
     @apply overflow-auto;

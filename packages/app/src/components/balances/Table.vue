@@ -142,7 +142,7 @@ const displayedBalances = computed(() => {
   .load-all {
     @apply py-1.5 text-center;
     button {
-      @apply h-[44px] rounded-md bg-primary-600 bg-opacity-[15%] p-2.5 text-primary-600 transition-colors hover:bg-opacity-10;
+      @apply h-[44px] rounded-md bg-primary-600/15 p-2.5 text-primary-600 transition-colors hover:bg-primary-600/10;
     }
   }
   .balance-data-symbol {

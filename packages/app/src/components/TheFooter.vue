@@ -39,7 +39,7 @@ const navigation = reactive([
 
 <style scoped lang="scss">
 .footer-container {
-  @apply container py-12 text-neutral-400 md:flex md:items-center md:justify-between;
+  @apply container mx-auto py-12 text-neutral-400 md:flex md:items-center md:justify-between;
 
   .links-container {
     @apply flex justify-center space-x-6 md:order-1;

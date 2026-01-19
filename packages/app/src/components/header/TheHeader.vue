@@ -224,7 +224,7 @@ const socials = [
 }
 
 .header-container {
-  @apply flex items-center justify-between h-14 gap-4;
+  @apply flex items-center justify-between h-14 gap-4 mx-auto;
 }
 
 .header-logo {
