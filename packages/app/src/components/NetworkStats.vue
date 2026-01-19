@@ -1,44 +1,44 @@
 <template>
-  <div class="card">
-    <div>
-      <div class="title">{{ t("networkStats.title") }}</div>
-      <div class="subtitle">{{ subtitle }}</div>
+  <div class="network-stats">
+    <div class="stats-header">
+      <h2 class="stats-title">{{ t("networkStats.title") }}</h2>
+      <p class="stats-subtitle">{{ subtitle }}</p>
     </div>
-    <dl class="description-list">
-      <div class="stats-container">
-        <dt>
+    <dl class="stats-grid">
+      <div class="stat-item">
+        <dt class="stat-label">
           <router-link :to="{ name: 'blocks' }">{{ t("networkStats.committed") }}</router-link>
         </dt>
-        <dd>
-          <ContentLoader v-if="loading" class="h-full w-24" />
-          <span v-else>{{ formatWithSpaces(committed ?? 0) }}</span>
+        <dd class="stat-value">
+          <ContentLoader v-if="loading" class="stat-loader" />
+          <span v-else class="stat-number">{{ formatWithSpaces(committed ?? 0) }}</span>
         </dd>
       </div>
-      <div class="stats-container">
-        <dt>
+      <div class="stat-item">
+        <dt class="stat-label">
           <router-link :to="{ name: 'blocks' }">{{ t("networkStats.verified") }}</router-link>
         </dt>
-        <dd>
-          <ContentLoader v-if="loading" class="h-full w-24" />
-          <span v-else>{{ formatWithSpaces(verified ?? 0) }}</span>
+        <dd class="stat-value">
+          <ContentLoader v-if="loading" class="stat-loader" />
+          <span v-else class="stat-number">{{ formatWithSpaces(verified ?? 0) }}</span>
         </dd>
       </div>
-      <div class="stats-container">
-        <dt>
+      <div class="stat-item">
+        <dt class="stat-label">
           <router-link :to="{ name: 'transactions' }">{{ t("networkStats.transactions") }}</router-link>
         </dt>
-        <dd>
-          <ContentLoader v-if="loading" class="h-full w-36" />
-          <span v-else>{{ formatWithSpaces(transactions ?? 0) }}</span>
+        <dd class="stat-value">
+          <ContentLoader v-if="loading" class="stat-loader" />
+          <span v-else class="stat-number">{{ formatWithSpaces(transactions ?? 0) }}</span>
         </dd>
       </div>
-      <div v-if="totalLocked" class="stats-container">
-        <dt>
+      <div v-if="totalLocked" class="stat-item">
+        <dt class="stat-label">
           {{ t("networkStats.totalLocked") }}
         </dt>
-        <dd>
-          <ContentLoader v-if="loading" class="h-full w-20" />
-          <span v-else>{{ formatMoney(totalLocked) }}</span>
+        <dd class="stat-value">
+          <ContentLoader v-if="loading" class="stat-loader" />
+          <span v-else class="stat-number">{{ formatMoney(totalLocked) }}</span>
         </dd>
       </div>
     </dl>
@@ -85,25 +85,68 @@ const subtitle = computed(() =>
 </script>
 
 <style scoped lang="scss">
-.card {
-  @apply flex w-full flex-col justify-between gap-x-12 rounded-lg bg-white px-8 py-5 shadow lg:flex-row lg:items-center;
-  .title {
-    @apply text-xl font-bold text-neutral-700;
-  }
-  .subtitle {
-    @apply font-sans text-base text-neutral-400;
-  }
-  .stats-container {
-    @apply flex flex-col border-neutral-200 py-3 pr-8 text-xl text-neutral-500 last:border-0 last:pb-0 sm:border-r sm:py-0 lg:w-max;
-    dd {
-      @apply text-[1.65rem] font-bold text-primary-800 xl:text-3xl;
+.network-stats {
+  @apply flex flex-col gap-4 p-5 rounded-lg lg:flex-row lg:items-center lg:justify-between lg:gap-8;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-default);
+}
+
+.stats-header {
+  @apply flex-shrink-0;
+}
+
+.stats-title {
+  @apply text-lg font-semibold m-0;
+  color: var(--text-primary);
+}
+
+.stats-subtitle {
+  @apply text-sm mt-1 mb-0 ml-0 mr-0;
+  color: var(--text-muted);
+}
+
+.stats-grid {
+  @apply grid grid-cols-2 gap-4 m-0 sm:flex sm:gap-6 lg:justify-end;
+}
+
+.stat-item {
+  @apply flex flex-col gap-1 pr-6 sm:pr-6;
+
+  @media (min-width: 640px) {
+    border-right: 1px solid var(--border-subtle);
+
+    &:last-child {
+      @apply border-r-0 pr-0;
     }
-    a {
-      @apply text-inherit no-underline;
+  }
+}
+
+.stat-label {
+  @apply text-sm font-medium;
+  color: var(--text-muted);
+
+  a {
+    @apply no-underline;
+    color: inherit;
+    transition: color 100ms ease-out;
+
+    &:hover {
+      color: var(--text-secondary);
     }
   }
-  .description-list {
-    @apply mt-4 gap-x-8 divide-y sm:flex sm:divide-y-0 lg:mt-0 lg:justify-end;
-  }
+}
+
+.stat-value {
+  @apply m-0;
+}
+
+.stat-number {
+  @apply font-mono text-xl font-semibold tabular-nums lg:text-2xl;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.stat-loader {
+  @apply w-20 h-7;
 }
 </style>

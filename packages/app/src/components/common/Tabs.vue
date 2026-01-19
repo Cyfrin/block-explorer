@@ -1,34 +1,31 @@
 <template>
-  <div class="tab-main">
-    <ul class="tab-head">
-      <template v-for="(tab, i) in tabs">
-        <li v-if="tab.hash" :key="`tab-${i}`">
+  <div class="tabs">
+    <div class="tabs-header">
+      <div class="tabs-list">
+        <template v-for="(tab, i) in tabs">
           <button
-            v-if="$slots[`tab-${i + 1}-header`]"
-            class="tab-btn"
+            v-if="tab.hash"
+            :key="`tab-${i}`"
+            type="button"
+            class="tab-button"
             :class="{ active: currentTabHash === tab.hash && tabs.length > 1 }"
             @click="setTab(tab)"
           >
-            <slot :name="`tab-${i + 1}-header`"></slot>
+            <slot v-if="$slots[`tab-${i + 1}-header`]" :name="`tab-${i + 1}-header`" />
+            <template v-else>
+              <span v-html="tab.title" />
+              <span v-if="tab.icon" class="tab-icon">
+                <component :is="tab.icon" />
+              </span>
+            </template>
           </button>
-          <button
-            v-else
-            class="tab-btn"
-            :class="{ active: currentTabHash === tab.hash && tabs.length > 1 }"
-            @click="setTab(tab)"
-          >
-            <span v-html="tab.title"></span>
-            <span v-if="tab.icon" class="tab-icon">
-              <component :is="tab.icon" />
-            </span>
-          </button>
-        </li>
-      </template>
-    </ul>
-    <div class="tab-content">
+        </template>
+      </div>
+    </div>
+    <div class="tabs-content">
       <div v-for="(tab, i) in tabs" :key="`tab-content-${i}`">
         <div v-show="currentTabHash === tab.hash">
-          <slot :name="`tab-${i + 1}-content`"></slot>
+          <slot :name="`tab-${i + 1}-content`" />
         </div>
       </div>
     </div>
@@ -68,7 +65,6 @@ const router = useRouter();
 const calculateCurrrentTabHash = () => {
   let tabHash = route?.hash && props.hasRoute ? route?.hash : props.tabs[0].hash;
   if (route?.hash && route?.hash.split("#").length > 2) {
-    // route.hash has multiple hashes (ex: #contracts#read)
     if (props.hasNestedRoute) {
       tabHash = `#${route?.hash.split("#").at(-1)}`;
     } else {
@@ -94,23 +90,56 @@ watchEffect(() => {
   }
 });
 </script>
+
 <style lang="scss" scoped>
-.tab-main {
-  @apply mx-auto w-full rounded-lg bg-white;
-  .tab-head {
-    @apply flex border-b md:flex-row;
+.tabs {
+  @apply w-full overflow-hidden rounded-lg;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-default);
+}
+
+.tabs-header {
+  @apply p-2;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tabs-list {
+  @apply flex gap-1;
+}
+
+.tab-button {
+  @apply inline-flex items-center gap-1 py-2 px-3 font-sans text-base font-medium bg-transparent border-none rounded-md cursor-pointer;
+  color: var(--text-muted);
+  transition: all 100ms ease-out;
+
+  &:hover:not(.active) {
+    color: var(--text-secondary);
+    background-color: var(--bg-hover);
   }
-  .tab-btn {
-    @apply px-4 py-3.5 text-sm text-gray-400 outline-0 sm:text-base flex;
+
+  &.active {
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
   }
-  .tab-content {
-    @apply rounded-b-lg;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
   }
-  .active {
-    @apply border-b-2 border-primary-600 font-bold text-primary-600;
+}
+
+.tab-icon {
+  @apply flex items-center w-4 h-4;
+  color: var(--success);
+
+  svg {
+    @apply w-full h-full;
   }
-  .tab-icon {
-    @apply ml-0.5 w-5 text-green-500;
-  }
+}
+
+.tabs-content {
+  // Content takes up remaining space
 }
 </style>

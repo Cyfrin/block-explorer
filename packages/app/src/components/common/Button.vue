@@ -1,14 +1,30 @@
 <template>
-  <component class="button" :is="tag" :type="type" :class="[variant, color, size]" v-bind="$attrs">
-    <LoadingIcon v-if="loading === true" />
-    <slot />
+  <component
+    :is="tag"
+    :type="type"
+    class="btn"
+    :class="[`btn-${variant}`, `btn-${size}`, { 'btn-loading': loading, 'btn-icon-only': iconOnly }]"
+    :disabled="disabled || loading"
+    v-bind="$attrs"
+  >
+    <span v-if="loading" class="btn-spinner">
+      <svg class="animate-spin" viewBox="0 0 24 24" fill="none">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        />
+      </svg>
+    </span>
+    <span v-else class="btn-content">
+      <slot />
+    </span>
   </component>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
-
-import LoadingIcon from "@/components/icons/LoadingIcon.vue";
 
 import type { PropType } from "vue";
 
@@ -19,17 +35,13 @@ export default defineComponent({
       type: String,
       default: "button",
     },
-    color: {
-      type: String as PropType<"primary" | "secondary">,
+    variant: {
+      type: String as PropType<"primary" | "secondary" | "ghost" | "danger">,
       default: "primary",
     },
     size: {
-      type: String as PropType<"md" | "lg" | "sm">,
+      type: String as PropType<"sm" | "md" | "lg">,
       default: "md",
-    },
-    variant: {
-      type: String as PropType<"contained" | "outlined">,
-      default: "contained",
     },
     type: {
       type: String,
@@ -39,54 +51,140 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
+    iconOnly: {
+      type: Boolean,
+      default: false,
+    },
   },
-  components: { LoadingIcon },
 });
 </script>
 
 <style lang="scss" scoped>
-.button {
-  @apply flex items-center justify-center rounded-md px-4 py-3 text-lg font-light leading-none no-underline shadow-sm;
-  @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
-  @apply appearance-none disabled:cursor-not-allowed disabled:opacity-50;
+.btn {
+  @apply inline-flex items-center justify-center gap-2 font-sans font-medium no-underline whitespace-nowrap rounded-md cursor-pointer;
+  transition: all 100ms cubic-bezier(0.25, 1, 0.5, 1);
 
-  &.sm {
-    @apply px-3 py-1.5 text-sm font-semibold;
-  }
-  &.md {
-    @apply px-4 py-2.5 text-sm font-semibold;
-  }
-  &.lg {
-    @apply px-4 py-3 text-xl font-bold;
+  &:focus-visible {
+    @apply outline-2 outline-offset-2;
+    outline-color: var(--accent);
   }
 
-  &.contained {
-    @apply text-neutral-50;
-    @apply border border-transparent;
+  &:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
 
-    &.primary {
-      @apply bg-primary-600 hover:bg-primary-700 disabled:hover:bg-primary-600;
-    }
+  // Sizes
+  &.btn-sm {
+    @apply h-7 px-2 text-xs;
 
-    &.secondary {
-      @apply bg-secondary-600 hover:bg-secondary-700 disabled:hover:bg-secondary-600;
+    &.btn-icon-only {
+      @apply w-7 px-0;
     }
   }
-  &.outlined {
-    @apply border border-neutral-300;
-    @apply bg-white hover:bg-white disabled:hover:bg-white;
 
-    &.primary {
-      @apply text-primary-700;
-    }
+  &.btn-md {
+    @apply h-9 px-3 text-sm;
 
-    &.secondary {
-      @apply text-secondary-700;
-    }
-
-    &.neutral {
-      @apply text-neutral-500;
+    &.btn-icon-only {
+      @apply w-9 px-0;
     }
   }
+
+  &.btn-lg {
+    @apply h-11 px-4 text-base;
+
+    &.btn-icon-only {
+      @apply w-11 px-0;
+    }
+  }
+
+  // Variants
+  &.btn-primary {
+    background-color: var(--accent);
+    border: 1px solid var(--accent);
+    @apply text-white;
+
+    &:hover:not(:disabled) {
+      background-color: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+  }
+
+  &.btn-secondary {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    color: var(--text-primary);
+
+    &:hover:not(:disabled) {
+      background-color: var(--bg-hover);
+      border-color: var(--border-strong);
+    }
+
+    &:active:not(:disabled) {
+      background-color: var(--bg-active);
+    }
+  }
+
+  &.btn-ghost {
+    @apply bg-transparent border border-transparent;
+    color: var(--text-secondary);
+
+    &:hover:not(:disabled) {
+      background-color: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    &:active:not(:disabled) {
+      background-color: var(--bg-active);
+    }
+  }
+
+  &.btn-danger {
+    background-color: var(--error);
+    border: 1px solid var(--error);
+    @apply text-white;
+
+    &:hover:not(:disabled) {
+      background-color: var(--error-text);
+      border-color: var(--error-text);
+    }
+  }
+
+  &.btn-loading {
+    @apply pointer-events-none;
+  }
+}
+
+.btn-spinner {
+  @apply flex items-center justify-center;
+
+  svg {
+    @apply w-4 h-4;
+  }
+}
+
+.btn-content {
+  @apply inline-flex items-center gap-1;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 </style>

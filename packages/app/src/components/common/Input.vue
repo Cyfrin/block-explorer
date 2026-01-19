@@ -1,18 +1,17 @@
 <template>
   <div class="input-container">
-    <input v-bind="$attrs" v-model="inputted" class="input" :class="{ error }" />
+    <input v-bind="$attrs" v-model="inputted" class="input" :class="{ 'input-error': error }" />
     <transition
-      enter-active-class="transition ease duration-200"
+      enter-active-class="transition-opacity duration-150"
       enter-from-class="opacity-0"
       enter-to-class="opacity-100"
-      leave-active-class="transition ease duration-200"
+      leave-active-class="transition-opacity duration-150"
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
-      <div v-if="error" class="input-error-tooltip">
-        <Tooltip class="relative h-5 w-5">
-          <ExclamationCircleIcon class="h-full w-full text-error-500" aria-hidden="true" />
-
+      <div v-if="error" class="input-error-icon">
+        <Tooltip class="error-tooltip">
+          <ExclamationCircleIcon class="icon" aria-hidden="true" />
           <template #content>{{ error }}</template>
         </Tooltip>
       </div>
@@ -61,24 +60,56 @@ const inputted = computed({
 <style lang="scss" scoped>
 .input-container {
   @apply relative w-full;
+}
 
-  .input {
-    @apply block w-full rounded-md border border-neutral-300 bg-neutral-50 p-3 text-sm shadow-sm transition-colors focus:outline-none;
-    &:disabled {
-      @apply cursor-not-allowed bg-neutral-200 text-neutral-500;
-    }
-    &::placeholder {
-      @apply text-neutral-400;
-    }
-    &:not(.error) {
-      @apply border-neutral-300 focus:border-primary-600 focus:ring-primary-600;
-    }
-    &.error {
-      @apply border-error-400 pr-8 text-error-500 focus:border-error-500 focus:ring-error-500;
+.input {
+  @apply block w-full py-2 px-3 font-sans text-base rounded-md;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-default);
+  transition: all 100ms ease-out;
+
+  &::placeholder {
+    color: var(--text-faint);
+  }
+
+  &:hover:not(:disabled):not(.input-error) {
+    border-color: var(--border-strong);
+  }
+
+  &:focus {
+    @apply outline-none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-muted);
+  }
+
+  &:disabled {
+    @apply cursor-not-allowed;
+    background-color: var(--bg-tertiary);
+    color: var(--text-muted);
+  }
+
+  &.input-error {
+    @apply pr-8;
+    border-color: var(--error);
+    color: var(--error-text);
+
+    &:focus {
+      box-shadow: 0 0 0 3px var(--error-muted);
     }
   }
-  .input-error-tooltip {
-    @apply absolute inset-y-0 right-0 flex items-center justify-center pr-3;
+}
+
+.input-error-icon {
+  @apply absolute inset-0 left-auto flex items-center pr-3 pointer-events-auto;
+
+  .error-tooltip {
+    @apply flex;
+  }
+
+  .icon {
+    @apply w-5 h-5;
+    color: var(--error);
   }
 }
 </style>

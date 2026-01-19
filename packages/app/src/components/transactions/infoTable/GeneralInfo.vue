@@ -105,7 +105,7 @@
               </div>
               <Badge
                 v-if="transaction?.isEvmLike && displayedTxReceiver"
-                color="primary"
+                color="accent"
                 class="verified-badge"
                 :tooltip="t('contract.evmTooltip')"
               >

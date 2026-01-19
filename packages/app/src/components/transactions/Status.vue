@@ -2,12 +2,10 @@
   <div :class="[`transaction-status`, { 'single-badge-status': badges.length === 1 }]">
     <template v-for="(item, index) in badges" :key="index">
       <Badge
-        type="pill"
         size="md"
         :data-testid="item.testId"
         :color="item.color"
         :tooltip="item.tooltip"
-        :text-color="item.textColor"
         :class="[
           {
             badge: badges.length > 1 && index % 2 === 0,
@@ -43,12 +41,10 @@
       </Badge>
       <Badge
         v-if="item.withDetailedPopup"
-        type="pill"
         size="md"
         :data-testid="item.testId"
         :color="item.color"
         :tooltip="item.tooltip"
-        :text-color="item.textColor"
         class="badge-with-content"
         :class="[
           {
@@ -168,14 +164,12 @@ const remainingTxStatuses: TxStatus[] = [
 
 const badges = computed(() => {
   const badgesArr: {
-    color: "neutral" | "dark-neutral" | "success" | "dark-success" | "danger" | "progress";
+    color: "neutral" | "success" | "warning" | "error" | "accent";
     text?: string;
     tooltip?: string;
     infoTooltip?: string;
     icon?: unknown;
     testId: string;
-    textColor?: "neutral";
-    iconColor?: "dark-neutral";
     finishedStatuses?: TxStatus[];
     remainingStatuses?: TxStatus[];
     withDetailedPopup?: boolean;
@@ -183,7 +177,7 @@ const badges = computed(() => {
   if (props.status === "failed") {
     badgesArr.push({
       testId: "failed",
-      color: "danger",
+      color: "error",
       text: t("transactions.statusComponent.failed"),
       icon: ExclamationCircleIcon,
     });
@@ -194,11 +188,10 @@ const badges = computed(() => {
     testId: "l2-badge-title",
     color: "success",
     text: t("general.execution"),
-    textColor: "neutral",
   });
   badgesArr.push({
     testId: "l2-badge-value",
-    color: "dark-success",
+    color: "success",
     text: t("transactions.statusComponent.processed"),
     icon: CheckIcon,
   });
@@ -217,12 +210,11 @@ const badges = computed(() => {
     testId: "l1-badge-title",
     color: props.status === "verified" ? "success" : "neutral",
     text: t("general.finality"),
-    textColor: "neutral",
   });
   if (props.status === "verified") {
     badgesArr.push({
       testId: "verified",
-      color: "dark-success",
+      color: "success",
       text: t("transactions.statusComponent.executed"),
       finishedStatuses: [finishedTxStatuses[0], finishedTxStatuses[1]],
       withDetailedPopup: true,
@@ -249,8 +241,7 @@ const badges = computed(() => {
 
     badgesArr.push({
       testId: "l1-badge-value",
-      color: "dark-neutral",
-      iconColor: "dark-neutral",
+      color: "neutral",
       text: t(`transactions.statusComponent.${textKey}`),
       icon: Spinner,
       finishedStatuses,

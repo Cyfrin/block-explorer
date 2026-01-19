@@ -6,10 +6,10 @@
       <CopyButton :value="value" class="title-copy-button" />
     </div>
     <div class="badge-container">
-      <Badge v-if="isVerified" color="dark-success" class="verified-badge" :tooltip="t('contract.verifiedTooltip')">
+      <Badge v-if="isVerified" color="success" class="verified-badge" :tooltip="t('contract.verifiedTooltip')">
         {{ t("contract.verified") }}
       </Badge>
-      <Badge v-if="isEvmLike" color="primary" class="verified-badge" :tooltip="t('contract.evmTooltip')">
+      <Badge v-if="isEvmLike" color="accent" class="verified-badge" :tooltip="t('contract.evmTooltip')">
         {{ t("contract.evm") }}
       </Badge>
     </div>

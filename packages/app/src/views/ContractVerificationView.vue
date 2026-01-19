@@ -250,7 +250,7 @@
               : t("contractVerification.form.buttonVerify")
           }}
         </Button>
-        <Button variant="outlined" :disabled="disabledClearButton" @click="clearForm">
+        <Button variant="secondary" :disabled="disabledClearButton" @click="clearForm">
           {{ t("contractVerification.form.buttonClear") }}
         </Button>
       </div>

@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeMount } from "vue";
+import { onBeforeMount, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useTitle } from "@vueuse/core";
@@ -32,6 +32,7 @@ import useContext from "@/composables/useContext";
 import useLocalization from "@/composables/useLocalization";
 import useLogin from "@/composables/useLogin";
 import useRouteTitle from "@/composables/useRouteTitle";
+import { useTheme } from "@/composables/useTheme";
 
 import MaintenanceView from "@/views/MaintenanceView.vue";
 
@@ -45,10 +46,24 @@ const { isSkipLoginRoute } = useSkipLoginCheckRoutes();
 const { initializeLogin } = useLogin(context);
 const runtimeConfig = useRuntimeConfig();
 
+// Initialize theme
+const { theme } = useTheme();
+
 useTitle(title);
 const { isReady, currentNetwork } = useContext();
 
 setup();
+
+// Apply theme on mount
+onMounted(() => {
+  const effectiveTheme =
+    theme.value === "system"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light"
+      : theme.value;
+  document.documentElement.dataset.theme = effectiveTheme;
+});
 
 onBeforeMount(async () => {
   if (runtimeConfig.appEnvironment !== "prividium" || isSkipLoginRoute.value) {

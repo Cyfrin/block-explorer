@@ -26,10 +26,10 @@
           {{ name }}
         </div>
         <div class="token-badge">
-          <Badge v-if="bridged" color="primary" class="verified-badge" :tooltip="t('tokensView.table.bridged.tooltip')">
+          <Badge v-if="bridged" color="accent" class="verified-badge" :tooltip="t('tokensView.table.bridged.tooltip')">
             {{ t("tokensView.table.bridged.title") }}
           </Badge>
-          <Badge v-else color="progress" class="verified-badge" :tooltip="t('tokensView.table.native.tooltip')">
+          <Badge v-else color="neutral" class="verified-badge" :tooltip="t('tokensView.table.native.tooltip')">
             {{ t("tokensView.table.native.title") }}
           </Badge>
         </div>

@@ -4,21 +4,21 @@
       <table cellspacing="0" cellpadding="0">
         <thead v-if="$slots['table-head']">
           <tr>
-            <slot name="table-head"></slot>
+            <slot name="table-head" />
           </tr>
         </thead>
         <tbody v-if="!loading">
           <slot />
           <template v-if="items?.length">
-            <tr v-for="(item, index) in items" :key="index">
-              <slot name="table-row" :item="item" :index="index"></slot>
+            <tr v-for="(item, index) in items" :key="index" class="table-row">
+              <slot name="table-row" :item="item" :index="index" />
             </tr>
           </template>
           <template v-else-if="$slots.empty && !failed">
-            <slot name="empty"></slot>
+            <slot name="empty" />
           </template>
           <template v-else-if="$slots.failed && failed">
-            <slot name="failed"></slot>
+            <slot name="failed" />
           </template>
         </tbody>
         <tbody v-else>
@@ -26,8 +26,8 @@
         </tbody>
       </table>
     </div>
-    <div v-if="$slots.footer" class="table-footer" :class="[items?.length! % 2 ? 'bg-neutral-50' : 'bg-white']">
-      <slot name="footer"></slot>
+    <div v-if="$slots.footer" class="table-footer">
+      <slot name="footer" />
     </div>
   </div>
 </template>
@@ -54,53 +54,112 @@ defineProps({
 
 <style lang="scss">
 .table-container {
-  @apply w-full rounded-lg shadow-md;
+  @apply w-full overflow-hidden rounded-lg;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-default);
 
   .table-body {
-    @apply w-full overflow-auto;
+    @apply w-full overflow-x-auto;
 
+    // Hide header on mobile, show on md+
     & > table > thead tr {
       @apply absolute left-[-9999px] top-[-9999px] md:relative md:left-0 md:top-0;
     }
   }
+
+  // Header border radius
   &.has-head {
     table thead tr th {
-      @apply first:rounded-tl-lg last:rounded-tr-lg;
+      &:first-child {
+        @apply rounded-tl-lg;
+      }
+      &:last-child {
+        @apply rounded-tr-lg;
+      }
     }
   }
+
+  // Body border radius when no header
   &:not(.has-head) {
     table tbody tr:first-child td {
-      @apply first:rounded-tl-lg last:rounded-tr-lg;
+      &:first-child {
+        @apply rounded-tl-lg;
+      }
+      &:last-child {
+        @apply rounded-tr-lg;
+      }
     }
   }
+
+  // Footer border radius
   &:not(.has-footer) {
     .table-body {
       @apply rounded-b-lg;
     }
 
     table tbody tr:last-child td {
-      @apply first:rounded-bl-lg last:rounded-br-lg;
+      &:first-child {
+        @apply rounded-bl-lg;
+      }
+      &:last-child {
+        @apply rounded-br-lg;
+      }
     }
   }
 
   table {
-    @apply w-full border-collapse border-none;
+    @apply w-full border-collapse;
+    border-spacing: 0;
 
     thead {
-      @apply md:border-b;
-
       tr th {
-        @apply bg-gray-100;
+        @apply py-3 px-4 text-left text-sm font-medium whitespace-nowrap;
+        background-color: var(--bg-tertiary);
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--border-default);
       }
     }
+
     tbody {
       tr {
-        @apply transition last:border-b-0 odd:bg-white even:bg-gray-50 md:border-b;
+        transition: background-color 100ms ease-out;
+
+        &:not(:last-child) {
+          border-bottom: 1px solid var(--border-subtle);
+        }
+
+        // Alternating row colors
+        &:nth-child(odd) {
+          background-color: var(--bg-primary);
+        }
+
+        &:nth-child(even) {
+          background-color: var(--bg-secondary);
+        }
+
+        // Hover state
+        &:hover {
+          background-color: var(--bg-hover);
+        }
+
+        td {
+          @apply py-3 px-4 text-base align-middle;
+          color: var(--text-secondary);
+
+          // Data values in monospace
+          &.data-cell {
+            @apply font-mono text-sm tabular-nums;
+            color: var(--text-primary);
+          }
+        }
       }
     }
   }
+
   .table-footer {
-    @apply w-full rounded-b-lg;
+    @apply w-full py-3 px-4 rounded-b-lg;
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-subtle);
   }
 }
 </style>
