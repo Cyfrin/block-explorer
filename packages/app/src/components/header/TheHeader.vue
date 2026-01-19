@@ -5,9 +5,7 @@
         <!-- Logo -->
         <div class="header-logo">
           <router-link :to="{ name: 'home' }" class="logo-link">
-            <span class="sr-only">ZKsync</span>
-            <zk-sync-era v-if="currentNetwork.groupId === 'era'" class="logo-icon" />
-            <zk-sync-arrows-logo v-else class="logo-icon" />
+            <span class="logo-text">BattleChain</span>
           </router-link>
         </div>
 
@@ -79,7 +77,7 @@
         <div class="mobile-menu-inner">
           <div class="mobile-menu-header">
             <div class="mobile-logo">
-              <zk-sync class="logo-icon" />
+              <span class="logo-text">BattleChain</span>
             </div>
             <PopoverButton class="mobile-close-btn">
               <span class="sr-only">Close menu</span>
@@ -156,9 +154,6 @@ import NetworkSwitch from "@/components/NetworkSwitch.vue";
 import ThemeToggle from "@/components/ThemeToggle.vue";
 import DiscordIcon from "@/components/icons/DiscordIcon.vue";
 import TwitterIcon from "@/components/icons/TwitterIcon.vue";
-import ZkSync from "@/components/icons/ZkSync.vue";
-import ZkSyncArrowsLogo from "@/components/icons/ZkSyncArrowsLogo.vue";
-import ZkSyncEra from "@/components/icons/ZkSyncEra.vue";
 
 import useContext from "@/composables/useContext";
 import useLocalization from "@/composables/useLocalization";
@@ -239,8 +234,8 @@ const socials = [
     @apply flex items-center no-underline;
   }
 
-  .logo-icon {
-    @apply h-7 w-auto;
+  .logo-text {
+    @apply text-xl font-bold tracking-tight;
     color: var(--text-primary);
   }
 }
@@ -373,8 +368,8 @@ const socials = [
 }
 
 .mobile-logo {
-  .logo-icon {
-    @apply h-8 w-auto;
+  .logo-text {
+    @apply text-xl font-bold tracking-tight;
     color: var(--text-primary);
   }
 }
