@@ -132,7 +132,8 @@ const shouldDisplayL1Address = (l1Address?: string) => {
 .table-body-col {
   @apply relative flex flex-col items-end justify-end text-right md:table-cell md:w-1/3 md:text-left;
   &:before {
-    @apply absolute left-4 top-3 whitespace-nowrap pr-5 text-left text-xs uppercase text-neutral-400 content-[attr(data-heading)] md:content-none;
+    @apply absolute left-4 top-3 whitespace-nowrap pr-5 text-left text-xs uppercase content-[attr(data-heading)] md:content-none;
+    color: var(--text-muted);
   }
   .token-address-container {
     @apply flex gap-x-2;
@@ -146,7 +147,8 @@ const shouldDisplayL1Address = (l1Address?: string) => {
     }
   }
   .tokens-not-found {
-    @apply px-1.5 py-2 text-gray-700;
+    @apply px-1.5 py-2;
+    color: var(--text-secondary);
   }
 }
 </style>

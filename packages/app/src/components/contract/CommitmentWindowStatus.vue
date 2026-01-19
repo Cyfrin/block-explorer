@@ -67,30 +67,30 @@ const deadlineISO = computed(() => {
   @apply flex items-start gap-2 rounded-md px-3 py-2 sm:items-center;
 
   &.locked {
-    @apply bg-success-50;
+    background-color: var(--success-muted);
 
     .status-icon .icon {
-      @apply text-success-500;
+      color: var(--success);
     }
 
     .status-label {
-      @apply text-success-700;
+      color: var(--success-text);
     }
   }
 
   &.unlocked {
-    @apply bg-warning-50;
+    background-color: var(--warning-muted);
 
     .status-icon .icon {
-      @apply text-warning-500;
+      color: var(--warning);
     }
 
     .status-label {
-      @apply text-warning-700;
+      color: var(--warning-text);
     }
 
     .status-warning {
-      @apply text-warning-600;
+      color: var(--warning-text);
     }
   }
 
@@ -111,7 +111,8 @@ const deadlineISO = computed(() => {
   }
 
   .status-deadline {
-    @apply flex flex-wrap items-center gap-1 text-xs text-neutral-500;
+    @apply flex flex-wrap items-center gap-1 text-xs;
+    color: var(--text-muted);
   }
 
   :deep(.deadline-copy.copy-button-container) {
@@ -122,7 +123,8 @@ const deadlineISO = computed(() => {
     }
 
     .info-field-time {
-      @apply cursor-pointer text-neutral-600 hover:underline;
+      @apply cursor-pointer hover:underline;
+      color: var(--text-secondary);
     }
   }
 

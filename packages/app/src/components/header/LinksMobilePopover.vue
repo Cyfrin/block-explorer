@@ -1,16 +1,14 @@
 <template>
-  <PopoverButton v-for="item in items" :key="item.to?.name ?? item.url">
-    <router-link v-if="item.to" :to="item.to" class="mobile-navigation-link internal-link">
-      <span class="mobile-navigation-label">
+  <div class="mobile-nav-links">
+    <PopoverButton v-for="item in items" :key="item.to?.name ?? item.url" as="template">
+      <router-link v-if="item.to" :to="item.to" class="mobile-nav-link">
         {{ item.label }}
-      </span>
-    </router-link>
-    <a v-else :href="item.url" target="_blank" class="mobile-navigation-link internal-link">
-      <span class="mobile-navigation-label">
+      </router-link>
+      <a v-else :href="item.url" target="_blank" rel="noopener" class="mobile-nav-link">
         {{ item.label }}
-      </span>
-    </a>
-  </PopoverButton>
+      </a>
+    </PopoverButton>
+  </div>
 </template>
 
 <script lang="ts" setup>

@@ -1,5 +1,5 @@
 <template>
-  <Table class="account-info-table" :items="tableInfoItems" :loading="loading">
+  <Table class="account-info-table no-hover" :items="tableInfoItems" :loading="loading">
     <template #table-row="{ item }: { item: any }">
       <TableBodyColumn>
         <span class="block-info-field-label">{{ item.label }}</span>
@@ -91,13 +91,11 @@ const tableInfoItems = computed(() => {
   }
 
   .block-info-field-label {
-    @apply text-gray-400;
+    color: var(--text-muted);
   }
 
-  .table-footer {
-    .block-info-field-value {
-      @apply text-gray-800;
-    }
+  .block-info-field-value {
+    color: var(--text-primary);
   }
 }
 </style>

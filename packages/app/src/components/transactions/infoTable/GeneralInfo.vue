@@ -308,10 +308,10 @@ const gasUsedPercent = computed(() => {
     }
   }
   .transaction-info-field-label {
-    @apply text-gray-400;
+    color: var(--text-muted);
   }
   .transaction-info-field-value {
-    @apply text-gray-800;
+    color: var(--text-primary);
   }
   .transaction-table-label {
     @apply m-0 inline-flex w-[7rem] items-center whitespace-normal sm:w-[11.5rem];

@@ -63,7 +63,7 @@
       </TableBodyColumn>
       <TableBodyColumn class="tablet-column">
         <div class="flex gap-x-2">
-          <div class="text-neutral-400">
+          <div class="transfer-label">
             <div>{{ t("transfers.table.from") }}</div>
             <div>{{ t("transfers.table.to") }}</div>
           </div>
@@ -202,8 +202,13 @@ watch(
   td {
     @apply relative flex flex-col items-end justify-end text-right md:table-cell md:h-[56.5px] md:text-left;
     &:before {
-      @apply absolute left-4 top-3 whitespace-nowrap pr-5 text-left text-xs uppercase text-neutral-400 content-[attr(data-heading)] md:content-none;
+      @apply absolute left-4 top-3 whitespace-nowrap pr-5 text-left text-xs uppercase content-[attr(data-heading)] md:content-none;
+      color: var(--text-muted);
     }
+  }
+
+  .transfer-label {
+    color: var(--text-muted);
   }
 
   &.has-head {

@@ -1,5 +1,5 @@
 <template>
-  <Table class="contract-info-table" :loading="loading">
+  <Table class="contract-info-table no-hover" :loading="loading">
     <template v-if="!loading && contract" #default>
       <tr>
         <table-body-column class="contract-info-field-label">
@@ -147,14 +147,16 @@ watch(
     }
   }
   .contract-info-field-label {
-    @apply text-gray-400;
+    color: var(--text-muted);
   }
+
   .contract-info-field-value {
-    @apply text-gray-800;
+    color: var(--text-primary);
   }
 
   .contract-not-found {
-    @apply px-1.5 py-2 text-gray-700;
+    @apply px-1.5 py-2;
+    color: var(--text-secondary);
   }
 
   .safe-harbor-cell {

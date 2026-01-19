@@ -1,9 +1,9 @@
 import { defineConfig } from "vite";
-import { fileURLToPath, URL } from "url";
-
-import vue from "@vitejs/plugin-vue";
-import tailwindcss from "@tailwindcss/vite";
 import tailwindAutoReference from "vite-plugin-vue-tailwind-auto-reference";
+
+import tailwindcss from "@tailwindcss/vite";
+import vue from "@vitejs/plugin-vue";
+import { fileURLToPath, URL } from "url";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -49,11 +49,7 @@ export default defineConfig({
       target: "esnext",
     },
   },
-  plugins: [
-    vue(),
-    tailwindAutoReference("./src/assets/tailwind.css"),
-    tailwindcss(),
-  ],
+  plugins: [vue(), tailwindAutoReference("./src/assets/tailwind.css"), tailwindcss()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

@@ -342,7 +342,7 @@ const badges = computed(() => {
 
 .badge-additional-content {
   .badge-status-link-icon {
-    @apply text-neutral-600;
+    color: var(--text-secondary);
   }
 
   .badge-status-link {
@@ -364,7 +364,7 @@ const badges = computed(() => {
   }
 
   &:hover .badge-status-link-icon {
-    @apply text-black;
+    color: var(--text-primary);
   }
 }
 
@@ -387,7 +387,8 @@ const badges = computed(() => {
 */
 
 .badge-status-popup {
-  @apply mx-auto rounded-lg bg-white p-4;
+  @apply mx-auto rounded-lg p-4;
+  background-color: var(--bg-primary);
 }
 
 .badge-status-popup-header {
@@ -395,39 +396,46 @@ const badges = computed(() => {
 }
 
 .badge-status-popup-close {
-  @apply rounded-md bg-neutral-200 p-1.5 focus:outline-none;
+  @apply rounded-md p-1.5 focus:outline-none;
+  background-color: var(--bg-tertiary);
 
   svg {
     @apply h-6 w-6;
   }
 
   &:hover {
-    @apply text-black;
+    color: var(--text-primary);
   }
 }
 .badge-status-popup-title {
-  @apply text-xl font-normal text-neutral-600;
+  @apply text-xl font-normal;
+  color: var(--text-secondary);
 }
 
 .badge-status-popup-button {
-  @apply mb-2 rounded-md bg-neutral-200 text-sm text-neutral-600;
+  @apply mb-2 rounded-md text-sm;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
 
   &::after {
-    @apply absolute left-5 top-full h-2 w-[2px] bg-neutral-200 content-[''];
+    @apply absolute left-5 top-full h-2 w-[2px] content-[''];
+    background-color: var(--bg-tertiary);
   }
   &.status-active {
-    @apply text-success-600;
+    color: var(--success-text);
 
     &::after {
-      @apply bg-success-600;
+      background-color: var(--success);
     }
   }
   &.status-current {
-    @apply p-2 text-neutral-600;
+    @apply p-2;
+    color: var(--text-secondary);
   }
 
   &.status-next {
-    @apply p-2 pl-9 text-neutral-500;
+    @apply p-2 pl-9;
+    color: var(--text-muted);
   }
 
   &:last-child {
@@ -445,13 +453,14 @@ const badges = computed(() => {
       @apply text-inherit;
 
       .badge-status-link-icon {
-        @apply text-black;
+        color: var(--text-primary);
       }
     }
   }
 
   .badge-status-link-icon {
-    @apply mr-0 text-neutral-600;
+    @apply mr-0;
+    color: var(--text-secondary);
   }
 
   svg,

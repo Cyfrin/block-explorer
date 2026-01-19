@@ -15,10 +15,14 @@ defineProps({
 
 <style lang="scss">
 .content-container {
-  @apply mt-4 grid w-full grid-flow-row grid-cols-1 gap-4 rounded-lg bg-white p-4 shadow-md;
+  @apply mt-4 grid w-full grid-flow-row grid-cols-1 gap-4 rounded-lg p-4;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-md);
 
   .content-title {
-    @apply text-2xl text-neutral-700;
+    @apply text-2xl;
+    color: var(--text-primary);
   }
 }
 </style>

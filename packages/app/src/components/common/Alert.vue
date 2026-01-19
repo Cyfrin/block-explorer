@@ -34,7 +34,8 @@ const iconColor = computed(() => {
   @apply flex items-center rounded-lg p-4;
 
   .info-tooltip-icon {
-    @apply h-5 w-5 text-neutral-400;
+    @apply h-5 w-5;
+    color: var(--text-muted);
   }
 
   &.warning {
@@ -45,7 +46,8 @@ const iconColor = computed(() => {
   }
 
   &.notification {
-    @apply bg-neutral-200 text-neutral-600;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
   }
 
   .alert-body {

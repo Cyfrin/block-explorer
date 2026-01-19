@@ -32,12 +32,13 @@ defineProps({
 .tippy-box {
   @apply rounded-lg text-sm;
   &[data-theme~="light"] {
-    @apply bg-neutral-400 text-white;
+    background-color: var(--text-muted);
+    color: var(--bg-primary);
     &[data-placement^="top"] > .tippy-arrow:before {
-      @apply border-t-neutral-400;
+      border-top-color: var(--text-muted);
     }
     &[data-placement^="bottom"] > .tippy-arrow:before {
-      @apply border-b-neutral-400;
+      border-bottom-color: var(--text-muted);
     }
   }
 }

@@ -120,7 +120,8 @@ const { isReady: isImageLoaded } = useImage({ src: imgSource.value });
         @apply absolute inset-0 h-full w-full rounded-full;
       }
       .token-img-loader {
-        @apply animate-pulse bg-neutral-200;
+        @apply animate-pulse;
+        background-color: var(--bg-tertiary);
       }
       .token-img {
         @apply opacity-0 transition-opacity duration-150;
@@ -138,10 +139,11 @@ const { isReady: isImageLoaded } = useImage({ src: imgSource.value });
   }
   .token-info {
     .token-symbol {
-      @apply text-neutral-600;
+      color: var(--text-secondary);
     }
     .token-name {
-      @apply text-xs text-neutral-400;
+      @apply text-xs;
+      color: var(--text-muted);
     }
     .token-badge {
       @apply flex items-center justify-end md:justify-start gap-x-1;

@@ -1,5 +1,5 @@
 <template>
-  <Table class="token-info-table" :loading="loading">
+  <Table class="token-info-table no-hover" :loading="loading">
     <template v-if="!loading && tokenInfo" #default>
       <tr>
         <table-body-column class="token-info-field-label">
@@ -86,14 +86,15 @@ const { t } = useI18n();
     }
   }
   .token-info-field-label {
-    @apply text-gray-400;
+    color: var(--text-muted);
   }
   .token-info-field-value {
-    @apply text-gray-800;
+    color: var(--text-primary);
   }
 
   .token-not-found {
-    @apply px-1.5 py-2 text-gray-700;
+    @apply px-1.5 py-2;
+    color: var(--text-secondary);
   }
 }
 </style>

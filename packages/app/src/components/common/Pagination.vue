@@ -188,18 +188,29 @@ const nextButtonQuery = computed(() => ({
     }
 
     .pagination-page-button {
-      @apply rounded-md bg-white px-1.5 py-1 font-mono text-sm font-medium text-neutral-700 no-underline sm:px-2;
+      @apply rounded-md px-1.5 py-1 font-mono text-sm font-medium no-underline sm:px-2;
+      background-color: var(--bg-primary);
+      color: var(--text-secondary);
       &:not(.disabled):not(.active):not(.dots) {
-        @apply hover:bg-neutral-50;
+        &:hover {
+          background-color: var(--bg-hover);
+        }
       }
       &.disabled {
-        @apply cursor-not-allowed text-neutral-400;
+        @apply cursor-not-allowed;
+        color: var(--text-faint);
       }
       &.active {
-        @apply z-10 bg-neutral-100;
+        @apply z-10;
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
       }
       &.dots {
-        @apply font-sans text-neutral-400 hover:bg-white;
+        @apply font-sans;
+        color: var(--text-muted);
+        &:hover {
+          background-color: var(--bg-primary);
+        }
       }
       &.arrow {
         @apply flex items-center;
@@ -213,7 +224,8 @@ const nextButtonQuery = computed(() => ({
   .page-size-container {
     @apply relative left-0 flex items-center justify-center pb-2 sm:absolute sm:pb-0 sm:left-6;
     .page-size-text {
-      @apply text-gray-500 pl-2;
+      @apply pl-2;
+      color: var(--text-muted);
     }
     .page-size-dropdown {
       @apply w-16;

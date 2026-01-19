@@ -39,7 +39,9 @@ useResizeObserver(el as MaybeElementRef, (entries) => {
 
 <style lang="scss" scoped>
 .expandable-text {
-  @apply relative w-full rounded-md border border-neutral-200 bg-neutral-50 px-4 py-2;
+  @apply relative w-full rounded-md border px-4 py-2;
+  border-color: var(--border-default);
+  background-color: var(--bg-secondary);
 
   &.expanded {
     .expandable-text-content {
@@ -52,6 +54,7 @@ useResizeObserver(el as MaybeElementRef, (entries) => {
   }
   .expand-button {
     @apply underline;
+    color: var(--accent);
   }
 }
 </style>

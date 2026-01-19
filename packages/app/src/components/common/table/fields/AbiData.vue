@@ -12,7 +12,7 @@
           <CopyButton class="mr-1" tooltipPosition="left" :value="value" />
           <ChevronDownIcon
             :class="open ? 'rotate-180 transform' : ''"
-            class="h-5 w-5 text-gray-500 transition-transform"
+            class="chevron-icon h-5 w-5 transition-transform"
           />
         </div>
       </DisclosureButton>
@@ -47,16 +47,30 @@ const truncatedAbi = computed<string>(() => {
 <style lang="scss">
 .info-field-abi-data {
   .abi-data-disclosure-btn {
-    @apply flex w-full items-center justify-between bg-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-none [word-break:break-word];
+    @apply flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium focus:outline-none [word-break:break-word];
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+
+    &:hover {
+      background-color: var(--bg-hover);
+    }
   }
   .abi-data-disclosure-icons {
-    @apply flex items-center;
+    @apply flex shrink-0 items-center ml-2;
+
+    .chevron-icon {
+      color: var(--text-muted);
+    }
   }
   .abi-data-disclosure-panel {
-    @apply rounded-bl-lg rounded-br-lg border border-t-0 border-dashed border-gray-300 px-4 py-4;
+    @apply rounded-bl-lg rounded-br-lg border border-t-0 px-4 py-4;
+    border-color: var(--border-default);
+    background-color: var(--bg-secondary);
 
     .abi-data-full-value {
-      @apply overflow-hidden whitespace-pre-line break-words break-all text-sm text-gray-700;
+      @apply overflow-hidden whitespace-pre-line break-words break-all font-mono text-sm;
+      color: var(--text-secondary);
     }
   }
 }

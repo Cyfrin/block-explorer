@@ -9,7 +9,7 @@
       <tr class="loader-row" v-for="item in loadingRows" :key="item">
         <TableBodyColumn :data-heading="t('blocks.table.block')">
           <div class="blocks-number-container">
-            <div class="h-8 w-8 animate-pulse rounded-full bg-neutral-200"></div>
+            <div class="block-icon-loader h-8 w-8 animate-pulse rounded-full"></div>
             <div class="blocks-number-right">
               <ContentLoader class="block-data-number w-14" />
               <ContentLoader class="block-data-txns-amount w-10" />
@@ -30,7 +30,7 @@
       <TableBodyColumn :data-heading="t('blocks.table.block')">
         <div class="blocks-number-container">
           <div class="blocks-number-icon-container">
-            <CubeIcon class="h-5 w-5 text-white" />
+            <CubeIcon class="h-5 w-5" />
           </div>
           <div class="blocks-number-right">
             <div class="block-data-number">
@@ -109,26 +109,36 @@ defineProps({
   .blocks-number-container {
     @apply flex items-center;
 
+    .block-icon-loader {
+      background-color: var(--bg-tertiary);
+    }
+
     .blocks-number-icon-container {
-      @apply flex h-8 w-8 items-center justify-center rounded-full bg-gray-800;
+      @apply flex h-8 w-8 items-center justify-center rounded-full;
+      background-color: var(--accent);
+      color: white;
     }
     .blocks-number-right {
       @apply ml-3;
 
       .block-data-number {
-        @apply font-bold text-gray-700;
+        @apply font-bold;
+        color: var(--text-primary);
 
         a {
           @apply font-medium;
+          color: var(--accent);
         }
       }
       .block-data-txns-amount {
-        @apply float-right text-xs text-gray-400 md:float-none;
+        @apply float-right text-xs md:float-none;
+        color: var(--text-muted);
       }
     }
   }
   .block-data-status {
-    @apply text-xs font-bold capitalize text-gray-700;
+    @apply text-xs font-bold capitalize;
+    color: var(--text-primary);
   }
   .table-body {
     @apply rounded-t-lg;
@@ -137,12 +147,15 @@ defineProps({
       @apply relative flex flex-col items-end justify-end whitespace-normal text-right md:table-cell md:text-left md:py-2.5;
 
       &:before {
-        @apply absolute left-4 top-2 whitespace-nowrap pr-5 text-left text-xs uppercase text-neutral-400 content-[attr(data-heading)] md:content-none;
+        @apply absolute left-4 top-2 whitespace-nowrap pr-5 text-left text-xs uppercase content-[attr(data-heading)] md:content-none;
+        color: var(--text-muted);
       }
     }
   }
   td.blocks-not-found {
-    @apply my-0 table-cell items-start justify-start bg-white p-4 text-left text-gray-700;
+    @apply my-0 table-cell items-start justify-start p-4 text-left;
+    background-color: var(--bg-primary);
+    color: var(--text-secondary);
   }
   .copy-button-container {
     @apply flex w-fit;

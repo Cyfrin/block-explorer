@@ -83,7 +83,8 @@ const timeAgo = useTimeAgo(isoString.value, { messages: messages.value });
     @apply capitalize;
   }
   .full-date {
-    @apply ml-3 text-gray-400;
+    @apply ml-3;
+    color: var(--text-muted);
   }
 }
 </style>

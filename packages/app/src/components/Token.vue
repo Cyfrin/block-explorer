@@ -189,7 +189,8 @@ const transactionsSearchParams = computed(() => ({
     @apply absolute inset-0 h-full w-full rounded-full;
   }
   .token-img-loader {
-    @apply animate-pulse bg-neutral-200;
+    @apply animate-pulse;
+    background-color: var(--bg-tertiary);
   }
   .token-img {
     @apply transition-opacity duration-150;

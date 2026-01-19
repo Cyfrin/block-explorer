@@ -80,15 +80,19 @@ defineProps({
     }
   }
   .arrow-right-icon {
-    @apply h-4 w-4 min-w-[1rem] text-neutral-600;
+    @apply h-4 w-4 min-w-[1rem];
+    color: var(--text-muted);
   }
   .topic-index-container {
-    @apply h-6 rounded bg-gray-200 px-2 py-0.5 font-mono text-sm leading-5 text-gray-400;
+    @apply h-6 rounded px-2 py-0.5 font-mono text-sm leading-5;
+    background-color: var(--bg-tertiary);
+    color: var(--text-muted);
   }
   .toggle-button {
-    @apply h-auto text-neutral-600;
+    @apply h-auto;
+    color: var(--text-secondary);
     .toggle-button-icon {
-      @apply text-neutral-600;
+      color: var(--text-secondary);
     }
   }
   .topic-value {

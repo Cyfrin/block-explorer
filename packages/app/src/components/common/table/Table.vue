@@ -137,7 +137,7 @@ defineProps({
           background-color: var(--bg-secondary);
         }
 
-        // Hover state
+        // Hover state (can be disabled with .no-hover on table-container)
         &:hover {
           background-color: var(--bg-hover);
         }
@@ -160,6 +160,18 @@ defineProps({
     @apply w-full py-3 px-4 rounded-b-lg;
     background-color: var(--bg-secondary);
     border-top: 1px solid var(--border-subtle);
+  }
+
+  // Disable hover for info tables (non-interactive rows)
+  &.no-hover {
+    table tbody tr {
+      &:nth-child(odd):hover {
+        background-color: var(--bg-primary);
+      }
+      &:nth-child(even):hover {
+        background-color: var(--bg-secondary);
+      }
+    }
   }
 }
 </style>

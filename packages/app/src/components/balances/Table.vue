@@ -131,40 +131,62 @@ const displayedBalances = computed(() => {
   .table-body table thead tr {
     @apply relative left-0 top-0;
   }
+
   .table-body-col {
     @apply h-[53px] py-2;
   }
+
   .loading-row {
     .content-loader {
       @apply w-full;
     }
   }
+
   .load-all {
     @apply py-1.5 text-center;
+
     button {
-      @apply h-[44px] rounded-md bg-primary-600/15 p-2.5 text-primary-600 transition-colors hover:bg-primary-600/10;
+      @apply h-[44px] rounded-md p-2.5 transition-colors;
+      background-color: var(--accent-muted);
+      color: var(--accent);
+
+      &:hover {
+        background-color: var(--bg-hover);
+      }
     }
   }
+
   .balance-data-symbol {
-    @apply ml-2 inline-block min-w-[5rem] font-bold text-gray-700;
+    @apply ml-2 inline-block min-w-[5rem] font-bold;
+    color: var(--text-primary);
   }
+
   .balance-data-value {
-    @apply font-bold text-gray-700;
+    @apply font-bold;
+    color: var(--text-primary);
   }
+
   .balance-data-price {
-    @apply text-xs text-gray-400;
+    @apply text-xs;
+    color: var(--text-muted);
   }
+
   .token-icon a {
     @apply flex-row-reverse;
   }
+
   .balance-data-icon {
     @apply inline-block h-5 w-5 rounded-full;
   }
+
   .balances-not-found {
-    @apply px-1.5 py-[1.9rem] text-gray-700;
+    @apply px-1.5 py-[1.9rem];
+    color: var(--text-secondary);
   }
+
   .balances-error {
-    @apply mt-0.5 px-1.5 py-2.5 text-gray-700;
+    @apply mt-0.5 px-1.5 py-2.5;
+    color: var(--text-secondary);
   }
 }
 </style>

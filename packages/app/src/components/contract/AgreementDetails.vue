@@ -224,14 +224,16 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
   @apply space-y-4 sm:space-y-6;
 
   .agreement-header {
-    @apply flex items-start gap-3 rounded-lg bg-success-50 p-3 sm:items-center sm:gap-4 sm:p-4;
+    @apply flex items-start gap-3 rounded-lg p-3 sm:items-center sm:gap-4 sm:p-4;
+    background-color: var(--success-muted);
   }
 
   .header-icon {
     @apply flex-shrink-0;
 
     .icon {
-      @apply h-8 w-8 text-success-500 sm:h-10 sm:w-10;
+      @apply h-8 w-8 sm:h-10 sm:w-10;
+      color: var(--success);
     }
   }
 
@@ -240,14 +242,19 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
   }
 
   .protocol-name {
-    @apply text-lg font-semibold text-success-700 sm:text-xl;
+    @apply text-lg font-semibold sm:text-xl;
+    color: var(--success-text);
   }
 
   .agreement-address {
-    @apply flex flex-wrap items-center gap-1 text-xs text-neutral-500;
+    @apply flex flex-wrap items-center gap-1 text-xs;
+    color: var(--text-muted);
 
     a {
-      @apply text-primary-600 hover:underline;
+      color: var(--accent);
+      &:hover {
+        @apply underline;
+      }
     }
   }
 
@@ -260,7 +267,9 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
   }
 
   .details-section {
-    @apply rounded-lg border border-neutral-200 bg-white p-3 sm:p-4;
+    @apply rounded-lg border p-3 sm:p-4;
+    border-color: var(--border-default);
+    background-color: var(--bg-primary);
 
     &.full-width {
       @apply md:col-span-2;
@@ -268,7 +277,9 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
   }
 
   .section-title {
-    @apply mb-2 border-b border-neutral-100 pb-2 text-sm font-semibold text-neutral-700 sm:mb-3;
+    @apply mb-2 border-b pb-2 text-sm font-semibold sm:mb-3;
+    border-color: var(--border-subtle);
+    color: var(--text-secondary);
   }
 
   .section-content {
@@ -288,26 +299,35 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
   }
 
   .detail-label {
-    @apply text-xs text-neutral-400;
+    @apply text-xs;
+    color: var(--text-muted);
   }
 
   .detail-value {
-    @apply break-all text-sm text-neutral-700;
+    @apply break-all text-sm;
+    color: var(--text-secondary);
 
     &.highlight {
-      @apply text-lg font-bold text-success-600;
+      @apply text-lg font-bold;
+      color: var(--success-text);
     }
 
     &.allowed {
-      @apply font-medium text-success-600;
+      @apply font-medium;
+      color: var(--success-text);
     }
 
     &.not-allowed {
-      @apply font-medium text-error-600;
+      @apply font-medium;
+      color: var(--error-text);
     }
 
     &.link {
-      @apply break-all text-primary-600 hover:underline;
+      @apply break-all;
+      color: var(--accent);
+      &:hover {
+        @apply underline;
+      }
 
       &.external {
         @apply inline-flex flex-wrap items-center gap-1;
@@ -320,7 +340,8 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
   }
 
   .no-contacts {
-    @apply text-sm italic text-neutral-400;
+    @apply text-sm italic;
+    color: var(--text-muted);
   }
 
   .covered-contracts-list {
@@ -328,7 +349,8 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
   }
 
   .covered-contract {
-    @apply rounded-md bg-neutral-100 px-2 py-1 text-xs sm:text-sm;
+    @apply rounded-md px-2 py-1 text-xs sm:text-sm;
+    background-color: var(--bg-tertiary);
 
     // Truncate long addresses on mobile
     :deep(a) {

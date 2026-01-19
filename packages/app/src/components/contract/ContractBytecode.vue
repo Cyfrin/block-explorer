@@ -100,14 +100,18 @@ const abiJson = computed<undefined | string>(() => {
 
 <style scoped lang="scss">
 .contract-bytecode-container {
-  @apply rounded-b-lg bg-white py-4;
+  @apply rounded-b-lg py-4;
+  background-color: var(--bg-primary);
+
   .verified-contract-container {
     @apply mb-6 flex flex-col justify-between text-sm md:mb-10 md:flex-row md:text-base;
     .title {
-      @apply mb-1 text-base font-bold text-neutral-900;
+      @apply mb-1 text-base font-bold;
+      color: var(--text-primary);
     }
     .description {
-      @apply whitespace-pre-line text-neutral-600;
+      @apply whitespace-pre-line;
+      color: var(--text-secondary);
       span {
         @apply break-words font-bold;
       }
@@ -126,7 +130,8 @@ const abiJson = computed<undefined | string>(() => {
     @apply grid gap-4;
 
     .info-field-label {
-      @apply text-sm font-bold text-neutral-700;
+      @apply text-sm font-bold;
+      color: var(--text-primary);
     }
     .source-code-container,
     .abi-json-field-container,

@@ -64,9 +64,13 @@ const buttonText = computed(() => {
 
 <style scoped lang="scss">
 .metamask-button {
-  @apply relative flex w-max min-w-[200px] rounded-lg bg-neutral-200 p-1 pl-2 pr-5 text-neutral-900;
+  @apply relative flex w-max min-w-[200px] rounded-lg p-1 pl-2 pr-5;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
   &:not(.disabled) {
-    @apply hover:bg-neutral-300;
+    &:hover {
+      background-color: var(--bg-active);
+    }
   }
   &.disabled {
     @apply opacity-50;
@@ -80,12 +84,19 @@ const buttonText = computed(() => {
   .dropdown-container {
     @apply absolute left-0 right-0 top-1 z-10 flex flex-col items-end;
     .dropdown-button {
-      @apply mr-1 h-6 w-6 rounded-md hover:bg-neutral-300;
+      @apply mr-1 h-6 w-6 rounded-md;
+      &:hover {
+        background-color: var(--bg-active);
+      }
     }
     .dropdown-options {
-      @apply top-[10px] w-full self-start rounded-lg bg-white shadow-md;
+      @apply top-[10px] w-full self-start rounded-lg shadow-md;
+      background-color: var(--bg-primary);
       .logout-button {
-        @apply w-full rounded-lg px-2 py-1 text-left hover:bg-neutral-200;
+        @apply w-full rounded-lg px-2 py-1 text-left;
+        &:hover {
+          background-color: var(--bg-tertiary);
+        }
       }
     }
   }

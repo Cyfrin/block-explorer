@@ -97,7 +97,14 @@ if (requiredArrayLength.value && requiredArrayLength.value !== inputted.value.le
 
   .function-input-plus-icon,
   .function-input-field-trash-icon {
-    @apply h-5 w-5 cursor-pointer text-neutral-500 transition-colors duration-200 ease-in-out hover:text-neutral-400 active:text-neutral-500;
+    @apply h-5 w-5 cursor-pointer transition-colors duration-200 ease-in-out;
+    color: var(--text-muted);
+    &:hover {
+      color: var(--text-secondary);
+    }
+    &:active {
+      color: var(--text-muted);
+    }
   }
   .function-input-label-container,
   .function-input-field-container {

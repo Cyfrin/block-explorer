@@ -95,7 +95,9 @@ const selected = computed({
 
 <style scoped lang="scss">
 .toggle-button {
-  @apply grid h-[2.875rem] w-full grid-flow-col rounded-md border border-neutral-300 bg-neutral-50 p-3 text-left text-sm shadow-sm focus:outline-none;
+  @apply grid h-[2.875rem] w-full grid-flow-col rounded-md border p-3 text-left text-sm shadow-sm focus:outline-none;
+  border-color: var(--border-default);
+  background-color: var(--bg-secondary);
   &.error {
     @apply border-error-400 text-error-500;
   }
@@ -118,7 +120,7 @@ const selected = computed({
     }
   }
   .loading {
-    @apply text-neutral-700;
+    color: var(--text-secondary);
   }
 }
 .toggle-button-focused {
@@ -128,15 +130,22 @@ const selected = computed({
   @apply mt-0.5 text-sm text-error-500;
 }
 .options-list-container {
-  @apply absolute z-20 mt-1 max-h-[180px] w-full cursor-pointer overflow-hidden overflow-y-auto rounded-md border-neutral-300 bg-white text-sm shadow-md focus:outline-none;
+  @apply absolute z-20 mt-1 max-h-[180px] w-full cursor-pointer overflow-hidden overflow-y-auto rounded-md text-sm shadow-md focus:outline-none;
+  border-color: var(--border-default);
+  background-color: var(--bg-primary);
   .options-list-item {
-    @apply px-3 py-3 hover:bg-neutral-100;
+    @apply px-3 py-3;
+    &:hover {
+      background-color: var(--bg-tertiary);
+    }
 
     &.active {
-      @apply bg-neutral-100 px-3;
+      @apply px-3;
+      background-color: var(--bg-tertiary);
     }
     .check-icon-container {
-      @apply absolute inset-y-0 right-3 flex items-center pl-3 text-neutral-800;
+      @apply absolute inset-y-0 right-3 flex items-center pl-3;
+      color: var(--text-primary);
       .check-icon {
         @apply h-5 w-5;
       }

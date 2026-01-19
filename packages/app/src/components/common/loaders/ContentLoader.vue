@@ -4,6 +4,7 @@
 
 <style lang="scss" scoped>
 .content-loader {
-  @apply rounded-md bg-neutral-200;
+  @apply rounded-md;
+  background-color: var(--bg-tertiary);
 }
 </style>

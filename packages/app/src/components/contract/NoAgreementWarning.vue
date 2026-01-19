@@ -61,18 +61,22 @@ const formattedDefaultCap = computed(() => {
 
 <style scoped lang="scss">
 .no-agreement-warning {
-  @apply rounded-lg border border-warning-200 bg-warning-50 p-4;
+  @apply rounded-lg border p-4;
+  border-color: var(--warning);
+  background-color: var(--warning-muted);
 
   .warning-header {
     @apply mb-3 flex items-center gap-2;
   }
 
   .warning-icon {
-    @apply h-6 w-6 text-warning-500;
+    @apply h-6 w-6;
+    color: var(--warning);
   }
 
   .warning-title {
-    @apply text-lg font-semibold text-warning-700;
+    @apply text-lg font-semibold;
+    color: var(--warning-text);
   }
 
   .warning-content {
@@ -80,15 +84,19 @@ const formattedDefaultCap = computed(() => {
   }
 
   .warning-message {
-    @apply text-sm text-warning-700;
+    @apply text-sm;
+    color: var(--warning-text);
   }
 
   .default-terms {
-    @apply rounded-md bg-white/50 p-3;
+    @apply rounded-md p-3;
+    background-color: var(--bg-primary);
+    opacity: 0.9;
   }
 
   .default-terms-title {
-    @apply mb-2 text-sm font-medium text-neutral-700;
+    @apply mb-2 text-sm font-medium;
+    color: var(--text-secondary);
   }
 
   .default-terms-list {
@@ -100,15 +108,17 @@ const formattedDefaultCap = computed(() => {
   }
 
   .term-label {
-    @apply text-neutral-500;
+    color: var(--text-muted);
   }
 
   .term-value {
-    @apply font-medium text-neutral-700;
+    @apply font-medium;
+    color: var(--text-secondary);
   }
 
   .warning-note {
-    @apply text-xs italic text-warning-600;
+    @apply text-xs italic;
+    color: var(--warning-text);
   }
 }
 </style>

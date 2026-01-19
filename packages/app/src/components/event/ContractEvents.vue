@@ -123,7 +123,8 @@ watch(
 </script>
 <style lang="scss">
 .contract-events-container {
-  @apply rounded-t-none bg-white shadow-none md:rounded;
+  @apply rounded-t-none shadow-none md:rounded;
+  background-color: var(--bg-primary);
   table {
     thead {
       tr {
@@ -141,13 +142,15 @@ watch(
     td {
       @apply relative flex flex-col items-end text-right last:text-left md:table-cell md:text-left;
       &:before {
-        @apply absolute left-4 top-2.5 whitespace-nowrap pr-5 text-left text-xs uppercase text-neutral-400 content-[attr(data-heading)] md:content-none;
+        @apply absolute left-4 top-2.5 whitespace-nowrap pr-5 text-left text-xs uppercase content-[attr(data-heading)] md:content-none;
+        color: var(--text-muted);
       }
     }
   }
 
   .first-col {
-    @apply overflow-hidden text-neutral-600;
+    @apply overflow-hidden;
+    color: var(--text-secondary);
     a {
       @apply mb-2 inline md:inline-block;
     }

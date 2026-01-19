@@ -42,10 +42,11 @@ function setBadgeColor(item: string, defaultColor: string) {
     }
   }
   &.color-neutral {
-    @apply bg-neutral-200 text-neutral-600;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
 
     .badge-dot {
-      @apply bg-neutral-600;
+      background-color: var(--text-secondary);
     }
   }
   &.color-warning {
@@ -56,10 +57,11 @@ function setBadgeColor(item: string, defaultColor: string) {
     }
   }
   &.color-transparent {
-    @apply pl-0 text-neutral-600;
+    @apply pl-0;
+    color: var(--text-secondary);
 
     .badge-dot {
-      @apply text-neutral-600;
+      color: var(--text-secondary);
     }
   }
 }

@@ -83,35 +83,35 @@ const formattedBountyCap = computed(() => {
   @apply flex flex-col gap-2 rounded-lg p-3 sm:flex-row sm:items-center sm:gap-3;
 
   &.has-agreement {
-    @apply bg-success-50;
+    background-color: var(--success-muted);
 
     .badge-icon .icon {
-      @apply text-success-500;
+      color: var(--success);
     }
 
     .badge-title {
-      @apply text-success-700;
+      color: var(--success-text);
     }
   }
 
   &.no-agreement {
-    @apply bg-warning-50;
+    background-color: var(--warning-muted);
 
     .badge-icon .icon {
-      @apply text-warning-500;
+      color: var(--warning);
     }
 
     .badge-title {
-      @apply text-warning-700;
+      color: var(--warning-text);
     }
 
     .default-terms {
-      @apply text-warning-600;
+      color: var(--warning-text);
     }
   }
 
   .badge-icon {
-    @apply hidden flex-shrink-0 sm:block;
+    @apply hidden shrink-0 sm:block;
 
     .icon {
       @apply h-6 w-6;
@@ -127,7 +127,8 @@ const formattedBountyCap = computed(() => {
   }
 
   .badge-details {
-    @apply flex flex-wrap items-center gap-1.5 text-xs text-neutral-500;
+    @apply flex flex-wrap items-center gap-1.5 text-xs;
+    color: var(--text-muted);
   }
 
   .detail-item {
@@ -135,23 +136,30 @@ const formattedBountyCap = computed(() => {
   }
 
   .detail-label {
-    @apply text-neutral-400;
+    color: var(--text-muted);
   }
 
   .detail-value {
-    @apply font-medium text-neutral-600;
+    @apply font-medium;
+    color: var(--text-secondary);
   }
 
   .detail-separator {
-    @apply hidden text-neutral-300 sm:inline;
+    @apply hidden sm:inline;
+    color: var(--text-faint);
   }
 
   .anonymous-allowed {
-    @apply text-success-600;
+    color: var(--success-text);
   }
 
   .view-details-link {
-    @apply flex flex-shrink-0 items-center gap-0.5 self-start text-xs font-medium text-primary-600 hover:text-primary-700 sm:self-center;
+    @apply flex shrink-0 items-center gap-0.5 self-start text-xs font-medium sm:self-center;
+    color: var(--accent);
+
+    &:hover {
+      color: var(--accent-hover);
+    }
 
     .chevron-icon {
       @apply h-4 w-4;

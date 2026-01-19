@@ -215,7 +215,8 @@ const transactionsSearchParams = computed(() => ({
     }
   }
   .balance-table {
-    @apply mb-4 overflow-hidden bg-white;
+    @apply mb-4 overflow-hidden;
+    background-color: var(--bg-primary);
     .balances-empty-icon {
       @apply m-auto;
       img {

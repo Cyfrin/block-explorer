@@ -55,15 +55,19 @@ const toggle = () => {
   @apply flex items-center gap-2;
 
   .toggle-label {
-    @apply text-sm font-medium text-neutral-700;
+    @apply text-sm font-medium;
+    color: var(--text-secondary);
   }
 
   .toggle-switch {
-    @apply flex items-center w-10 h-5 border border-neutral-300 bg-neutral-50 rounded-full relative cursor-pointer transition-colors duration-300 ease-in-out;
+    @apply flex items-center w-10 h-5 border rounded-full relative cursor-pointer transition-colors duration-300 ease-in-out;
+    border-color: var(--border-default);
+    background-color: var(--bg-secondary);
   }
 
   .toggle-handle {
-    @apply bg-primary-600 border-2 border-neutral-50 rounded-full absolute w-4 h-4 transition-transform duration-300;
+    @apply bg-primary-600 border-2 rounded-full absolute w-4 h-4 transition-transform duration-300;
+    border-color: var(--bg-secondary);
   }
 
   .toggle-switch.checked .toggle-handle {

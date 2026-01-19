@@ -57,19 +57,29 @@ const submit = async () => {
 <style lang="scss" scoped>
 .search-form {
   .submit-icon-container {
-    &:hover:not(:active) {
-      .submit-icon {
-        @apply bg-primary-300;
+    .submit-icon {
+      @apply flex items-center justify-center w-11 h-full rounded-r-lg p-3 cursor-pointer;
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      transition: background-color 100ms ease-out;
+
+      svg {
+        @apply w-5 h-5;
       }
-    }
-    &:active {
-      .submit-icon {
+
+      &:hover {
+        background-color: var(--accent-hover);
+      }
+
+      &:active {
         @apply transition-none;
       }
-    }
 
-    .submit-icon {
-      @apply w-[2.875rem] rounded-r-md bg-primary-500 p-3 text-white;
+      &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
     }
   }
 }

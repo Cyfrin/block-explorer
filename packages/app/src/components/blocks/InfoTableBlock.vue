@@ -1,5 +1,5 @@
 <template>
-  <Table class="block-info-table" :items="items" :loading="loading">
+  <Table class="block-info-table no-hover" :items="items" :loading="loading">
     <template #table-row="{ item }: { item: any }">
       <template v-if="item.value !== undefined">
         <table-body-column v-if="item.label" class="block-label-column">
@@ -95,14 +95,16 @@ defineProps({
     @apply flex items-center;
 
     .block-info-field-label {
-      @apply text-gray-400;
+      color: var(--text-muted);
     }
+
     .block-info-field-tooltip {
       @apply ml-1;
     }
   }
+
   .block-info-field-value {
-    @apply text-gray-800;
+    color: var(--text-primary);
   }
 }
 </style>

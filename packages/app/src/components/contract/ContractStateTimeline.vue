@@ -273,7 +273,9 @@ const getStepClass = (step: ContractState) => {
   }
 
   .ping-animation {
-    @apply absolute inset-0 h-7 w-7 rounded-full bg-primary-400;
+    @apply absolute inset-0 h-7 w-7 rounded-full;
+    background-color: var(--accent);
+    opacity: 0.6;
     animation: subtle-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
 
@@ -290,7 +292,9 @@ const getStepClass = (step: ContractState) => {
   }
 
   .step-indicator {
-    @apply relative flex h-7 w-7 items-center justify-center rounded-full bg-neutral-200 text-xs font-bold text-neutral-500;
+    @apply relative flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold;
+    background-color: var(--bg-tertiary);
+    color: var(--text-muted);
   }
 
   .timeline-connector-wrapper {
@@ -298,10 +302,11 @@ const getStepClass = (step: ContractState) => {
   }
 
   .timeline-connector {
-    @apply h-full w-0.5 bg-neutral-300;
+    @apply h-full w-0.5;
+    background-color: var(--border-strong);
 
     &.completed {
-      @apply bg-success-500;
+      background-color: var(--success);
     }
   }
 
@@ -314,23 +319,29 @@ const getStepClass = (step: ContractState) => {
   }
 
   .step-label {
-    @apply text-sm font-medium text-neutral-500;
+    @apply text-sm font-medium;
+    color: var(--text-muted);
   }
 
   :deep(.step-timestamp.copy-button-container) {
-    @apply h-auto w-auto text-xs text-neutral-400;
+    @apply h-auto w-auto text-xs;
+    color: var(--text-faint);
 
     .copy-button {
       @apply static p-0 focus:ring-0;
     }
 
     .info-field-time {
-      @apply cursor-pointer hover:text-neutral-600 hover:underline;
+      @apply cursor-pointer hover:underline;
+      &:hover {
+        color: var(--text-secondary);
+      }
     }
   }
 
   .step-countdown {
-    @apply flex items-center gap-1 text-xs text-neutral-400;
+    @apply flex items-center gap-1 text-xs;
+    color: var(--text-faint);
 
     :deep(.copy-button-container) {
       @apply h-auto w-auto;
@@ -341,7 +352,10 @@ const getStepClass = (step: ContractState) => {
     }
 
     .countdown-time {
-      @apply cursor-pointer hover:text-neutral-600 hover:underline;
+      @apply cursor-pointer hover:underline;
+      &:hover {
+        color: var(--text-secondary);
+      }
     }
   }
 
@@ -351,31 +365,34 @@ const getStepClass = (step: ContractState) => {
 
   &.current {
     .step-indicator {
-      @apply bg-primary-500 text-white;
+      background-color: var(--accent);
+      color: white;
     }
     .step-label {
-      @apply text-primary-600;
+      color: var(--accent-text);
     }
   }
 
   &.current.under-attack {
     .ping-animation {
-      @apply bg-error-400;
+      background-color: var(--error);
     }
     .step-indicator {
-      @apply bg-error-500 text-white;
+      background-color: var(--error);
+      color: white;
     }
     .step-label {
-      @apply text-error-600;
+      color: var(--error-text);
     }
   }
 
   &.completed {
     .step-indicator {
-      @apply bg-success-500 text-white;
+      background-color: var(--success);
+      color: white;
     }
     .step-label {
-      @apply text-success-600;
+      color: var(--success-text);
     }
   }
 

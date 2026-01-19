@@ -43,13 +43,17 @@ const expanded = ref(false);
 <style lang="scss">
 .code-block-container {
   .code-block-header {
-    @apply sticky top-0 z-10 mb-1 flex items-center justify-between bg-white text-neutral-700;
+    @apply sticky top-0 z-10 mb-1 flex items-center justify-between;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 
     .code-block-label {
       @apply text-left text-sm;
+      color: var(--text-secondary);
 
       &.bold {
-        @apply text-sm font-bold text-neutral-700;
+        @apply text-sm font-bold;
+        color: var(--text-primary);
       }
     }
     .code-block-buttons {
@@ -59,7 +63,12 @@ const expanded = ref(false);
         @apply pl-1.5 pt-0.5;
       }
       .expand-button {
-        @apply rounded-md p-1.5 text-neutral-500 transition-colors hover:text-neutral-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500;
+        @apply rounded-md p-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500;
+        color: var(--text-muted);
+
+        &:hover {
+          color: var(--text-primary);
+        }
 
         .expand-icon {
           @apply h-4 w-4;

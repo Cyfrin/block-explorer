@@ -11,7 +11,7 @@
       <TableHeadColumn
         v-if="columns.includes('age')"
         @click="toggleAgeTimestamp()"
-        class="hover:cursor-pointer text-blue-700"
+        class="hover:cursor-pointer age-column-header"
       >
         {{ isTimeAgeView ? t("transactions.table.age") : t("transactions.table.dateTimeUTC") }}
       </TableHeadColumn>
@@ -101,7 +101,7 @@
       </TableBodyColumn>
       <TableBodyColumn v-if="columns.includes('from') && columns.includes('to')" class="tablet-column">
         <div class="flex gap-x-2">
-          <div class="text-neutral-400">
+          <div class="from-to-label">
             <div>{{ t("transactions.table.from") }}</div>
             <div>{{ t("transactions.table.to") }}</div>
           </div>
@@ -468,17 +468,25 @@ const toggleAgeTimestamp = () => {
   .tablet-column {
     @apply hidden md:table-cell lg:hidden;
     .tablet-column-fee {
-      @apply flex text-xs text-neutral-400;
+      @apply flex text-xs;
+      color: var(--text-muted);
     }
   }
   .only-desktop {
     @apply hidden md:table-cell;
   }
   .table-initiator-container {
-    @apply gap-x-1 text-neutral-400;
+    @apply gap-x-1;
+    color: var(--text-muted);
     a {
       @apply font-medium;
     }
+  }
+  .from-to-label {
+    color: var(--text-muted);
+  }
+  .age-column-header {
+    color: var(--accent) !important;
   }
   .tablet-column-hidden {
     @apply md:hidden lg:table-cell;
@@ -497,7 +505,10 @@ const toggleAgeTimestamp = () => {
     }
   }
   .transactions-data-method {
-    @apply w-36 truncate border-slate-200 rounded border py-0.5 px-2 text-center bg-slate-400/10 text-xs text-slate-600 sm:w-28;
+    @apply w-36 truncate rounded border py-0.5 px-2 text-center text-xs sm:w-28;
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-default);
+    color: var(--text-secondary);
   }
   .transactions-data-transaction-amount,
   .transactions-data-age {
@@ -513,7 +524,9 @@ const toggleAgeTimestamp = () => {
     @apply font-bold;
   }
   .transactions-not-found {
-    @apply my-0 table-cell items-start justify-start bg-white p-4 text-left text-gray-700;
+    @apply my-0 table-cell items-start justify-start p-4 text-left;
+    background-color: var(--bg-primary);
+    color: var(--text-secondary);
   }
   .badge-content {
     @apply flex items-center;
@@ -535,7 +548,8 @@ const toggleAgeTimestamp = () => {
   td {
     @apply relative flex flex-col items-end justify-end text-right md:table-cell md:text-left;
     &:before {
-      @apply absolute left-4 top-3 whitespace-nowrap pr-5 text-left text-xs uppercase text-neutral-400 content-[attr(data-heading)] md:content-none;
+      @apply absolute left-4 top-3 whitespace-nowrap pr-5 text-left text-xs uppercase content-[attr(data-heading)] md:content-none;
+      color: var(--text-muted);
     }
   }
   .copy-button-container {

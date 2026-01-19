@@ -111,7 +111,9 @@ const submit = async (form: Record<string, string | string[] | boolean | boolean
 
 <style scoped lang="scss">
 .function-disclosure-btn {
-  @apply sticky top-0 z-[1] flex w-full items-center justify-between rounded-lg border bg-neutral-100 p-3 text-left text-base font-medium text-neutral-600;
+  @apply sticky top-0 z-[1] flex w-full items-center justify-between rounded-lg border p-3 text-left text-base font-medium;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
   &.opened {
     @apply rounded-bl-none rounded-br-none;
 
@@ -120,10 +122,12 @@ const submit = async (form: Record<string, string | string[] | boolean | boolean
     }
   }
   .function-arrow-icon {
-    @apply h-5 w-5 text-neutral-500;
+    @apply h-5 w-5;
+    color: var(--text-muted);
   }
   .function-selector {
-    @apply ml-2 font-mono text-sm text-neutral-500;
+    @apply ml-2 font-mono text-sm;
+    color: var(--text-muted);
   }
 }
 
@@ -132,15 +136,19 @@ const submit = async (form: Record<string, string | string[] | boolean | boolean
 }
 
 .response-message {
-  @apply mt-2 break-words rounded-md bg-neutral-200 px-4 py-2 font-mono text-neutral-900;
+  @apply mt-2 break-words rounded-md px-4 py-2 font-mono;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 .function-disclosure-panel {
-  @apply hidden space-y-3 rounded-bl-lg rounded-br-lg border border-t-0 px-4 py-3 text-sm text-gray-500;
+  @apply hidden space-y-3 rounded-bl-lg rounded-br-lg border border-t-0 px-4 py-3 text-sm;
+  color: var(--text-muted);
   &.opened {
     @apply block;
   }
   .disclosure-panel-type-text {
-    @apply italic text-neutral-400;
+    @apply italic;
+    color: var(--text-faint);
   }
 }
 </style>

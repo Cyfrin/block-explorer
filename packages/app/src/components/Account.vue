@@ -139,13 +139,14 @@ const transactionsSearchParams = computed(() => ({
     @apply mb-4;
   }
   .table-transaction-title {
-    @apply text-gray-800;
+    color: var(--text-primary);
   }
   .account-table {
     @apply mb-8;
   }
   .balance-table {
-    @apply mb-4 overflow-hidden bg-white;
+    @apply mb-4 overflow-hidden;
+    background-color: var(--bg-primary);
     .balances-empty-icon {
       @apply m-auto;
       img {

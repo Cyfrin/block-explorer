@@ -29,16 +29,6 @@
         <div class="header-controls">
           <WalletButton v-if="runtimeConfig.appEnvironment === 'prividium'" />
           <NetworkSwitch v-else />
-          <LocaleSwitch
-            :value="(locale as string)"
-            @update:value="changeLanguage"
-            :options="
-              ['en', 'uk'].map((value) => ({
-                value,
-                label: t(`locale.${value}`),
-              }))
-            "
-          />
           <ThemeToggle />
           <div class="header-socials">
             <a
@@ -107,16 +97,6 @@
           <div class="mobile-controls">
             <WalletButton v-if="runtimeConfig.appEnvironment === 'prividium'" />
             <NetworkSwitch v-else />
-            <LocaleSwitch
-              :value="(locale as string)"
-              @update:value="changeLanguage"
-              :options="
-                ['en', 'uk'].map((value) => ({
-                  value,
-                  label: t(`locale.${value}`),
-                }))
-              "
-            />
             <ThemeToggle />
           </div>
 
@@ -149,18 +129,15 @@ import LinksMobilePopover from "./LinksMobilePopover.vue";
 import LinksPopover from "./LinksPopover.vue";
 import WalletButton from "../prividium/WalletButton.vue";
 
-import LocaleSwitch from "@/components/LocaleSwitch.vue";
 import NetworkSwitch from "@/components/NetworkSwitch.vue";
 import ThemeToggle from "@/components/ThemeToggle.vue";
 import DiscordIcon from "@/components/icons/DiscordIcon.vue";
 import TwitterIcon from "@/components/icons/TwitterIcon.vue";
 
 import useContext from "@/composables/useContext";
-import useLocalization from "@/composables/useLocalization";
 import useRuntimeConfig from "@/composables/useRuntimeConfig";
 
-const { changeLanguage } = useLocalization();
-const { t, locale } = useI18n({ useScope: "global" });
+const { t } = useI18n({ useScope: "global" });
 const { currentNetwork } = useContext();
 const runtimeConfig = useRuntimeConfig();
 
@@ -224,7 +201,8 @@ const socials = [
 }
 
 .header-container {
-  @apply flex items-center justify-between h-14 gap-4 mx-auto;
+  @apply flex items-center justify-between h-14 gap-4 px-4 mx-auto;
+  max-width: 1240px;
 }
 
 .header-logo {
@@ -354,7 +332,7 @@ const socials = [
 
 // Mobile menu
 .mobile-menu {
-  @apply absolute inset-0 z-50 p-4 lg:hidden;
+  @apply fixed inset-0 z-50 p-4 lg:hidden;
   background-color: var(--bg-primary);
 }
 
