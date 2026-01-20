@@ -123,6 +123,24 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  battlechain-indexer:
+    build:
+      context: ./packages/battlechain-indexer
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/block-explorer?options=-c%20search_path%3Dbattlechain
+      - BLOCKCHAIN_RPC_URL=http://zksync:3050
+      - CHAIN_ID=270
+      - ATTACK_REGISTRY_ADDRESS=${ATTACK_REGISTRY_ADDRESS:-0x0000000000000000000000000000000000000000}
+      - AGREEMENT_FACTORY_ADDRESS=${AGREEMENT_FACTORY_ADDRESS:-0x0000000000000000000000000000000000000000}
+      - START_BLOCK=${START_BLOCK:-0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      zksync:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   reth:
   postgres:

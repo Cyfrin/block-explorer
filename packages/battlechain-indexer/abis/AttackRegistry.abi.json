@@ -1,0 +1,21 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "contractAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum AttackRegistry.ContractState",
+        "name": "newState",
+        "type": "uint8"
+      }
+    ],
+    "name": "ContractStateChanged",
+    "type": "event"
+  }
+]

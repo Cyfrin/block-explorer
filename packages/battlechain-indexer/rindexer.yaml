@@ -1,0 +1,48 @@
+name: battlechain-indexer
+description: Indexes BattleChain contract states and Safe Harbor agreements
+repository: https://github.com/pickleyd/block-explorer
+
+networks:
+  - name: battlechain
+    chain_id: ${CHAIN_ID:-270}
+    rpc: ${BLOCKCHAIN_RPC_URL:-http://localhost:3050}
+
+storage:
+  postgres:
+    enabled: true
+    # Uses DATABASE_URL from environment
+    # Tables will be created in the 'battlechain' schema
+
+contracts:
+  # Core State Tracking - AttackRegistry
+  - name: AttackRegistry
+    details:
+      - network: battlechain
+        address: ${ATTACK_REGISTRY_ADDRESS:-"0x0000000000000000000000000000000000000000"}
+        start_block: ${START_BLOCK:-0}
+    abi: ./abis/AttackRegistry.abi.json
+    include_events:
+      - ContractStateChanged
+
+  # Agreement Factory - tracks new agreement deployments
+  - name: AgreementFactory
+    details:
+      - network: battlechain
+        address: ${AGREEMENT_FACTORY_ADDRESS:-"0x0000000000000000000000000000000000000000"}
+        start_block: ${START_BLOCK:-0}
+    abi: ./abis/AgreementFactory.abi.json
+    include_events:
+      - AgreementCreated
+
+  # Agreement Contracts - track contract scope additions/removals
+  # This uses a filter to catch events from any Agreement contract
+  - name: Agreement
+    details:
+      - network: battlechain
+        filter:
+          event_name: BattleChainScopeAddressAdded
+        start_block: ${START_BLOCK:-0}
+    abi: ./abis/Agreement.abi.json
+    include_events:
+      - BattleChainScopeAddressAdded
+      - BattleChainScopeAddressRemoved
