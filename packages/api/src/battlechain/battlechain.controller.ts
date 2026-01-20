@@ -1,5 +1,6 @@
 import { Controller, Get, Param, NotFoundException } from "@nestjs/common";
 import { ApiTags, ApiParam, ApiOkResponse, ApiNotFoundResponse, ApiBadRequestResponse } from "@nestjs/swagger";
+// Note: NotFoundException still used for agreement endpoints
 import { BattlechainService } from "./battlechain.service";
 import { ContractStateInfoDto, AgreementDto, AgreementByContractDto } from "./battlechain.dto";
 import { ParseAddressPipe } from "../common/pipes/parseAddress.pipe";
@@ -17,17 +18,14 @@ export class BattlechainController {
     example: "0x1234567890123456789012345678901234567890",
   })
   @ApiOkResponse({
-    description: "Contract state info returned successfully",
+    description:
+      "Contract state info returned successfully. Returns NOT_REGISTERED state if contract is not in AttackRegistry.",
     type: ContractStateInfoDto,
   })
   @ApiBadRequestResponse({ description: "Invalid address format" })
-  @ApiNotFoundResponse({ description: "Contract state not found" })
   async getContractState(@Param("address", new ParseAddressPipe()) address: string): Promise<ContractStateInfoDto> {
-    const stateInfo = await this.battlechainService.getContractStateInfo(address);
-    if (!stateInfo) {
-      throw new NotFoundException("Contract state not found");
-    }
-    return stateInfo;
+    // Always returns a response - NOT_REGISTERED if contract not found in AttackRegistry
+    return await this.battlechainService.getContractStateInfo(address);
   }
 
   @Get("agreement/:address")

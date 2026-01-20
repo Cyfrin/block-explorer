@@ -1,5 +1,5 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { InjectMetric } from "@willsoto/nestjs-prometheus";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { getToken } from "@willsoto/nestjs-prometheus";
 import { Histogram } from "prom-client";
 import { DataSource, EntityManager, QueryRunner } from "typeorm";
 import { DB_COMMIT_DURATION_METRIC_NAME } from "../metrics";
@@ -19,7 +19,7 @@ export class UnitOfWork {
   private readonly asyncLocalStorage: AsyncLocalStorage<{ queryRunner: QueryRunner }>;
 
   public constructor(
-    @InjectMetric(DB_COMMIT_DURATION_METRIC_NAME)
+    @Inject(getToken(DB_COMMIT_DURATION_METRIC_NAME))
     private readonly dbCommitDurationMetric: Histogram,
     private readonly dataSource: DataSource,
     private readonly entityManager: EntityManager

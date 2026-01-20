@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export enum ContractState {
-  NEW_DEPLOYMENT = 0,
+  NOT_REGISTERED = -1, // Contract not found in AttackRegistry
+  REGISTERED = 0, // Contract registered in AttackRegistry (was NEW_DEPLOYMENT)
   UNDER_ATTACK = 1,
   PRODUCTION = 2,
 }
@@ -9,8 +10,8 @@ export enum ContractState {
 export class ContractStateInfoDto {
   @ApiProperty({
     description: "Current state of the contract",
-    enum: ["NEW_DEPLOYMENT", "UNDER_ATTACK", "PRODUCTION"],
-    example: "NEW_DEPLOYMENT",
+    enum: ["NOT_REGISTERED", "REGISTERED", "UNDER_ATTACK", "PRODUCTION"],
+    example: "REGISTERED",
   })
   state: string;
 
@@ -21,10 +22,10 @@ export class ContractStateInfoDto {
   wasUnderAttack: boolean;
 
   @ApiPropertyOptional({
-    description: "Unix timestamp in milliseconds when the contract was deployed",
+    description: "Unix timestamp in milliseconds when the contract was registered in the AttackRegistry",
     example: 1704067200000,
   })
-  deployedAt: number | null;
+  registeredAt: number | null;
 
   @ApiPropertyOptional({
     description: "Unix timestamp in milliseconds when the contract went under attack",

@@ -14,4 +14,4 @@ COPY abis/ ./abis/
 # - START_BLOCK: Block number to start indexing from
 # - CHAIN_ID: Chain ID of the network
 
-CMD ["rindexer", "start", "all"]
+CMD ["start", "all"]

@@ -1,6 +1,6 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from "@nestjs/common";
+import { Inject, Injectable, OnModuleInit, OnModuleDestroy, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { InjectMetric } from "@willsoto/nestjs-prometheus";
+import { getToken } from "@willsoto/nestjs-prometheus";
 import { Gauge, Histogram } from "prom-client";
 import { DataFetcherService } from "../dataFetcher/dataFetcher.service";
 import { BlockData } from "../dataFetcher/types";
@@ -36,13 +36,13 @@ export class BlockWatcher implements OnModuleInit, OnModuleDestroy {
     private readonly blockRepository: BlockRepository,
     private readonly blockchainService: BlockchainService,
     private readonly dataFetchService: DataFetcherService,
-    @InjectMetric(BLOCKCHAIN_BLOCKS_METRIC_NAME)
+    @Inject(getToken(BLOCKCHAIN_BLOCKS_METRIC_NAME))
     private readonly blockchainBlocksMetric: Gauge,
-    @InjectMetric(BLOCKS_TO_PROCESS_METRIC_NAME)
+    @Inject(getToken(BLOCKS_TO_PROCESS_METRIC_NAME))
     private readonly blocksToProcessMetric: Gauge,
-    @InjectMetric(MISSING_BLOCKS_METRIC_NAME)
+    @Inject(getToken(MISSING_BLOCKS_METRIC_NAME))
     private readonly missingBlocksMetric: Gauge,
-    @InjectMetric(GET_BLOCK_INFO_DURATION_METRIC_NAME)
+    @Inject(getToken(GET_BLOCK_INFO_DURATION_METRIC_NAME))
     private readonly getBlockInfoDurationMetric: Histogram<ProcessingActionMetricLabel>,
     configService: ConfigService
   ) {

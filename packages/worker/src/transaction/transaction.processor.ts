@@ -1,5 +1,5 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { InjectMetric } from "@willsoto/nestjs-prometheus";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { getToken } from "@willsoto/nestjs-prometheus";
 import { Histogram } from "prom-client";
 import { L1_ORIGINATED_TX_TYPES, BASE_TOKEN_L2_ADDRESS } from "../constants";
 import {
@@ -27,7 +27,7 @@ export class TransactionProcessor {
     private readonly addressRepository: AddressRepository,
     private readonly tokenRepository: TokenRepository,
     private readonly configService: ConfigService,
-    @InjectMetric(TRANSACTION_PROCESSING_DURATION_METRIC_NAME)
+    @Inject(getToken(TRANSACTION_PROCESSING_DURATION_METRIC_NAME))
     private readonly transactionProcessingDurationMetric: Histogram
   ) {
     this.logger = new Logger(TransactionProcessor.name);

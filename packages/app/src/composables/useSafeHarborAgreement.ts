@@ -1,7 +1,5 @@
 import { computed, ref } from "vue";
 
-import { FetchError } from "ohmyfetch";
-
 import useContext from "./useContext";
 
 import { FetchInstance } from "@/composables/useFetchInstance";
@@ -32,6 +30,7 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
   const agreement = ref<SafeHarborAgreement | null>(null);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  const isFetched = ref(false);
 
   const hasAgreement = computed(() => agreement.value !== null);
 
@@ -44,6 +43,7 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
   const fetch = async () => {
     isLoading.value = true;
     error.value = null;
+    isFetched.value = false;
 
     try {
       const response = await FetchInstance.api(context)<AgreementByContractResponse>(
@@ -66,14 +66,13 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
       } else {
         agreement.value = null;
       }
+      isFetched.value = true;
     } catch (e) {
-      if (e instanceof FetchError && e.response?.status === 404) {
-        // No agreement found
-        agreement.value = null;
-      } else {
-        error.value = e instanceof Error ? e.message : "Failed to fetch agreement";
-        agreement.value = null;
-      }
+      // Any error means we couldn't fetch - don't set isFetched
+      // The endpoint returns { agreement: null, hasCoverage: false } when no agreement exists,
+      // so a 404 means the battlechain API routes aren't available
+      error.value = e instanceof Error ? e.message : "Failed to fetch agreement";
+      agreement.value = null;
     } finally {
       isLoading.value = false;
     }
@@ -83,6 +82,7 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
     agreement,
     isLoading,
     error,
+    isFetched,
     hasAgreement,
     canModifyTerms,
     defaultAgreementTerms,

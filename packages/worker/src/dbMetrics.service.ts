@@ -1,6 +1,6 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
+import { Inject, Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { InjectMetric } from "@willsoto/nestjs-prometheus";
+import { getToken } from "@willsoto/nestjs-prometheus";
 import { Gauge } from "prom-client";
 import { DataSource, Driver } from "typeorm";
 import { DB_CONNECTION_POOL_SIZE_METRIC_NAME, DbConnectionPoolSizeMetricLabels } from "./metrics";
@@ -21,7 +21,7 @@ export class DbMetricsService implements OnModuleInit, OnModuleDestroy {
   private collectDbConnectionPoolMetricsTimer: NodeJS.Timer = null;
 
   constructor(
-    @InjectMetric(DB_CONNECTION_POOL_SIZE_METRIC_NAME)
+    @Inject(getToken(DB_CONNECTION_POOL_SIZE_METRIC_NAME))
     private readonly dbConnectionPoolSizeMetric: Gauge<DbConnectionPoolSizeMetricLabels>,
     private readonly dataSource: DataSource,
     configService: ConfigService

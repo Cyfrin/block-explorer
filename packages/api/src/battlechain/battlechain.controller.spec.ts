@@ -34,9 +34,9 @@ describe("BattlechainController", () => {
 
     it("calls service with correct address", async () => {
       const stateInfo: ContractStateInfoDto = {
-        state: "NEW_DEPLOYMENT",
+        state: "REGISTERED",
         wasUnderAttack: false,
-        deployedAt: 1704067200000,
+        registeredAt: 1704067200000,
         underAttackAt: null,
         productionAt: null,
       };
@@ -48,11 +48,11 @@ describe("BattlechainController", () => {
       expect(serviceMock.getContractStateInfo).toHaveBeenCalledWith(contractAddress);
     });
 
-    it("returns state info when found", async () => {
+    it("returns state info when contract is registered", async () => {
       const stateInfo: ContractStateInfoDto = {
         state: "PRODUCTION",
         wasUnderAttack: true,
-        deployedAt: 1704067200000,
+        registeredAt: 1704067200000,
         underAttackAt: 1704153600000,
         productionAt: 1704240000000,
       };
@@ -63,10 +63,19 @@ describe("BattlechainController", () => {
       expect(result).toEqual(stateInfo);
     });
 
-    it("throws NotFoundException when state not found", async () => {
-      (serviceMock.getContractStateInfo as jest.Mock).mockResolvedValue(null);
+    it("returns NOT_REGISTERED state when contract not in AttackRegistry", async () => {
+      const stateInfo: ContractStateInfoDto = {
+        state: "NOT_REGISTERED",
+        wasUnderAttack: false,
+        registeredAt: null,
+        underAttackAt: null,
+        productionAt: null,
+      };
+      (serviceMock.getContractStateInfo as jest.Mock).mockResolvedValue(stateInfo);
 
-      await expect(controller.getContractState(contractAddress)).rejects.toThrow(NotFoundException);
+      const result = await controller.getContractState(contractAddress);
+
+      expect(result).toEqual(stateInfo);
     });
   });
 

@@ -4,8 +4,8 @@ repository: https://github.com/pickleyd/block-explorer
 
 networks:
   - name: battlechain
-    chain_id: ${CHAIN_ID:-270}
-    rpc: ${BLOCKCHAIN_RPC_URL:-http://localhost:3050}
+    chain_id: ${CHAIN_ID}
+    rpc: ${BLOCKCHAIN_RPC_URL}
 
 storage:
   postgres:
@@ -18,8 +18,8 @@ contracts:
   - name: AttackRegistry
     details:
       - network: battlechain
-        address: ${ATTACK_REGISTRY_ADDRESS:-"0x0000000000000000000000000000000000000000"}
-        start_block: ${START_BLOCK:-0}
+        address: ${ATTACK_REGISTRY_ADDRESS}
+        start_block: ${START_BLOCK}
     abi: ./abis/AttackRegistry.abi.json
     include_events:
       - ContractStateChanged
@@ -28,8 +28,8 @@ contracts:
   - name: AgreementFactory
     details:
       - network: battlechain
-        address: ${AGREEMENT_FACTORY_ADDRESS:-"0x0000000000000000000000000000000000000000"}
-        start_block: ${START_BLOCK:-0}
+        address: ${AGREEMENT_FACTORY_ADDRESS}
+        start_block: ${START_BLOCK}
     abi: ./abis/AgreementFactory.abi.json
     include_events:
       - AgreementCreated
@@ -41,7 +41,7 @@ contracts:
       - network: battlechain
         filter:
           event_name: BattleChainScopeAddressAdded
-        start_block: ${START_BLOCK:-0}
+        start_block: ${START_BLOCK}
     abi: ./abis/Agreement.abi.json
     include_events:
       - BattleChainScopeAddressAdded

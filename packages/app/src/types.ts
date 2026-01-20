@@ -111,7 +111,8 @@ export interface AgreementDocument {
 }
 
 export enum ContractState {
-  NEW_DEPLOYMENT = "NEW_DEPLOYMENT",
+  NOT_REGISTERED = "NOT_REGISTERED",
+  REGISTERED = "REGISTERED",
   UNDER_ATTACK = "UNDER_ATTACK",
   PRODUCTION = "PRODUCTION",
 }

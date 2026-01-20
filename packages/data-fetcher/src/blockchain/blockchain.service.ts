@@ -1,6 +1,6 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Histogram } from "prom-client";
-import { InjectMetric } from "@willsoto/nestjs-prometheus";
+import { getToken } from "@willsoto/nestjs-prometheus";
 import { Listener, toBeHex } from "ethers";
 import { ConfigService } from "@nestjs/config";
 import { setTimeout } from "timers/promises";
@@ -46,7 +46,7 @@ export class BlockchainService {
   public constructor(
     configService: ConfigService,
     private readonly provider: JsonRpcProviderBase,
-    @InjectMetric(BLOCKCHAIN_RPC_CALL_DURATION_METRIC_NAME)
+    @Inject(getToken(BLOCKCHAIN_RPC_CALL_DURATION_METRIC_NAME))
     private readonly rpcCallDurationMetric: Histogram<BlockchainRpcCallMetricLabel>
   ) {
     this.logger = new Logger(BlockchainService.name);

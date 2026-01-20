@@ -52,24 +52,30 @@ describe("BattlechainService", () => {
   describe("getContractStateInfo", () => {
     const contractAddress = "0x1234567890123456789012345678901234567890";
 
-    it("returns null when no state changes exist", async () => {
+    it("returns NOT_REGISTERED when no state changes exist", async () => {
       (contractStateRepository.find as jest.Mock).mockResolvedValue([]);
 
       const result = await service.getContractStateInfo(contractAddress);
 
-      expect(result).toBeNull();
+      expect(result).toEqual({
+        state: "NOT_REGISTERED",
+        wasUnderAttack: false,
+        registeredAt: null,
+        underAttackAt: null,
+        productionAt: null,
+      });
       expect(contractStateRepository.find).toHaveBeenCalledWith({
         where: { contractAddress: contractAddress.toLowerCase() },
         order: { blockNumber: "ASC", logIndex: "ASC" },
       });
     });
 
-    it("returns correct state from single NEW_DEPLOYMENT state change", async () => {
+    it("returns correct state from single REGISTERED state change", async () => {
       const timestamp = new Date("2024-01-01T00:00:00Z");
       (contractStateRepository.find as jest.Mock).mockResolvedValue([
         {
           contractAddress: contractAddress.toLowerCase(),
-          newState: ContractState.NEW_DEPLOYMENT,
+          newState: ContractState.REGISTERED,
           blockNumber: 100,
           logIndex: 0,
           blockTimestamp: timestamp,
@@ -79,25 +85,25 @@ describe("BattlechainService", () => {
       const result = await service.getContractStateInfo(contractAddress);
 
       expect(result).toEqual({
-        state: "NEW_DEPLOYMENT",
+        state: "REGISTERED",
         wasUnderAttack: false,
-        deployedAt: timestamp.getTime(),
+        registeredAt: timestamp.getTime(),
         underAttackAt: null,
         productionAt: null,
       });
     });
 
     it("correctly processes multiple state changes to PRODUCTION", async () => {
-      const deployTime = new Date("2024-01-01T00:00:00Z");
+      const registeredTime = new Date("2024-01-01T00:00:00Z");
       const productionTime = new Date("2024-01-02T00:00:00Z");
 
       (contractStateRepository.find as jest.Mock).mockResolvedValue([
         {
           contractAddress: contractAddress.toLowerCase(),
-          newState: ContractState.NEW_DEPLOYMENT,
+          newState: ContractState.REGISTERED,
           blockNumber: 100,
           logIndex: 0,
-          blockTimestamp: deployTime,
+          blockTimestamp: registeredTime,
         },
         {
           contractAddress: contractAddress.toLowerCase(),
@@ -113,24 +119,24 @@ describe("BattlechainService", () => {
       expect(result).toEqual({
         state: "PRODUCTION",
         wasUnderAttack: false,
-        deployedAt: deployTime.getTime(),
+        registeredAt: registeredTime.getTime(),
         underAttackAt: null,
         productionAt: productionTime.getTime(),
       });
     });
 
     it("sets wasUnderAttack true when contract went through UNDER_ATTACK state", async () => {
-      const deployTime = new Date("2024-01-01T00:00:00Z");
+      const registeredTime = new Date("2024-01-01T00:00:00Z");
       const attackTime = new Date("2024-01-02T00:00:00Z");
       const productionTime = new Date("2024-01-03T00:00:00Z");
 
       (contractStateRepository.find as jest.Mock).mockResolvedValue([
         {
           contractAddress: contractAddress.toLowerCase(),
-          newState: ContractState.NEW_DEPLOYMENT,
+          newState: ContractState.REGISTERED,
           blockNumber: 100,
           logIndex: 0,
-          blockTimestamp: deployTime,
+          blockTimestamp: registeredTime,
         },
         {
           contractAddress: contractAddress.toLowerCase(),
@@ -153,7 +159,7 @@ describe("BattlechainService", () => {
       expect(result).toEqual({
         state: "PRODUCTION",
         wasUnderAttack: true,
-        deployedAt: deployTime.getTime(),
+        registeredAt: registeredTime.getTime(),
         underAttackAt: attackTime.getTime(),
         productionAt: productionTime.getTime(),
       });
@@ -163,7 +169,7 @@ describe("BattlechainService", () => {
       (contractStateRepository.find as jest.Mock).mockResolvedValue([
         {
           contractAddress: contractAddress.toLowerCase(),
-          newState: ContractState.NEW_DEPLOYMENT,
+          newState: ContractState.REGISTERED,
           blockNumber: 100,
           logIndex: 0,
           blockTimestamp: null,
@@ -173,9 +179,9 @@ describe("BattlechainService", () => {
       const result = await service.getContractStateInfo(contractAddress);
 
       expect(result).toEqual({
-        state: "NEW_DEPLOYMENT",
+        state: "REGISTERED",
         wasUnderAttack: false,
-        deployedAt: null,
+        registeredAt: null,
         underAttackAt: null,
         productionAt: null,
       });

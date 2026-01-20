@@ -75,8 +75,12 @@
       </template>
       <template #tab-5-content>
         <div class="safe-harbor-tab-content">
-          <AgreementDetails v-if="hasAgreement && agreement" :agreement="agreement" />
-          <NoAgreementWarning v-else :default-terms="defaultAgreementTerms" />
+          <ContentLoader v-if="isAgreementLoading" class="agreement-loader" />
+          <template v-else-if="isAgreementFetched">
+            <AgreementDetails v-if="hasAgreement && agreement" :agreement="agreement" />
+            <NoAgreementWarning v-else :default-terms="defaultAgreementTerms" />
+          </template>
+          <span v-else class="fetch-error">Unable to load Safe Harbor data</span>
         </div>
       </template>
     </Tabs>
@@ -95,6 +99,7 @@ import EmptyState from "@/components/common/EmptyState.vue";
 import Spinner from "@/components/common/Spinner.vue";
 import Tabs from "@/components/common/Tabs.vue";
 import Title from "@/components/common/Title.vue";
+import ContentLoader from "@/components/common/loaders/ContentLoader.vue";
 import AgreementDetails from "@/components/contract/AgreementDetails.vue";
 import ContractInfoTab from "@/components/contract/ContractInfoTab.vue";
 import ContractInfoTable from "@/components/contract/InfoTable.vue";
@@ -133,6 +138,8 @@ const contractAddress = computed(() => props.contract?.address || "");
 const {
   agreement,
   hasAgreement,
+  isLoading: isAgreementLoading,
+  isFetched: isAgreementFetched,
   defaultAgreementTerms,
   fetch: fetchAgreement,
 } = useSafeHarborAgreement(contractAddress);
@@ -233,6 +240,15 @@ const transactionsSearchParams = computed(() => ({
 }
 .safe-harbor-tab-content {
   @apply p-4;
+
+  .agreement-loader {
+    @apply h-6 w-48;
+  }
+
+  .fetch-error {
+    @apply text-sm;
+    color: var(--text-muted);
+  }
 }
 </style>
 

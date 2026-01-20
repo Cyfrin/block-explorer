@@ -1,7 +1,5 @@
 import { computed, ref } from "vue";
 
-import { FetchError } from "ohmyfetch";
-
 import useContext from "./useContext";
 
 import { FetchInstance } from "@/composables/useFetchInstance";
@@ -13,7 +11,7 @@ import type { ComputedRef, Ref } from "vue";
 export interface BattlechainContractStateInfo {
   state: ContractState;
   wasUnderAttack: boolean;
-  deployedAt: number | null; // Unix timestamp in milliseconds
+  registeredAt: number | null; // Unix timestamp in milliseconds when registered in AttackRegistry
   underAttackAt: number | null;
   productionAt: number | null;
   attackDetails?: {
@@ -23,15 +21,6 @@ export interface BattlechainContractStateInfo {
   };
 }
 
-// Default state for contracts with no indexed state (fallback for new contracts)
-const defaultContractState: BattlechainContractStateInfo = {
-  state: "NEW_DEPLOYMENT" as ContractState,
-  wasUnderAttack: false,
-  deployedAt: null,
-  underAttackAt: null,
-  productionAt: null,
-};
-
 export default (contractAddress: Ref<string> | ComputedRef<string>, context = useContext()) => {
   const stateInfo = ref<BattlechainContractStateInfo | null>(null);
   const isLoading = ref(false);
@@ -40,8 +29,9 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
   const hasStateInfo = computed(() => stateInfo.value !== null);
 
   const state = computed(() => stateInfo.value?.state ?? null);
+  const isNotRegistered = computed(() => stateInfo.value?.state === "NOT_REGISTERED");
   const wasUnderAttack = computed(() => stateInfo.value?.wasUnderAttack ?? false);
-  const deployedAt = computed(() => stateInfo.value?.deployedAt ?? null);
+  const registeredAt = computed(() => stateInfo.value?.registeredAt ?? null);
   const underAttackAt = computed(() => stateInfo.value?.underAttackAt ?? null);
   const productionAt = computed(() => stateInfo.value?.productionAt ?? null);
   const attackDetails = computed(() => stateInfo.value?.attackDetails ?? null);
@@ -56,13 +46,8 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
       );
       stateInfo.value = response;
     } catch (e) {
-      if (e instanceof FetchError && e.response?.status === 404) {
-        // Contract state not found - use default state
-        stateInfo.value = { ...defaultContractState };
-      } else {
-        error.value = e instanceof Error ? e.message : "Failed to fetch contract state";
-        stateInfo.value = null;
-      }
+      error.value = e instanceof Error ? e.message : "Failed to fetch contract state";
+      stateInfo.value = null;
     } finally {
       isLoading.value = false;
     }
@@ -74,8 +59,9 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
     error,
     hasStateInfo,
     state,
+    isNotRegistered,
     wasUnderAttack,
-    deployedAt,
+    registeredAt,
     underAttackAt,
     productionAt,
     attackDetails,

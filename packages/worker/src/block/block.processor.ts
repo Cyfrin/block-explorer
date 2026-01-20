@@ -1,7 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { ConfigService } from "@nestjs/config";
-import { InjectMetric } from "@willsoto/nestjs-prometheus";
+import { getToken } from "@willsoto/nestjs-prometheus";
 import { Histogram } from "prom-client";
 import { MoreThanOrEqual, LessThanOrEqual, Between, FindOptionsWhere } from "typeorm";
 import { IDbTransaction, UnitOfWork } from "../unitOfWork";
@@ -41,9 +41,9 @@ export class BlockProcessor {
     private readonly blockWatcher: BlockWatcher,
     private readonly blockRepository: BlockRepository,
     private readonly eventEmitter: EventEmitter2,
-    @InjectMetric(BLOCKS_BATCH_PROCESSING_DURATION_METRIC_NAME)
+    @Inject(getToken(BLOCKS_BATCH_PROCESSING_DURATION_METRIC_NAME))
     private readonly blocksBatchProcessingDurationMetric: Histogram<BlocksBatchProcessingMetricLabels>,
-    @InjectMetric(BLOCK_PROCESSING_DURATION_METRIC_NAME)
+    @Inject(getToken(BLOCK_PROCESSING_DURATION_METRIC_NAME))
     private readonly processingDurationMetric: Histogram<BlockProcessingMetricLabels>,
     configService: ConfigService
   ) {

@@ -1,5 +1,5 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { InjectMetric } from "@willsoto/nestjs-prometheus";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { getToken } from "@willsoto/nestjs-prometheus";
 import { Histogram } from "prom-client";
 import { type Block } from "ethers";
 import { BlockchainService } from "../blockchain/blockchain.service";
@@ -27,11 +27,11 @@ export class BlockService {
     private readonly blockchainService: BlockchainService,
     private readonly transactionService: TransactionService,
     private readonly balanceService: BalanceService,
-    @InjectMetric(BLOCK_PROCESSING_DURATION_METRIC_NAME)
+    @Inject(getToken(BLOCK_PROCESSING_DURATION_METRIC_NAME))
     private readonly processingDurationMetric: Histogram<BlockProcessingMetricLabels>,
-    @InjectMetric(BALANCES_PROCESSING_DURATION_METRIC_NAME)
+    @Inject(getToken(BALANCES_PROCESSING_DURATION_METRIC_NAME))
     private readonly balancesProcessingDurationMetric: Histogram,
-    @InjectMetric(GET_BLOCK_INFO_DURATION_METRIC_NAME)
+    @Inject(getToken(GET_BLOCK_INFO_DURATION_METRIC_NAME))
     private readonly getBlockInfoDurationMetric: Histogram<ProcessingActionMetricLabel>
   ) {
     this.logger = new Logger(BlockService.name);

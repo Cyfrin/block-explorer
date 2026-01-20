@@ -1,7 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { MoreThan } from "typeorm";
 import { Histogram } from "prom-client";
-import { InjectMetric } from "@willsoto/nestjs-prometheus";
+import { getToken } from "@willsoto/nestjs-prometheus";
 import { UnitOfWork } from "../unitOfWork";
 import { BlockStatus } from "../entities";
 import { BlockRepository } from "../repositories";
@@ -18,9 +18,9 @@ export class BlocksRevertService {
     private readonly blockRepository: BlockRepository,
     private readonly counterService: CounterService,
     private readonly unitOfWork: UnitOfWork,
-    @InjectMetric(BLOCKS_REVERT_DURATION_METRIC_NAME)
+    @Inject(getToken(BLOCKS_REVERT_DURATION_METRIC_NAME))
     private readonly revertDurationMetric: Histogram,
-    @InjectMetric(BLOCKS_REVERT_DETECT_METRIC_NAME)
+    @Inject(getToken(BLOCKS_REVERT_DETECT_METRIC_NAME))
     private readonly revertDetectMetric: Histogram
   ) {
     this.logger = new Logger(BlocksRevertService.name);

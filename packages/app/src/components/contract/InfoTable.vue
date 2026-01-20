@@ -31,16 +31,22 @@
           {{ contract.totalTransactions }}
         </table-body-column>
       </tr>
-      <tr v-if="contractState">
+      <tr>
         <table-body-column class="contract-info-field-label"> Contract state </table-body-column>
         <table-body-column class="contract-info-field-value">
-          <ContractStateTimeline
-            :state="contractState"
-            :was-under-attack="wasUnderAttack"
-            :deployed-at="deployedAt"
-            :under-attack-at="underAttackAt"
-            :production-at="productionAt"
-          />
+          <ContentLoader v-if="isContractStateLoading" />
+          <template v-else-if="hasStateInfo">
+            <ContractNotRegistered v-if="isNotRegistered" />
+            <ContractStateTimeline
+              v-else
+              :state="contractState"
+              :was-under-attack="wasUnderAttack"
+              :registered-at="registeredAt"
+              :under-attack-at="underAttackAt"
+              :production-at="productionAt"
+            />
+          </template>
+          <span v-else class="fetch-error">Unable to load</span>
         </table-body-column>
       </tr>
       <tr>
@@ -48,7 +54,9 @@
           {{ t("tabs.safeHarbor") }}
         </table-body-column>
         <table-body-column class="contract-info-field-value safe-harbor-cell">
-          <AgreementSummaryBadge :agreement="agreement" :has-agreement="hasAgreement" />
+          <ContentLoader v-if="isAgreementLoading" />
+          <AgreementSummaryBadge v-else-if="isAgreementFetched" :agreement="agreement" :has-agreement="hasAgreement" />
+          <span v-else class="fetch-error">Unable to load</span>
         </table-body-column>
       </tr>
     </template>
@@ -82,6 +90,7 @@ import Table from "@/components/common/table/Table.vue";
 import TableBodyColumn from "@/components/common/table/TableBodyColumn.vue";
 import CopyContent from "@/components/common/table/fields/CopyContent.vue";
 import AgreementSummaryBadge from "@/components/contract/AgreementSummaryBadge.vue";
+import ContractNotRegistered from "@/components/contract/ContractNotRegistered.vue";
 import ContractStateTimeline from "@/components/contract/ContractStateTimeline.vue";
 
 import useBattlechainContractState from "@/composables/useBattlechainContractState";
@@ -106,11 +115,20 @@ const props = defineProps({
 const { t } = useI18n();
 
 const contractAddress = computed(() => props.contract?.address || "");
-const { agreement, hasAgreement, fetch: fetchAgreement } = useSafeHarborAgreement(contractAddress);
+const {
+  agreement,
+  hasAgreement,
+  isLoading: isAgreementLoading,
+  isFetched: isAgreementFetched,
+  fetch: fetchAgreement,
+} = useSafeHarborAgreement(contractAddress);
 const {
   state: contractState,
+  hasStateInfo,
+  isLoading: isContractStateLoading,
+  isNotRegistered,
   wasUnderAttack,
-  deployedAt,
+  registeredAt,
   underAttackAt,
   productionAt,
   fetch: fetchContractState,
@@ -157,6 +175,11 @@ watch(
   .contract-not-found {
     @apply px-1.5 py-2;
     color: var(--text-secondary);
+  }
+
+  .fetch-error {
+    @apply text-sm;
+    color: var(--text-muted);
   }
 
   .safe-harbor-cell {

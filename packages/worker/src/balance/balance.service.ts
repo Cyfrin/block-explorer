@@ -1,6 +1,6 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Histogram } from "prom-client";
-import { InjectMetric } from "@willsoto/nestjs-prometheus";
+import { getToken } from "@willsoto/nestjs-prometheus";
 import { BalanceRepository } from "../repositories";
 import { TokenType } from "../entities";
 import { Balance as ChangedBalance } from "../dataFetcher/types";
@@ -14,9 +14,9 @@ export class BalanceService {
 
   constructor(
     private readonly balanceRepository: BalanceRepository,
-    @InjectMetric(DELETE_OLD_BALANCES_DURATION_METRIC_NAME)
+    @Inject(getToken(DELETE_OLD_BALANCES_DURATION_METRIC_NAME))
     private readonly deleteOldBalancesDurationMetric: Histogram,
-    @InjectMetric(DELETE_ZERO_BALANCES_DURATION_METRIC_NAME)
+    @Inject(getToken(DELETE_ZERO_BALANCES_DURATION_METRIC_NAME))
     private readonly deleteZeroBalancesDurationMetric: Histogram
   ) {
     this.logger = new Logger(BalanceService.name);

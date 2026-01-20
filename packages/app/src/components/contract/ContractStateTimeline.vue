@@ -1,25 +1,25 @@
 <template>
   <div class="contract-state-timeline">
-    <!-- New Deployment Step -->
-    <div class="timeline-step" :class="getStepClass(ContractState.NEW_DEPLOYMENT)">
+    <!-- Registered Step -->
+    <div class="timeline-step" :class="getStepClass(ContractState.REGISTERED)">
       <div class="step-indicator-column">
         <div class="step-indicator-wrapper">
-          <span v-if="isCurrent(ContractState.NEW_DEPLOYMENT)" class="ping-animation"></span>
+          <span v-if="isCurrent(ContractState.REGISTERED)" class="ping-animation"></span>
           <div class="step-indicator">
-            <CubeIcon v-if="isCurrentOrCompleted(ContractState.NEW_DEPLOYMENT)" class="step-icon" />
+            <CubeIcon v-if="isCurrentOrCompleted(ContractState.REGISTERED)" class="step-icon" />
             <CubeIconOutline v-else class="step-icon" />
           </div>
         </div>
         <div class="timeline-connector-wrapper">
-          <div class="timeline-connector" :class="connectorClassAfterNewDeployment"></div>
+          <div class="timeline-connector" :class="connectorClassAfterRegistered"></div>
         </div>
       </div>
       <div class="step-content">
-        <span class="step-label">New Deployment</span>
-        <CopyButton v-if="deployedAtISO" :value="formattedDeployedAt!" class="step-timestamp">
-          <TimeField :value="deployedAtISO" :format="TimeFormat.TIME_AGO" />
+        <span class="step-label">Registered</span>
+        <CopyButton v-if="registeredAtISO" :value="formattedRegisteredAt!" class="step-timestamp">
+          <TimeField :value="registeredAtISO" :format="TimeFormat.TIME_AGO" />
         </CopyButton>
-        <Tooltip v-if="isCurrent(ContractState.NEW_DEPLOYMENT) && hasCountdown" :interactive="true" max-width="350px">
+        <Tooltip v-if="isCurrent(ContractState.REGISTERED) && hasCountdown" :interactive="true" max-width="350px">
           <span class="step-countdown">
             <CopyButton :value="formattedPromotionTimestamp!">
               <span class="countdown-time">{{ countdownTimeAgo }}</span>
@@ -121,7 +121,7 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  deployedAt: {
+  registeredAt: {
     type: Number,
     default: null,
   },
@@ -145,19 +145,19 @@ const toISOString = (timestamp: number | null): string => {
   return ISOStringFromUnixTimestamp(Math.floor(timestamp / 1000));
 };
 
-const formattedDeployedAt = computed(() => formatTimestamp(props.deployedAt));
+const formattedRegisteredAt = computed(() => formatTimestamp(props.registeredAt));
 const formattedUnderAttackAt = computed(() => formatTimestamp(props.underAttackAt));
 const formattedProductionAt = computed(() => formatTimestamp(props.productionAt));
 
-const deployedAtISO = computed(() => toISOString(props.deployedAt));
+const registeredAtISO = computed(() => toISOString(props.registeredAt));
 const underAttackAtISO = computed(() => toISOString(props.underAttackAt));
 const productionAtISO = computed(() => toISOString(props.productionAt));
 
 const promotionTimestamp = computed(() => {
   if (props.state === ContractState.PRODUCTION) return null;
-  if (props.state === ContractState.NEW_DEPLOYMENT && props.deployedAt) {
-    // Auto-promotion is 7 days from deployment (this would come from backend in real impl)
-    return props.deployedAt + 7 * 24 * 60 * 60 * 1000;
+  if (props.state === ContractState.REGISTERED && props.registeredAt) {
+    // Auto-promotion is 7 days from registration (this would come from backend in real impl)
+    return props.registeredAt + 7 * 24 * 60 * 60 * 1000;
   }
   if (props.state === ContractState.UNDER_ATTACK && props.underAttackAt) {
     // Production promotion is 7 days from under attack (this would come from backend in real impl)
@@ -214,8 +214,8 @@ const showUnderAttackStep = computed(() => {
   return props.state === ContractState.UNDER_ATTACK || props.wasUnderAttack;
 });
 
-const connectorClassAfterNewDeployment = computed(() => {
-  // Completed if we're past NEW_DEPLOYMENT
+const connectorClassAfterRegistered = computed(() => {
+  // Completed if we're past REGISTERED
   return {
     completed: props.state === ContractState.UNDER_ATTACK || props.state === ContractState.PRODUCTION,
   };
@@ -233,8 +233,8 @@ const isCurrent = (step: ContractState) => props.state === step;
 const isCurrentOrCompleted = (step: ContractState) => isCurrent(step) || isCompleted(step);
 
 const isCompleted = (step: ContractState) => {
-  if (step === ContractState.NEW_DEPLOYMENT) {
-    return props.state !== ContractState.NEW_DEPLOYMENT;
+  if (step === ContractState.REGISTERED) {
+    return props.state !== ContractState.REGISTERED;
   }
   if (step === ContractState.UNDER_ATTACK) {
     return props.state === ContractState.PRODUCTION && props.wasUnderAttack;
