@@ -47,17 +47,23 @@ vi.mock("ohmyfetch", () => {
   };
 });
 
-const mockContractImplementation = vi.fn().mockResolvedValue("0xc31f9d4cbf557b6cf0ad2af66d44c358f7fa7a10");
+const { mockContractImplementation } = vi.hoisted(() => {
+  return {
+    mockContractImplementation: vi.fn().mockResolvedValue("0xc31f9d4cbf557b6cf0ad2af66d44c358f7fa7a10"),
+  };
+});
 
 vi.mock("ethers", async () => {
   const actualEthers = await vi.importActual("ethers");
+  // Create a mock class that extends the actual Contract behavior
+  class MockContract {
+    implementation = () => mockContractImplementation();
+  }
   return {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     ...actualEthers,
-    Contract: vi.fn().mockReturnValue({
-      implementation: () => mockContractImplementation(),
-    }),
+    Contract: MockContract,
   };
 });
 

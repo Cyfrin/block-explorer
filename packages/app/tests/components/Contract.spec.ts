@@ -64,17 +64,17 @@ describe("Contract:", () => {
         stubs: { RouterLink: RouterLinkStub, TransfersTable: { template: "<div />" } },
       },
     });
-    expect(container.querySelector(".breadcrumb-item-active")?.textContent).toBe("Contract 0x0cc7...dc1b");
+    expect(container.querySelector(".breadcrumb-current")?.textContent).toBe("Contract 0x0cc7...dc1b");
     expect(container.querySelector(".title-container")?.textContent?.replace(/\u00a0/g, " ")).toContain(
       "Contract  0x0cc7...dc1b"
     );
     expect(container.querySelector(".contract-info-table")).toBeDefined();
     expect(container.querySelector(".balance-table")).toBeDefined();
-    const tabs = container.querySelectorAll(".tab-head li");
-    expect(tabs[0].querySelector("button")?.textContent).toBe("Transactions");
-    expect(tabs[1].querySelector("button")?.textContent).toBe("Transfers");
-    expect(tabs[2].querySelector("button")?.textContent).toBe("Contract");
-    expect(tabs[3].querySelector("button")?.textContent).toBe("Events");
+    const tabs = container.querySelectorAll(".tab-button");
+    expect(tabs[0]?.textContent).toBe("Transactions");
+    expect(tabs[1]?.textContent).toBe("Transfers");
+    expect(tabs[2]?.textContent).toBe("Contract");
+    expect(tabs[3]?.textContent).toBe("Events");
   });
   it("renders contract name in the headline when contract is verified", () => {
     const { container } = render(Contract, {

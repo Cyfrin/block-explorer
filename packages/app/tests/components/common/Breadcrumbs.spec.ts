@@ -33,12 +33,12 @@ describe("Breadcrumbs:", () => {
         plugins: [i18n],
       },
     });
-    const breadcrumbLinks = wrapper.findAll(".breadcrumb-item-link");
+    const breadcrumbLinks = wrapper.findAll(".breadcrumb-link");
 
     expect(breadcrumbLinks.length).toBe(2);
     expect(breadcrumbLinks[0].attributes("to")).toBe("/");
     expect(breadcrumbLinks[1].attributes("to")).toBe("/blocks");
-    expect(wrapper.find(".breadcrumb-item-active").element.tagName).toBe("SPAN");
-    expect(wrapper.find(".breadcrumb-item-active").text()).toBe("Transaction");
+    expect(wrapper.find(".breadcrumb-current").element.tagName).toBe("SPAN");
+    expect(wrapper.find(".breadcrumb-current").text()).toBe("Transaction");
   });
 });

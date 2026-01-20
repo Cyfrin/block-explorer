@@ -47,7 +47,7 @@ describe("NetworkStats:", () => {
       },
       global,
     });
-    const wrapperArray = container.querySelectorAll(".stats-container");
+    const wrapperArray = container.querySelectorAll(".stat-item");
     expect(wrapperArray[0].textContent).toContain("123");
     expect(wrapperArray[1].textContent).toContain("542");
     expect(wrapperArray[2].textContent).toContain("1 404");
@@ -63,7 +63,7 @@ describe("NetworkStats:", () => {
       },
       global,
     });
-    const wrapperArray = container.querySelectorAll(".stats-container");
+    const wrapperArray = container.querySelectorAll(".stat-item");
     expect(wrapperArray[0].textContent).toContain("123");
     expect(wrapperArray[1].textContent).toContain("542");
     expect(wrapperArray[2].textContent).toContain("1 404");
@@ -76,7 +76,7 @@ describe("NetworkStats:", () => {
       },
       global,
     });
-    expect(container.querySelectorAll(".content-loader").length).toBe(3);
+    expect(container.querySelectorAll(".stat-loader").length).toBe(3);
   });
   it("shows 0 if value of committed, verified or transactions is undefined", () => {
     const { container } = render(NetworkStats, {
@@ -88,7 +88,7 @@ describe("NetworkStats:", () => {
       },
       global,
     });
-    const wrapperArray = container.querySelectorAll(".stats-container");
+    const wrapperArray = container.querySelectorAll(".stat-item");
     expect(wrapperArray[0].textContent).toContain("0");
     expect(wrapperArray[1].textContent).toContain("0");
     expect(wrapperArray[2].textContent).toContain("0");
@@ -140,7 +140,7 @@ describe("NetworkStats:", () => {
       global,
     });
 
-    expect(wrapper.find(".title").text()).toBe("Network Stats");
+    expect(wrapper.find(".stats-title").text()).toBe("Network Stats");
   });
   it("renders subtitle for testnet", () => {
     const wrapper = mount(NetworkStats, {
@@ -150,7 +150,7 @@ describe("NetworkStats:", () => {
       global,
     });
 
-    expect(wrapper.find(".subtitle").text()).toBe("Stats are occasionally reset on testnet.");
+    expect(wrapper.find(".stats-subtitle").text()).toBe("Stats are occasionally reset on testnet.");
   });
   it("renders subtitle for mainnet", () => {
     const mockNetwork = currentNetworkMock.mockReturnValue("mainnet");
@@ -161,7 +161,7 @@ describe("NetworkStats:", () => {
       global,
     });
 
-    expect(wrapper.find(".subtitle").text()).toBe("Network is open to everyone.");
+    expect(wrapper.find(".stats-subtitle").text()).toBe("Network is open to everyone.");
     mockNetwork.mockRestore();
   });
 });

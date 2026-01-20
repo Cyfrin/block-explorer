@@ -98,7 +98,7 @@ describe("Contract Info Tab", () => {
       },
     });
 
-    expect(wrapper.findAll(".tab-head li").length).toBe(3);
+    expect(wrapper.findAll(".tab-button").length).toBe(3);
     expect(wrapper.findAll(".function-type-title")[0].text()).toBe("Read");
     expect(wrapper.findAll(".function-disclosure-btn")[0].text()).toBe("1. get(0x6d4ce63c)");
     expect(wrapper.findAll(".function-type-title")[1].text()).toBe("Write");
@@ -121,7 +121,7 @@ describe("Contract Info Tab", () => {
       },
     });
 
-    expect(wrapper.findAll(".tab-head li").length).toBe(0);
+    expect(wrapper.findAll(".tab-button").length).toBe(0);
     const routerArray = wrapper.find(".contract-link-container").findAllComponents(RouterLinkStub);
     expect(routerArray[0].props().to.name).toBe("contract-verification");
     expect(routerArray[0].props().to.query.address).toBe(contract.address);
@@ -150,14 +150,14 @@ describe("Contract Info Tab", () => {
           },
         });
 
-        expect(wrapper.findAll(".tab-head li").length).toBe(5);
+        expect(wrapper.findAll(".tab-button").length).toBe(5);
         expect(wrapper.findAll(".function-type-title")[0].text()).toBe("Read");
         expect(wrapper.findAll(".function-disclosure-btn")[0].text()).toBe("1. get(0x6d4ce63c)");
         expect(wrapper.findAll(".function-type-title")[1].text()).toBe("Write");
         expect(wrapper.findAll(".function-disclosure-btn")[1].text()).toBe("1. increment(0x7cf5dab0)");
-        expect(wrapper.findAll(".tab-head li .tab-btn")[3].text()).toBe("Read as Proxy");
+        expect(wrapper.findAll(".tab-button")[3].text()).toBe("Read as Proxy");
         expect(wrapper.findAll(".proxy-implementation-link")[0].findComponent(Alert).props().type).toBe("warning");
-        expect(wrapper.findAll(".tab-head li .tab-btn")[4].text()).toBe("Write as Proxy");
+        expect(wrapper.findAll(".tab-button")[4].text()).toBe("Write as Proxy");
         expect(wrapper.findAll(".proxy-implementation-link")[1].findComponent(Alert).props().type).toBe("warning");
       });
     });
@@ -213,16 +213,16 @@ describe("Contract Info Tab", () => {
           },
         });
 
-        expect(wrapper.findAll(".tab-head li").length).toBe(5);
+        expect(wrapper.findAll(".tab-button").length).toBe(5);
         expect(wrapper.findAll(".function-type-title")[0].text()).toBe("Read");
         expect(wrapper.findAll(".function-disclosure-btn")[0].text()).toBe("1. get(0x6d4ce63c)");
         expect(wrapper.findAll(".function-type-title")[1].text()).toBe("Write");
         expect(wrapper.findAll(".function-disclosure-btn")[1].text()).toBe("1. increment(0x7cf5dab0)");
-        expect(wrapper.findAll(".tab-head li .tab-btn")[3].text()).toBe("Read as Proxy");
+        expect(wrapper.findAll(".tab-button")[3].text()).toBe("Read as Proxy");
         expect(wrapper.findAll(".proxy-implementation-link")[0].findComponent(Alert).props().type).toBe("notification");
         expect(wrapper.findAll(".function-disclosure-btn")[2].text()).toBe("1. get2(0xd2178b08)");
         expect(wrapper.findAll(".proxy-implementation-link")[1].findComponent(Alert).props().type).toBe("notification");
-        expect(wrapper.findAll(".tab-head li .tab-btn")[4].text()).toBe("Write as Proxy");
+        expect(wrapper.findAll(".tab-button")[4].text()).toBe("Write as Proxy");
         expect(wrapper.findAll(".function-disclosure-btn")[3].text()).toBe("1. increment2(0x700b0997)");
       });
     });

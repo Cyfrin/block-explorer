@@ -130,10 +130,11 @@ describe("MetadataBlockPopup:", () => {
     expect(container.querySelector(".metadata-popup-active-code")!.textContent).toBe("3 World");
     const rows = container.querySelectorAll(".meta-info");
     expect(rows[0].querySelector(".actual-string")!.textContent).toBe("0xdeadbeef00000000000000000000000000000000");
-    const flags = rows[1].querySelectorAll(".badge-container");
-    expect(flags[0].className).contain("color-danger");
-    expect(flags[1].className).contain("color-progress");
-    expect(flags[2].className).contain("color-danger");
+    const flags = rows[1].querySelectorAll(".badge");
+    expect(flags.length).toBe(3);
+    expect(flags[0].textContent).toBe("lt");
+    expect(flags[1].textContent).toBe("eq");
+    expect(flags[2].textContent).toBe("gt");
     const registersContainer = rows[2].querySelectorAll(".badge-wrap");
     const registers = registersContainer[0].querySelectorAll(".badge-container");
 
@@ -157,7 +158,7 @@ describe("MetadataBlockPopup:", () => {
     expect(memoryIndexes[3].textContent).toBe("3");
     expect(memoryIndexes[4]).toBe(undefined);
 
-    const memoryTabs = container.querySelectorAll(".tab-btn");
+    const memoryTabs = container.querySelectorAll(".tab-button");
     expect(memoryTabs[0].textContent).toBe("stack 12");
     expect(memoryTabs[1].textContent).toBe("heap 5");
     expect(memoryTabs[2].textContent).toBe("code 4");

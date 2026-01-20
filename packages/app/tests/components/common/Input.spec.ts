@@ -65,16 +65,16 @@ describe("Input:", () => {
     expect(container.querySelector("input")!.hasAttribute("disabled")).toEqual(true);
   });
 
-  it("error tooltip is hidden when no error was passed", async () => {
+  it("error icon is hidden when no error was passed", async () => {
     const { container } = render(Input, {
       props: {
         modelValue: "",
       },
     });
-    expect(container.querySelector(".input-error-tooltip")).toBeFalsy();
+    expect(container.querySelector(".input-error-icon")).toBeFalsy();
   });
 
-  it("shows error tooltip and adds class when error prop is not empty", async () => {
+  it("shows error icon and adds class when error prop is not empty", async () => {
     const { container } = render(Input, {
       props: {
         modelValue: "",
@@ -82,7 +82,7 @@ describe("Input:", () => {
       },
     });
 
-    expect(container.querySelector(".input-error-tooltip")).toBeTruthy();
-    expect(container.querySelector(".input.error")).toBeTruthy();
+    expect(container.querySelector(".input-error-icon")).toBeTruthy();
+    expect(container.querySelector(".input.input-error")).toBeTruthy();
   });
 });

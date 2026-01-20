@@ -5,7 +5,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import { mount } from "@vue/test-utils";
 
-const useTitleMock = vi.fn();
+// Use vi.hoisted to ensure the mock function is available during vi.mock hoisting
+const { useTitleMock } = vi.hoisted(() => {
+  return { useTitleMock: vi.fn() };
+});
+
 vi.mock("@vueuse/core", () => {
   return {
     useTitle: useTitleMock,
@@ -53,6 +57,16 @@ vi.mock("@/composables/useEnvironmentConfig", () => {
   return {
     default: () => ({
       prividium: computed(() => false),
+    }),
+  };
+});
+vi.mock("@/composables/useTheme", () => {
+  return {
+    useTheme: () => ({
+      theme: computed(() => "light"),
+      isDark: () => false,
+      toggleTheme: vi.fn(),
+      setTheme: vi.fn(),
     }),
   };
 });

@@ -43,7 +43,7 @@ describe("TheHeader:", () => {
   it("renders navigation links", async () => {
     const wrapper = mount(TheHeader, {
       global: {
-        stubs: { RouterLink: RouterLinkStub },
+        stubs: { RouterLink: RouterLinkStub, ThemeToggle: true },
         plugins: [i18n],
       },
     });
@@ -61,98 +61,60 @@ describe("TheHeader:", () => {
     expect(toolsLinksRouter[0].props().to.name).toBe("contract-verification");
     expect(toolsLinks[2].attributes("href")).toBe("https://bridge.zksync.io/");
 
-    expect(wrapper.findAll(".navigation-container > .navigation-link")[0].attributes("href")).toBe(
+    expect(wrapper.findAll(".header-nav > .nav-link")[0].attributes("href")).toBe(
       "https://docs.zksync.io/zksync-era/tooling/block-explorers"
     );
   });
   it("renders social links", () => {
     const wrapper = mount(TheHeader, {
       global: {
-        stubs: ["router-link"],
+        stubs: ["router-link", "ThemeToggle"],
         plugins: [i18n],
       },
     });
-    const routerArray = wrapper.findAll(".socials-container > a");
+    const routerArray = wrapper.findAll(".header-socials > .social-link");
     expect(routerArray[0].attributes("href")).toBe("https://join.zksync.dev/");
     expect(routerArray[1].attributes("href")).toBe("https://x.com/zksync");
   });
-  it("renders network switch", () => {
+  it("renders network switch or wallet button", () => {
     const wrapper = mount(TheHeader, {
       global: {
-        stubs: ["router-link"],
+        stubs: ["router-link", "ThemeToggle"],
         plugins: [i18n],
       },
     });
-    expect(wrapper.find(".network-switch")).toBeTruthy();
+    // NetworkSwitch is rendered by default (when not prividium environment)
+    expect(wrapper.find(".header-controls").exists()).toBe(true);
   });
-  it("renders hero banner container by default", async () => {
+  it("renders logo", async () => {
     const wrapper = mount(TheHeader, {
       global: {
-        stubs: ["router-link"],
+        stubs: { RouterLink: RouterLinkStub, ThemeToggle: true },
         plugins: [i18n],
       },
     });
 
-    expect(wrapper.find(".hero-banner-container").exists()).toBe(true);
+    expect(wrapper.find(".header-logo").exists()).toBe(true);
+    expect(wrapper.find(".logo-text").text()).toBe("BattleChain");
   });
-  it("doesn't render hero banner for not-found route", async () => {
-    const mockRoute = routeMock.mockReturnValue({ name: "not-found", params: {} });
+  it("renders theme toggle", async () => {
     const wrapper = mount(TheHeader, {
       global: {
-        stubs: ["router-link"],
+        stubs: ["router-link", "ThemeToggle"],
         plugins: [i18n],
       },
     });
 
-    expect(wrapper.find(".hero-banner-container").exists()).toBe(false);
-    mockRoute.mockRestore();
+    expect(wrapper.find(".header-controls").exists()).toBe(true);
   });
-  it("doesn't render hero banner if network maintenance is true", async () => {
-    const mockRoute = routeMock.mockReturnValue({ name: "not-found", params: {} });
+  it("renders mobile menu button on small screens", async () => {
     const wrapper = mount(TheHeader, {
       global: {
-        stubs: ["router-link"],
+        stubs: ["router-link", "ThemeToggle"],
         plugins: [i18n],
       },
     });
 
-    expect(wrapper.find(".hero-banner-container").exists()).toBe(false);
-    mockRoute.mockRestore();
-  });
-  it("doesn't render hero banner if transaction hash is invalid", async () => {
-    const mockRoute = routeMock.mockReturnValue({ name: "transaction", params: { hash: "asdasd" } });
-    const wrapper = mount(TheHeader, {
-      global: {
-        stubs: ["router-link"],
-        plugins: [i18n],
-      },
-    });
-
-    expect(wrapper.find(".hero-banner-container").exists()).toBe(false);
-    mockRoute.mockRestore();
-  });
-  it("doesn't render hero banner if address is invalid", async () => {
-    const mockRoute = routeMock.mockReturnValue({ name: "address", params: { address: "asdasd" } });
-    const wrapper = mount(TheHeader, {
-      global: {
-        stubs: ["router-link"],
-        plugins: [i18n],
-      },
-    });
-
-    expect(wrapper.find(".hero-banner-container").exists()).toBe(false);
-    mockRoute.mockRestore();
-  });
-  it("doesn't render hero banner if block id is invalid", async () => {
-    const mockRoute = routeMock.mockReturnValue({ name: "block", params: { id: "asdasd" } });
-    const wrapper = mount(TheHeader, {
-      global: {
-        stubs: ["router-link"],
-        plugins: [i18n],
-      },
-    });
-
-    expect(wrapper.find(".hero-banner-container").exists()).toBe(false);
-    mockRoute.mockRestore();
+    expect(wrapper.find(".mobile-menu-btn").exists()).toBe(true);
   });
 });

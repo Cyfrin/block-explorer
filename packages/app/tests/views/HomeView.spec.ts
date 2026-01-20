@@ -100,7 +100,7 @@ describe("HomeView:", () => {
         global,
       });
 
-      expect(container.querySelector(".not-found")?.textContent).toBe(
+      expect(container.querySelector(".empty-state")?.textContent).toBe(
         "We haven't had any blocks yet. Please, check again later."
       );
       mockBlocks.mockRestore();
@@ -119,7 +119,7 @@ describe("HomeView:", () => {
         global,
       });
 
-      expect(container.querySelector(".error-message")?.textContent).toBe(
+      expect(container.querySelector(".error-state")?.textContent).toBe(
         "Failed to show .... Please, try to refresh the page."
       );
       mockBlocks.mockRestore();
@@ -159,7 +159,7 @@ describe("HomeView:", () => {
         global,
       });
 
-      expect(container.querySelector(".not-found")?.textContent).toBe(
+      expect(container.querySelector(".empty-state")?.textContent).toBe(
         "We haven't had any transactions yet. Please, check again later."
       );
 

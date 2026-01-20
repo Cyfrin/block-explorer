@@ -5,19 +5,17 @@ import { render } from "@testing-library/vue";
 import Button from "@/components/common/Button.vue";
 
 describe("Button:", () => {
-  it("applies custom color, size, variant (class properties)", () => {
+  it("applies custom variant and size (class properties)", () => {
     const { container } = render(Button, {
       props: {
-        color: "secondary",
+        variant: "secondary",
         size: "md",
-        variant: "outlined",
       },
     });
 
-    const element = container.querySelector(".button")!;
-    expect(element.classList.contains("secondary")).toBe(true);
-    expect(element.classList.contains("md")).toBe(true);
-    expect(element.classList.contains("outlined")).toBe(true);
+    const element = container.querySelector(".btn")!;
+    expect(element.classList.contains("btn-secondary")).toBe(true);
+    expect(element.classList.contains("btn-md")).toBe(true);
   });
   it("uses custom tag", () => {
     const { container } = render(Button, {
@@ -26,7 +24,7 @@ describe("Button:", () => {
       },
     });
 
-    expect(container.querySelector("a.button")).not.toBeNull();
+    expect(container.querySelector("a.btn")).not.toBeNull();
   });
   it("loading is visible", () => {
     const { container } = render(Button, {
@@ -35,7 +33,7 @@ describe("Button:", () => {
       },
     });
 
-    expect(container.querySelector(".button-spinner")).not.toBeNull();
+    expect(container.querySelector(".btn-spinner")).not.toBeNull();
   });
   it("renders default slot", () => {
     const { container } = render(Button, {
@@ -44,6 +42,6 @@ describe("Button:", () => {
       },
     });
 
-    expect(container.querySelector(".button")?.textContent).toBe("Hello");
+    expect(container.querySelector(".btn")?.textContent).toBe("Hello");
   });
 });

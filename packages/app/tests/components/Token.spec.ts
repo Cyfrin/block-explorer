@@ -78,7 +78,7 @@ describe("Account:", () => {
         stubs: { RouterLink: RouterLinkStub, TransfersTable: { template: "<div />" } },
       },
     });
-    expect(container.querySelector(".breadcrumb-item-active")?.textContent).toBe("Token 0xDB75...DEd4");
+    expect(container.querySelector(".breadcrumb-current")?.textContent).toBe("Token 0xDB75...DEd4");
     expect(container.querySelector(".token-info-table")).toBeDefined();
     expect(container.querySelector(".transactions-table")).toBeDefined();
   });

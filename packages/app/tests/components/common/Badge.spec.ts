@@ -20,38 +20,41 @@ describe("Badge", () => {
     await findByText("Test slot content");
     unmount();
   });
-  it("adds has-icon class when icon slot is not empty", async () => {
-    const { getByTestId, findByText, unmount } = render(Badge, {
+  it("renders icon slot content", async () => {
+    const { findByText, container, unmount } = render(Badge, {
       global,
       slots: {
         icon: "Test icon slot content",
       },
     });
-    expect(getByTestId("badge")?.classList.contains("has-icon")).toBe(true);
     await findByText("Test icon slot content");
+    expect(container.querySelector(".badge-icon")).toBeTruthy();
     unmount();
   });
   it("properly uses size props", async () => {
     const { getByTestId, rerender, unmount } = render(Badge, { global });
-    expect(getByTestId("badge")?.classList.contains("size-sm")).toBe(true);
+    expect(getByTestId("badge")?.classList.contains("badge-sm")).toBe(true);
     await rerender({
       size: "md",
     });
-    expect(getByTestId("badge")?.classList.contains("size-md")).toBe(true);
-    unmount();
-  });
-  it("properly uses type props", async () => {
-    const { getByTestId, rerender, unmount } = render(Badge, { global });
-    expect(getByTestId("badge")?.classList.contains("type-label")).toBe(true);
-    await rerender({ type: "pill" });
-    expect(getByTestId("badge")?.classList.contains("type-pill")).toBe(true);
+    expect(getByTestId("badge")?.classList.contains("badge-md")).toBe(true);
     unmount();
   });
   it("properly uses color props", async () => {
     const { getByTestId, rerender, unmount } = render(Badge, { global });
-    expect(getByTestId("badge")?.classList.contains("color-neutral")).toBe(true);
-    await rerender({ color: "secondary" });
-    expect(getByTestId("badge")?.classList.contains("color-secondary")).toBe(true);
+    expect(getByTestId("badge")?.classList.contains("badge-neutral")).toBe(true);
+    await rerender({ color: "success" });
+    expect(getByTestId("badge")?.classList.contains("badge-success")).toBe(true);
+    unmount();
+  });
+  it("renders dot when showDot is true", async () => {
+    const { container, unmount } = render(Badge, {
+      global,
+      props: {
+        showDot: true,
+      },
+    });
+    expect(container.querySelector(".badge-dot")).toBeTruthy();
     unmount();
   });
   it("shows tooltip on hover", async () => {

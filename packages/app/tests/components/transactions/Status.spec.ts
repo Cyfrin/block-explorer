@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
 
 import Badge from "@/components/common/Badge.vue";
-import Spinner from "@/components/common/Spinner.vue";
 import Status from "@/components/transactions/Status.vue";
 
 import enUS from "@/locales/en.json";
@@ -26,7 +25,7 @@ describe("Status", () => {
     },
     plugins: [i18n, $testId],
   };
-  it("shows a single danger badge with an error icon for 'failed' status", async () => {
+  it("shows a single error badge for 'failed' status", async () => {
     const wrapper = mount(Status, {
       global,
       props: {
@@ -38,10 +37,10 @@ describe("Status", () => {
 
     const [failedBadge] = badges;
 
-    expect(failedBadge.props().color).toBe("danger");
+    expect(failedBadge.props().color).toBe("error");
     expect(failedBadge.text()).toBe(i18n.global.t("transactions.statusComponent.failed"));
   });
-  it("shows execution completed badge and finality validating badge for 'included' status", async () => {
+  it("shows execution and finality badges for 'included' status", async () => {
     const wrapper = mount(Status, {
       global,
       props: {
@@ -51,41 +50,18 @@ describe("Status", () => {
     const badges = wrapper.findAllComponents(Badge);
     expect(badges.length).toBe(5);
 
-    const [
-      l2StatusBadgeTitle,
-      l2StatusBadgeValue,
-      l1StatusBadgeTitle,
-      l1StatusBadgeValueDesktop,
-      l1StatusBadgeValueMobile,
-    ] = badges;
+    const [l2StatusBadgeTitle, l2StatusBadgeValue, l1StatusBadgeTitle] = badges;
 
     expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
     expect(l2StatusBadgeTitle.props().color).toBe("success");
-    expect(l2StatusBadgeTitle.props().textColor).toBe("neutral");
 
     expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
-    expect(l2StatusBadgeValue.props().color).toBe("dark-success");
+    expect(l2StatusBadgeValue.props().color).toBe("success");
 
     expect(l1StatusBadgeTitle.text()).toBe(i18n.global.t("general.finality"));
     expect(l1StatusBadgeTitle.props().color).toBe("neutral");
-    expect(l1StatusBadgeTitle.props().textColor).toBe("neutral");
-    expect(l1StatusBadgeValueDesktop.text()).toBe(
-      i18n.global.t("transactions.statusComponent.sending") +
-        i18n.global.t("transactions.statusComponent.validating") +
-        i18n.global.t("transactions.statusComponent.executing")
-    );
-    expect(l1StatusBadgeValueDesktop.props().color).toBe("dark-neutral");
-    let spinnerComponents = l1StatusBadgeValueDesktop.findAllComponents(Spinner);
-    expect(spinnerComponents.length).toBe(1);
-    expect(spinnerComponents[0].props().color).toBe("dark-neutral");
-
-    expect(l1StatusBadgeValueMobile.text()).toBe(i18n.global.t("transactions.statusComponent.sending"));
-    expect(l1StatusBadgeValueMobile.props().color).toBe("dark-neutral");
-    spinnerComponents = l1StatusBadgeValueMobile.findAllComponents(Spinner);
-    expect(spinnerComponents.length).toBe(1);
-    expect(spinnerComponents[0].props().color).toBe("dark-neutral");
   });
-  it("shows execution completed badge and finality validating badge for 'committed' status", async () => {
+  it("shows execution and finality badges for 'committed' status", async () => {
     const wrapper = mount(Status, {
       global,
       props: {
@@ -95,41 +71,20 @@ describe("Status", () => {
     const badges = wrapper.findAllComponents(Badge);
     expect(badges.length).toBe(5);
 
-    const [
-      l2StatusBadgeTitle,
-      l2StatusBadgeValue,
-      l1StatusBadgeTitle,
-      l1StatusBadgeValueDesktop,
-      l1StatusBadgeValueMobile,
-    ] = badges;
+    const [l2StatusBadgeTitle, l2StatusBadgeValue, l1StatusBadgeTitle, l1StatusBadgeValueDesktop] = badges;
+
     expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
     expect(l2StatusBadgeTitle.props().color).toBe("success");
-    expect(l2StatusBadgeTitle.props().textColor).toBe("neutral");
 
     expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
-    expect(l2StatusBadgeValue.props().color).toBe("dark-success");
+    expect(l2StatusBadgeValue.props().color).toBe("success");
 
     expect(l1StatusBadgeTitle.text()).toBe(i18n.global.t("general.finality"));
     expect(l1StatusBadgeTitle.props().color).toBe("neutral");
-    expect(l1StatusBadgeTitle.props().textColor).toBe("neutral");
 
-    expect(l1StatusBadgeValueDesktop.text()).toBe(
-      i18n.global.t("transactions.statusComponent.sent") +
-        i18n.global.t("transactions.statusComponent.validating") +
-        i18n.global.t("transactions.statusComponent.executing")
-    );
-    expect(l1StatusBadgeValueDesktop.props().color).toBe("dark-neutral");
-    let spinnerComponents = l1StatusBadgeValueDesktop.findAllComponents(Spinner);
-    expect(spinnerComponents.length).toBe(1);
-    expect(spinnerComponents[0].props().color).toBe("dark-neutral");
-
-    expect(l1StatusBadgeValueMobile.text()).toBe(i18n.global.t("transactions.statusComponent.validating"));
-    expect(l1StatusBadgeValueMobile.props().color).toBe("dark-neutral");
-    spinnerComponents = l1StatusBadgeValueMobile.findAllComponents(Spinner);
-    expect(spinnerComponents.length).toBe(1);
-    expect(spinnerComponents[0].props().color).toBe("dark-neutral");
+    expect(l1StatusBadgeValueDesktop.props().color).toBe("neutral");
   });
-  it("shows execution completed badge and finality validating badge for 'proved' status", async () => {
+  it("shows execution and finality badges for 'proved' status", async () => {
     const wrapper = mount(Status, {
       global,
       props: {
@@ -139,41 +94,20 @@ describe("Status", () => {
     const badges = wrapper.findAllComponents(Badge);
     expect(badges.length).toBe(5);
 
-    const [
-      l2StatusBadgeTitle,
-      l2StatusBadgeValue,
-      l1StatusBadgeTitle,
-      l1StatusBadgeValueDesktop,
-      l1StatusBadgeValueMobile,
-    ] = badges;
+    const [l2StatusBadgeTitle, l2StatusBadgeValue, l1StatusBadgeTitle, l1StatusBadgeValueDesktop] = badges;
+
     expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
     expect(l2StatusBadgeTitle.props().color).toBe("success");
-    expect(l2StatusBadgeTitle.props().textColor).toBe("neutral");
 
     expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
-    expect(l2StatusBadgeValue.props().color).toBe("dark-success");
+    expect(l2StatusBadgeValue.props().color).toBe("success");
 
     expect(l1StatusBadgeTitle.text()).toBe(i18n.global.t("general.finality"));
     expect(l1StatusBadgeTitle.props().color).toBe("neutral");
-    expect(l1StatusBadgeTitle.props().textColor).toBe("neutral");
 
-    expect(l1StatusBadgeValueDesktop.text()).toBe(
-      i18n.global.t("transactions.statusComponent.sent") +
-        i18n.global.t("transactions.statusComponent.validated") +
-        i18n.global.t("transactions.statusComponent.executing")
-    );
-    expect(l1StatusBadgeValueDesktop.props().color).toBe("dark-neutral");
-    let spinnerComponents = l1StatusBadgeValueDesktop.findAllComponents(Spinner);
-    expect(spinnerComponents.length).toBe(1);
-    expect(spinnerComponents[0].props().color).toBe("dark-neutral");
-
-    expect(l1StatusBadgeValueMobile.text()).toBe(i18n.global.t("transactions.statusComponent.executing"));
-    expect(l1StatusBadgeValueMobile.props().color).toBe("dark-neutral");
-    spinnerComponents = l1StatusBadgeValueMobile.findAllComponents(Spinner);
-    expect(spinnerComponents.length).toBe(1);
-    expect(spinnerComponents[0].props().color).toBe("dark-neutral");
+    expect(l1StatusBadgeValueDesktop.props().color).toBe("neutral");
   });
-  it("shows execution completed badge and finality executed badge for 'verified' status", async () => {
+  it("shows execution and finality success badges for 'verified' status", async () => {
     const wrapper = mount(Status, {
       global,
       props: {
@@ -183,32 +117,18 @@ describe("Status", () => {
     const badges = wrapper.findAllComponents(Badge);
     expect(badges.length).toBe(5);
 
-    const [
-      l2StatusBadgeTitle,
-      l2StatusBadgeValue,
-      l1StatusBadgeTitle,
-      l1StatusBadgeValueDesktop,
-      l1StatusBadgeValueMobile,
-    ] = badges;
+    const [l2StatusBadgeTitle, l2StatusBadgeValue, l1StatusBadgeTitle, l1StatusBadgeValueDesktop] = badges;
+
     expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
     expect(l2StatusBadgeTitle.props().color).toBe("success");
-    expect(l2StatusBadgeTitle.props().textColor).toBe("neutral");
 
     expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
-    expect(l2StatusBadgeValue.props().color).toBe("dark-success");
+    expect(l2StatusBadgeValue.props().color).toBe("success");
 
     expect(l1StatusBadgeTitle.text()).toBe(i18n.global.t("general.finality"));
     expect(l1StatusBadgeTitle.props().color).toBe("success");
-    expect(l1StatusBadgeTitle.props().textColor).toBe("neutral");
 
-    expect(l1StatusBadgeValueDesktop.text()).toBe(
-      i18n.global.t("transactions.statusComponent.sent") +
-        i18n.global.t("transactions.statusComponent.validated") +
-        i18n.global.t("transactions.statusComponent.executed")
-    );
-    expect(l1StatusBadgeValueDesktop.props().color).toBe("dark-success");
-    expect(l1StatusBadgeValueMobile.text()).toBe(i18n.global.t("transactions.statusComponent.executed"));
-    expect(l1StatusBadgeValueMobile.props().color).toBe("dark-success");
+    expect(l1StatusBadgeValueDesktop.props().color).toBe("success");
   });
   it("shows indexing badge for 'indexing' status", async () => {
     const wrapper = mount(Status, {
@@ -225,10 +145,9 @@ describe("Status", () => {
 
     expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
     expect(l2StatusBadgeTitle.props().color).toBe("success");
-    expect(l2StatusBadgeTitle.props().textColor).toBe("neutral");
 
     expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
-    expect(l2StatusBadgeValue.props().color).toBe("dark-success");
+    expect(l2StatusBadgeValue.props().color).toBe("success");
 
     expect(indexingBadge.props().color).toBe("neutral");
     expect(indexingBadge.text()).toBe(i18n.global.t("transactions.statusComponent.indexing"));

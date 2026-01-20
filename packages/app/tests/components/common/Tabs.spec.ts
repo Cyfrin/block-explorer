@@ -23,12 +23,12 @@ describe("Tabs", () => {
         ],
       },
     });
-    expect(wrapper.findAll(".tab-head li").length).toBe(2);
-    expect(wrapper.findAll(".tab-head li")[0].text()).toBe("Tab 1");
-    expect(wrapper.findAll(".tab-head li")[1].text()).toBe("Tab 2");
-    expect(wrapper.findAll(".tab-content > div").length).toBe(2);
-    expect(wrapper.findAll(".tab-content > div")[0].text()).toBe("");
-    expect(wrapper.findAll(".tab-content > div")[1].text()).toBe("");
+    expect(wrapper.findAll(".tab-button").length).toBe(2);
+    expect(wrapper.findAll(".tab-button")[0].text()).toBe("Tab 1");
+    expect(wrapper.findAll(".tab-button")[1].text()).toBe("Tab 2");
+    expect(wrapper.findAll(".tabs-content > div").length).toBe(2);
+    expect(wrapper.findAll(".tabs-content > div")[0].text()).toBe("");
+    expect(wrapper.findAll(".tabs-content > div")[1].text()).toBe("");
   });
   it("renders component with custom slots values", () => {
     const wrapper = mount(Tabs, {
@@ -47,12 +47,12 @@ describe("Tabs", () => {
         },
       },
     });
-    expect(wrapper.findAll(".tab-head li").length).toBe(2);
-    expect(wrapper.findAll(".tab-head li")[0].text()).toBe("Tab 1");
-    expect(wrapper.findAll(".tab-head li")[1].text()).toBe("Tab 2");
-    expect(wrapper.findAll(".tab-content > div").length).toBe(2);
-    expect(wrapper.findAll(".tab-content > div")[0].text()).toBe("Tab 1 slot content");
-    expect(wrapper.findAll(".tab-content > div")[1].text()).toBe("Tab 2 slot content");
+    expect(wrapper.findAll(".tab-button").length).toBe(2);
+    expect(wrapper.findAll(".tab-button")[0].text()).toBe("Tab 1");
+    expect(wrapper.findAll(".tab-button")[1].text()).toBe("Tab 2");
+    expect(wrapper.findAll(".tabs-content > div").length).toBe(2);
+    expect(wrapper.findAll(".tabs-content > div")[0].text()).toBe("Tab 1 slot content");
+    expect(wrapper.findAll(".tabs-content > div")[1].text()).toBe("Tab 2 slot content");
   });
   it("redirects to current tab hash on tab button click", async () => {
     const wrapper = mount(Tabs, {
@@ -64,7 +64,7 @@ describe("Tabs", () => {
       },
     });
 
-    await wrapper.findAll(".tab-btn")[1].trigger("click");
+    await wrapper.findAll(".tab-button")[1].trigger("click");
 
     expect(router.push).toHaveBeenCalledWith({
       hash: "tab2",

@@ -50,7 +50,7 @@ describe("Account:", () => {
         stubs: { RouterLink: RouterLinkStub, TransfersTable: { template: "<div />" } },
       },
     });
-    expect(container.querySelector(".breadcrumb-item-active")?.textContent).toBe("Account 0xDB75...DEd4");
+    expect(container.querySelector(".breadcrumb-current")?.textContent).toBe("Account 0xDB75...DEd4");
     expect(container.querySelector(".contract-info-table")).toBeDefined();
     expect(container.querySelector(".balance-table")).toBeDefined();
     expect(container.querySelector(".transactions-table")).toBeDefined();

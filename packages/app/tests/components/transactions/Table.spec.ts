@@ -152,7 +152,7 @@ describe("Transfers:", () => {
       });
 
       it("renders processed status column", () => {
-        expect(renderResult!.container.querySelector(".badge-content")!.textContent).toEqual("Processed on");
+        expect(renderResult!.container.querySelector(".badge-text")!.textContent).toEqual("Processed on");
       });
     });
 
@@ -177,7 +177,7 @@ describe("Transfers:", () => {
       });
 
       it("renders processed status column", () => {
-        expect(renderResult!.container.querySelector(".badge-content")!.textContent).toEqual("Processed on");
+        expect(renderResult!.container.querySelector(".badge-text")!.textContent).toEqual("Processed on");
       });
     });
 
@@ -202,7 +202,7 @@ describe("Transfers:", () => {
       });
 
       it("renders processed status column", () => {
-        expect(renderResult!.container.querySelector(".badge-content")!.textContent).toEqual("Processed on");
+        expect(renderResult!.container.querySelector(".badge-text")!.textContent).toEqual("Processed on");
       });
     });
 
