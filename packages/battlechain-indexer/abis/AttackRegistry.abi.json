@@ -5,7 +5,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "contractAddress",
+        "name": "targetContract",
         "type": "address"
       },
       {

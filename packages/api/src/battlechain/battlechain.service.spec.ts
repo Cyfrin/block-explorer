@@ -4,21 +4,17 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { BattlechainService } from "./battlechain.service";
 import { ContractStateChange } from "./contractState.entity";
-import { AgreementCreated, AgreementScopeAddressAdded, AgreementScopeAddressRemoved } from "./agreement.entity";
+import { AgreementCreated } from "./agreement.entity";
 import { ContractState } from "./battlechain.dto";
 
 describe("BattlechainService", () => {
   let service: BattlechainService;
   let contractStateRepository: Repository<ContractStateChange>;
   let agreementCreatedRepository: Repository<AgreementCreated>;
-  let scopeAddedRepository: Repository<AgreementScopeAddressAdded>;
-  let scopeRemovedRepository: Repository<AgreementScopeAddressRemoved>;
 
   beforeEach(async () => {
     contractStateRepository = mock<Repository<ContractStateChange>>();
     agreementCreatedRepository = mock<Repository<AgreementCreated>>();
-    scopeAddedRepository = mock<Repository<AgreementScopeAddressAdded>>();
-    scopeRemovedRepository = mock<Repository<AgreementScopeAddressRemoved>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -30,14 +26,6 @@ describe("BattlechainService", () => {
         {
           provide: getRepositoryToken(AgreementCreated),
           useValue: agreementCreatedRepository,
-        },
-        {
-          provide: getRepositoryToken(AgreementScopeAddressAdded),
-          useValue: scopeAddedRepository,
-        },
-        {
-          provide: getRepositoryToken(AgreementScopeAddressRemoved),
-          useValue: scopeRemovedRepository,
         },
       ],
     }).compile();
@@ -77,7 +65,7 @@ describe("BattlechainService", () => {
           contractAddress: contractAddress.toLowerCase(),
           newState: ContractState.REGISTERED,
           blockNumber: 100,
-          logIndex: 0,
+          logIndex: "0",
           blockTimestamp: timestamp,
         },
       ]);
@@ -102,14 +90,14 @@ describe("BattlechainService", () => {
           contractAddress: contractAddress.toLowerCase(),
           newState: ContractState.REGISTERED,
           blockNumber: 100,
-          logIndex: 0,
+          logIndex: "0",
           blockTimestamp: registeredTime,
         },
         {
           contractAddress: contractAddress.toLowerCase(),
           newState: ContractState.PRODUCTION,
           blockNumber: 200,
-          logIndex: 0,
+          logIndex: "0",
           blockTimestamp: productionTime,
         },
       ]);
@@ -135,21 +123,21 @@ describe("BattlechainService", () => {
           contractAddress: contractAddress.toLowerCase(),
           newState: ContractState.REGISTERED,
           blockNumber: 100,
-          logIndex: 0,
+          logIndex: "0",
           blockTimestamp: registeredTime,
         },
         {
           contractAddress: contractAddress.toLowerCase(),
           newState: ContractState.UNDER_ATTACK,
           blockNumber: 200,
-          logIndex: 0,
+          logIndex: "0",
           blockTimestamp: attackTime,
         },
         {
           contractAddress: contractAddress.toLowerCase(),
           newState: ContractState.PRODUCTION,
           blockNumber: 300,
-          logIndex: 0,
+          logIndex: "0",
           blockTimestamp: productionTime,
         },
       ]);
@@ -171,7 +159,7 @@ describe("BattlechainService", () => {
           contractAddress: contractAddress.toLowerCase(),
           newState: ContractState.REGISTERED,
           blockNumber: 100,
-          logIndex: 0,
+          logIndex: "0",
           blockTimestamp: null,
         },
       ]);
@@ -227,40 +215,7 @@ describe("BattlechainService", () => {
       });
     });
 
-    it("returns agreement with covered contracts", async () => {
-      const timestamp = new Date("2024-01-01T00:00:00Z");
-      const coveredContract = "0xcovered123456789012345678901234567890123";
-
-      (agreementCreatedRepository.findOne as jest.Mock).mockResolvedValue({
-        agreementAddress: agreementAddress.toLowerCase(),
-        owner: ownerAddress.toLowerCase(),
-        blockNumber: 100,
-        blockTimestamp: timestamp,
-      });
-
-      (scopeAddedRepository.find as jest.Mock).mockResolvedValue([
-        {
-          contractAddress: agreementAddress.toLowerCase(),
-          addr: coveredContract.toLowerCase(),
-          blockNumber: 101,
-          logIndex: 0,
-        },
-      ]);
-
-      (scopeRemovedRepository.find as jest.Mock).mockResolvedValue([]);
-
-      const result = await service.getAgreement(agreementAddress);
-
-      expect(result).toEqual({
-        agreementAddress: agreementAddress.toLowerCase(),
-        owner: ownerAddress.toLowerCase(),
-        coveredContracts: [coveredContract.toLowerCase()],
-        createdAtBlock: 100,
-        createdAt: timestamp.getTime(),
-      });
-    });
-
-    it("returns agreement with no covered contracts", async () => {
+    it("returns agreement with empty covered contracts (scope events not yet indexed)", async () => {
       const timestamp = new Date("2024-01-01T00:00:00Z");
 
       (agreementCreatedRepository.findOne as jest.Mock).mockResolvedValue({
@@ -269,9 +224,6 @@ describe("BattlechainService", () => {
         blockNumber: 100,
         blockTimestamp: timestamp,
       });
-
-      (scopeAddedRepository.find as jest.Mock).mockResolvedValue([]);
-      (scopeRemovedRepository.find as jest.Mock).mockResolvedValue([]);
 
       const result = await service.getAgreement(agreementAddress);
 
@@ -292,9 +244,6 @@ describe("BattlechainService", () => {
         blockTimestamp: null,
       });
 
-      (scopeAddedRepository.find as jest.Mock).mockResolvedValue([]);
-      (scopeRemovedRepository.find as jest.Mock).mockResolvedValue([]);
-
       const result = await service.getAgreement(agreementAddress);
 
       expect(result?.createdAt).toBeNull();
@@ -310,203 +259,15 @@ describe("BattlechainService", () => {
         where: { agreementAddress: upperCaseAddress.toLowerCase() },
       });
     });
-
-    it("excludes removed contracts from covered list", async () => {
-      const timestamp = new Date("2024-01-01T00:00:00Z");
-      const coveredContract1 = "0xcovered123456789012345678901234567890111";
-      const removedContract = "0xcovered123456789012345678901234567890222";
-
-      (agreementCreatedRepository.findOne as jest.Mock).mockResolvedValue({
-        agreementAddress: agreementAddress.toLowerCase(),
-        owner: ownerAddress.toLowerCase(),
-        blockNumber: 100,
-        blockTimestamp: timestamp,
-      });
-
-      (scopeAddedRepository.find as jest.Mock).mockResolvedValue([
-        {
-          contractAddress: agreementAddress.toLowerCase(),
-          addr: coveredContract1.toLowerCase(),
-          blockNumber: 101,
-          logIndex: 0,
-        },
-        {
-          contractAddress: agreementAddress.toLowerCase(),
-          addr: removedContract.toLowerCase(),
-          blockNumber: 102,
-          logIndex: 0,
-        },
-      ]);
-
-      (scopeRemovedRepository.find as jest.Mock).mockResolvedValue([
-        {
-          contractAddress: agreementAddress.toLowerCase(),
-          addr: removedContract.toLowerCase(),
-          blockNumber: 103,
-          logIndex: 0,
-        },
-      ]);
-
-      const result = await service.getAgreement(agreementAddress);
-
-      expect(result?.coveredContracts).toEqual([coveredContract1.toLowerCase()]);
-    });
   });
 
   describe("getAgreementByContract", () => {
     const contractAddress = "0xcontract12345678901234567890123456789012";
-    const agreementAddress = "0xagreement1234567890123456789012345678901";
-    const ownerAddress = "0xowner12345678901234567890123456789012345";
 
-    it("returns null when contract not covered by any agreement", async () => {
-      (scopeAddedRepository.find as jest.Mock).mockResolvedValue([]);
-
+    it("returns null (scope events not yet indexed)", async () => {
       const result = await service.getAgreementByContract(contractAddress);
 
       expect(result).toBeNull();
-      expect(scopeAddedRepository.find).toHaveBeenCalledWith({
-        where: { addr: contractAddress.toLowerCase() },
-        order: { blockNumber: "DESC", logIndex: "DESC" },
-      });
-    });
-
-    it("returns agreement when contract is in scope", async () => {
-      const timestamp = new Date("2024-01-01T00:00:00Z");
-
-      (scopeAddedRepository.find as jest.Mock).mockResolvedValue([
-        {
-          contractAddress: agreementAddress.toLowerCase(),
-          addr: contractAddress.toLowerCase(),
-          blockNumber: 101,
-          logIndex: 0,
-        },
-      ]);
-
-      (scopeRemovedRepository.findOne as jest.Mock).mockResolvedValue(null);
-
-      (agreementCreatedRepository.findOne as jest.Mock).mockResolvedValue({
-        agreementAddress: agreementAddress.toLowerCase(),
-        owner: ownerAddress.toLowerCase(),
-        blockNumber: 100,
-        blockTimestamp: timestamp,
-      });
-
-      (scopeAddedRepository.find as jest.Mock)
-        .mockResolvedValueOnce([
-          {
-            contractAddress: agreementAddress.toLowerCase(),
-            addr: contractAddress.toLowerCase(),
-            blockNumber: 101,
-            logIndex: 0,
-          },
-        ])
-        .mockResolvedValueOnce([
-          {
-            contractAddress: agreementAddress.toLowerCase(),
-            addr: contractAddress.toLowerCase(),
-            blockNumber: 101,
-            logIndex: 0,
-          },
-        ]);
-
-      (scopeRemovedRepository.find as jest.Mock).mockResolvedValue([]);
-
-      const result = await service.getAgreementByContract(contractAddress);
-
-      expect(result).not.toBeNull();
-      expect(result?.agreementAddress).toBe(agreementAddress.toLowerCase());
-    });
-
-    it("returns null when contract was added then removed", async () => {
-      (scopeAddedRepository.find as jest.Mock).mockResolvedValue([
-        {
-          contractAddress: agreementAddress.toLowerCase(),
-          addr: contractAddress.toLowerCase(),
-          blockNumber: 101,
-          logIndex: 0,
-        },
-      ]);
-
-      (scopeRemovedRepository.findOne as jest.Mock).mockResolvedValue({
-        contractAddress: agreementAddress.toLowerCase(),
-        addr: contractAddress.toLowerCase(),
-        blockNumber: 102,
-        logIndex: 0,
-      });
-
-      const result = await service.getAgreementByContract(contractAddress);
-
-      expect(result).toBeNull();
-    });
-
-    it("returns agreement when removal happened before addition", async () => {
-      const timestamp = new Date("2024-01-01T00:00:00Z");
-
-      (scopeAddedRepository.find as jest.Mock).mockResolvedValueOnce([
-        {
-          contractAddress: agreementAddress.toLowerCase(),
-          addr: contractAddress.toLowerCase(),
-          blockNumber: 102,
-          logIndex: 0,
-        },
-      ]);
-
-      (scopeRemovedRepository.findOne as jest.Mock).mockResolvedValue({
-        contractAddress: agreementAddress.toLowerCase(),
-        addr: contractAddress.toLowerCase(),
-        blockNumber: 100,
-        logIndex: 0,
-      });
-
-      (agreementCreatedRepository.findOne as jest.Mock).mockResolvedValue({
-        agreementAddress: agreementAddress.toLowerCase(),
-        owner: ownerAddress.toLowerCase(),
-        blockNumber: 90,
-        blockTimestamp: timestamp,
-      });
-
-      (scopeAddedRepository.find as jest.Mock).mockResolvedValueOnce([
-        {
-          contractAddress: agreementAddress.toLowerCase(),
-          addr: contractAddress.toLowerCase(),
-          blockNumber: 102,
-          logIndex: 0,
-        },
-      ]);
-
-      (scopeRemovedRepository.find as jest.Mock).mockResolvedValue([]);
-
-      const result = await service.getAgreementByContract(contractAddress);
-
-      expect(result).not.toBeNull();
-    });
-
-    it("normalizes address case", async () => {
-      const upperCaseAddress = "0xCONTRACT123456789012345678901234567890";
-      (scopeAddedRepository.find as jest.Mock).mockResolvedValue([]);
-
-      await service.getAgreementByContract(upperCaseAddress);
-
-      expect(scopeAddedRepository.find).toHaveBeenCalledWith({
-        where: { addr: upperCaseAddress.toLowerCase() },
-        order: { blockNumber: "DESC", logIndex: "DESC" },
-      });
-    });
-
-    it("skips added events with null contractAddress", async () => {
-      (scopeAddedRepository.find as jest.Mock).mockResolvedValue([
-        {
-          contractAddress: null,
-          addr: contractAddress.toLowerCase(),
-          blockNumber: 101,
-          logIndex: 0,
-        },
-      ]);
-
-      const result = await service.getAgreementByContract(contractAddress);
-
-      expect(result).toBeNull();
-      expect(scopeRemovedRepository.findOne).not.toHaveBeenCalled();
     });
   });
 
@@ -522,14 +283,13 @@ describe("BattlechainService", () => {
       });
     });
 
-    it("returns all agreements with their covered contracts", async () => {
+    it("returns all agreements with empty covered contracts", async () => {
       const timestamp1 = new Date("2024-01-01T00:00:00Z");
       const timestamp2 = new Date("2024-01-02T00:00:00Z");
       const agreement1 = "0xagreement1234567890123456789012345678901";
       const agreement2 = "0xagreement2234567890123456789012345678902";
       const owner1 = "0xowner12345678901234567890123456789012345";
       const owner2 = "0xowner22345678901234567890123456789012346";
-      const covered1 = "0xcovered123456789012345678901234567890123";
 
       (agreementCreatedRepository.find as jest.Mock).mockResolvedValue([
         {
@@ -546,29 +306,13 @@ describe("BattlechainService", () => {
         },
       ]);
 
-      (scopeAddedRepository.find as jest.Mock).mockImplementation(({ where }) => {
-        if (where.contractAddress === agreement1.toLowerCase()) {
-          return Promise.resolve([
-            {
-              contractAddress: agreement1.toLowerCase(),
-              addr: covered1.toLowerCase(),
-              blockNumber: 201,
-              logIndex: 0,
-            },
-          ]);
-        }
-        return Promise.resolve([]);
-      });
-
-      (scopeRemovedRepository.find as jest.Mock).mockResolvedValue([]);
-
       const result = await service.getAllAgreements();
 
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
         agreementAddress: agreement1.toLowerCase(),
         owner: owner1.toLowerCase(),
-        coveredContracts: [covered1.toLowerCase()],
+        coveredContracts: [],
         createdAtBlock: 200,
         createdAt: timestamp2.getTime(),
       });

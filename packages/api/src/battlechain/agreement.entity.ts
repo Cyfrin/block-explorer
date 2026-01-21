@@ -4,93 +4,36 @@ import { bigIntNumberTransformer } from "../common/transformers/bigIntNumber.tra
 
 /**
  * Entity representing an agreement created event from the AgreementFactory contract.
- * This maps to the table created by rindexer: battlechain.agreementfactory_agreementcreated
+ * This maps to the table created by rindexer: battlechainindexer_agreement_factory.agreement_created
  */
-@Entity({ name: "agreementfactory_agreementcreated", schema: "battlechain" })
+@Entity({ name: "agreement_created", schema: "battlechainindexer_agreement_factory" })
 export class AgreementCreated {
-  @PrimaryColumn({ name: "rindexer_id", type: "varchar" })
-  public readonly rindexerId: string;
+  @PrimaryColumn({ name: "rindexer_id", type: "int" })
+  public readonly rindexerId: number;
 
-  @Column({ name: "agreement_address", type: "bytea", transformer: hexTransformer })
+  @Column({ name: "agreement_address", type: "char", length: 42, nullable: true })
   @Index()
-  public readonly agreementAddress: string;
+  public readonly agreementAddress: string | null;
 
-  @Column({ name: "owner", type: "bytea", transformer: hexTransformer })
+  @Column({ name: "owner", type: "char", length: 42, nullable: true })
   @Index()
-  public readonly owner: string;
+  public readonly owner: string | null;
 
-  @Column({ name: "salt", type: "bytea", transformer: hexTransformer })
-  public readonly salt: string;
+  @Column({ name: "salt", type: "bytea", transformer: hexTransformer, nullable: true })
+  public readonly salt: string | null;
 
-  @Column({ name: "tx_hash", type: "bytea", transformer: hexTransformer })
+  @Column({ name: "tx_hash", type: "char", length: 66 })
   public readonly txHash: string;
 
-  @Column({ name: "block_number", type: "bigint", transformer: bigIntNumberTransformer })
+  @Column({ name: "block_number", type: "numeric", transformer: bigIntNumberTransformer })
   public readonly blockNumber: number;
 
-  @Column({ name: "log_index", type: "int" })
-  public readonly logIndex: number;
+  @Column({ name: "log_index", type: "varchar", length: 78 })
+  public readonly logIndex: string;
 
-  @Column({ name: "block_timestamp", type: "timestamp", nullable: true })
+  @Column({ name: "block_timestamp", type: "timestamptz", nullable: true })
   public readonly blockTimestamp: Date | null;
 }
 
-/**
- * Entity representing a contract being added to an agreement's scope.
- * This maps to the table: battlechain.agreement_battlechainscopeaddressadded
- */
-@Entity({ name: "agreement_battlechainscopeaddressadded", schema: "battlechain" })
-export class AgreementScopeAddressAdded {
-  @PrimaryColumn({ name: "rindexer_id", type: "varchar" })
-  public readonly rindexerId: string;
-
-  @Column({ name: "addr", type: "bytea", transformer: hexTransformer })
-  @Index()
-  public readonly addr: string;
-
-  @Column({ name: "tx_hash", type: "bytea", transformer: hexTransformer })
-  public readonly txHash: string;
-
-  @Column({ name: "block_number", type: "bigint", transformer: bigIntNumberTransformer })
-  public readonly blockNumber: number;
-
-  @Column({ name: "log_index", type: "int" })
-  public readonly logIndex: number;
-
-  @Column({ name: "block_timestamp", type: "timestamp", nullable: true })
-  public readonly blockTimestamp: Date | null;
-
-  // The contract that emitted this event (the Agreement contract address)
-  @Column({ name: "contract_address", type: "bytea", transformer: hexTransformer, nullable: true })
-  public readonly contractAddress: string | null;
-}
-
-/**
- * Entity representing a contract being removed from an agreement's scope.
- * This maps to the table: battlechain.agreement_battlechainscopeaddressremoved
- */
-@Entity({ name: "agreement_battlechainscopeaddressremoved", schema: "battlechain" })
-export class AgreementScopeAddressRemoved {
-  @PrimaryColumn({ name: "rindexer_id", type: "varchar" })
-  public readonly rindexerId: string;
-
-  @Column({ name: "addr", type: "bytea", transformer: hexTransformer })
-  @Index()
-  public readonly addr: string;
-
-  @Column({ name: "tx_hash", type: "bytea", transformer: hexTransformer })
-  public readonly txHash: string;
-
-  @Column({ name: "block_number", type: "bigint", transformer: bigIntNumberTransformer })
-  public readonly blockNumber: number;
-
-  @Column({ name: "log_index", type: "int" })
-  public readonly logIndex: number;
-
-  @Column({ name: "block_timestamp", type: "timestamp", nullable: true })
-  public readonly blockTimestamp: Date | null;
-
-  // The contract that emitted this event (the Agreement contract address)
-  @Column({ name: "contract_address", type: "bytea", transformer: hexTransformer, nullable: true })
-  public readonly contractAddress: string | null;
-}
+// Note: AgreementScopeAddressAdded and AgreementScopeAddressRemoved entities
+// will be added when those events are indexed from individual Agreement contracts.
