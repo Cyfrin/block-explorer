@@ -33,10 +33,10 @@
       </tr>
       <tr>
         <table-body-column class="contract-info-field-label"> Contract state </table-body-column>
-        <table-body-column class="contract-info-field-value">
+        <table-body-column class="contract-info-field-value contract-state-cell">
           <ContentLoader v-if="isContractStateLoading" />
           <template v-else-if="hasStateInfo">
-            <ContractNotRegistered v-if="isNotRegistered" />
+            <ContractNotRegistered v-if="isNotRegistered" :contract-address="contractAddress" />
             <ContractStateTimeline
               v-else
               :state="contractState"
@@ -180,6 +180,10 @@ watch(
   .fetch-error {
     @apply text-sm;
     color: var(--text-muted);
+  }
+
+  .contract-state-cell {
+    @apply whitespace-normal;
   }
 
   .safe-harbor-cell {

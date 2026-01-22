@@ -18,6 +18,7 @@ export type NetworkConfig = {
   tokensMinLiquidity?: number;
   zkTokenAddress?: string;
   baseTokenAddress: string;
+  attackRegistryAddress?: string;
 };
 
 export type SettlementChain = {
