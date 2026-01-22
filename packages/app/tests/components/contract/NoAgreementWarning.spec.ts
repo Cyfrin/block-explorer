@@ -21,56 +21,16 @@ const global = {
 };
 
 describe("NoAgreementWarning", () => {
-  it("renders warning title", () => {
+  it("renders warning message", () => {
     const { container } = render(NoAgreementWarning, {
-      props: {
-        defaultTerms: {
-          bountyPercentage: 10,
-          bountyCap: BigInt("5000000000000"),
-        },
-      },
       global,
     });
 
-    expect(container.querySelector(".warning-title")).toBeTruthy();
-  });
-
-  it("renders default bounty percentage", () => {
-    const { container } = render(NoAgreementWarning, {
-      props: {
-        defaultTerms: {
-          bountyPercentage: 10,
-          bountyCap: BigInt("5000000000000"),
-        },
-      },
-      global,
-    });
-
-    expect(container.textContent).toContain("10%");
-  });
-
-  it("renders formatted default bounty cap", () => {
-    const { container } = render(NoAgreementWarning, {
-      props: {
-        defaultTerms: {
-          bountyPercentage: 10,
-          bountyCap: BigInt("5000000000000"),
-        },
-      },
-      global,
-    });
-
-    expect(container.textContent).toContain("$5M");
+    expect(container.textContent).toContain("does not have a registered Safe Harbor Agreement");
   });
 
   it("applies warning styling", () => {
     const { container } = render(NoAgreementWarning, {
-      props: {
-        defaultTerms: {
-          bountyPercentage: 10,
-          bountyCap: BigInt("5000000000000"),
-        },
-      },
       global,
     });
 
@@ -79,54 +39,9 @@ describe("NoAgreementWarning", () => {
 
   it("renders warning icon", () => {
     const { container } = render(NoAgreementWarning, {
-      props: {
-        defaultTerms: {
-          bountyPercentage: 10,
-          bountyCap: BigInt("5000000000000"),
-        },
-      },
       global,
     });
 
     expect(container.querySelector(".warning-icon")).toBeTruthy();
-  });
-
-  it("uses default terms when not provided", () => {
-    const { container } = render(NoAgreementWarning, {
-      global,
-    });
-
-    // Default is 10% and $5M
-    expect(container.textContent).toContain("10%");
-    expect(container.textContent).toContain("$5M");
-  });
-
-  it("renders custom terms when provided", () => {
-    const { container } = render(NoAgreementWarning, {
-      props: {
-        defaultTerms: {
-          bountyPercentage: 5,
-          bountyCap: BigInt("1000000000000"), // $1M
-        },
-      },
-      global,
-    });
-
-    expect(container.textContent).toContain("5%");
-    expect(container.textContent).toContain("$1M");
-  });
-
-  it("renders default terms section", () => {
-    const { container } = render(NoAgreementWarning, {
-      props: {
-        defaultTerms: {
-          bountyPercentage: 10,
-          bountyCap: BigInt("5000000000000"),
-        },
-      },
-      global,
-    });
-
-    expect(container.querySelector(".default-terms")).toBeTruthy();
   });
 });

@@ -793,6 +793,7 @@
     "cap": "Cap",
     "anonymousAllowed": "Anonymous OK",
     "noAgreement": "No Safe Harbor Agreement",
+    "noAgreementSimple": "This contract does not have a registered Safe Harbor Agreement.",
     "defaultTermsApply": "Default rescue terms apply",
     "viewDetails": "View details",
     "noAgreementTitle": "No Safe Harbor Agreement",
@@ -837,6 +838,7 @@
     "registering": "Registering...",
     "success": "Contract registered!",
     "viewTransaction": "View transaction",
+    "refreshPage": "Refresh page",
     "tryAgain": "Try again"
   },
   "contractInfoTabs": {

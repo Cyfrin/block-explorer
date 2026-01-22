@@ -14,12 +14,17 @@
     <!-- Registration section -->
     <div class="registration-section">
       <!-- Success state -->
-      <div v-if="registrationTxHash" class="success-message">
-        <CheckCircleIcon class="success-icon" />
-        <span>{{ t("contractRegistration.success") }}</span>
-        <a :href="txLink" target="_blank" class="tx-link">
-          {{ t("contractRegistration.viewTransaction") }}
-        </a>
+      <div v-if="registrationTxHash" class="success-state">
+        <div class="success-message">
+          <CheckCircleIcon class="success-icon" />
+          <span>{{ t("contractRegistration.success") }}</span>
+          <a :href="txLink" target="_blank" class="tx-link">
+            {{ t("contractRegistration.viewTransaction") }}
+          </a>
+        </div>
+        <button type="button" class="refresh-link" @click="refreshPage">
+          {{ t("contractRegistration.refreshPage") }}
+        </button>
       </div>
 
       <!-- Not connected state -->
@@ -34,7 +39,9 @@
           >
             {{ connectButtonText }}
           </button>
-          {{ t("contractRegistration.promptSuffix") }}
+          <template v-if="isMetamaskInstalled && !isConnectPending">
+            {{ " " + t("contractRegistration.promptSuffix") }}
+          </template>
         </p>
       </template>
 
@@ -129,6 +136,10 @@ const txLink = computed(() => {
 
 const handleRegister = () => {
   registration.registerContract(props.contractAddress);
+};
+
+const refreshPage = () => {
+  window.location.reload();
 };
 
 onMounted(async () => {
@@ -229,6 +240,10 @@ onMounted(async () => {
     @apply h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent;
   }
 
+  .success-state {
+    @apply flex flex-col items-start gap-2;
+  }
+
   .success-message {
     @apply flex items-center gap-2 text-sm;
     color: var(--success, #10b981);
@@ -239,6 +254,16 @@ onMounted(async () => {
   }
 
   .tx-link {
+    @apply font-medium underline;
+    color: var(--accent);
+
+    &:hover {
+      color: var(--accent-hover);
+    }
+  }
+
+  .refresh-link {
+    @apply text-sm;
     @apply font-medium underline;
     color: var(--accent);
 

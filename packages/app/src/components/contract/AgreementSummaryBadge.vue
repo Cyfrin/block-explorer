@@ -25,11 +25,6 @@
       </template>
       <template v-else>
         <span class="badge-title">{{ t("safeHarbor.noAgreement") }}</span>
-        <div class="badge-details">
-          <span class="detail-item">
-            <span class="detail-value default-terms">{{ t("safeHarbor.defaultTermsApply") }}</span>
-          </span>
-        </div>
       </template>
     </div>
     <router-link v-if="linkToTab" :to="{ hash: '#safe-harbor' }" class="view-details-link">
@@ -102,10 +97,6 @@ const formattedBountyCap = computed(() => {
     }
 
     .badge-title {
-      color: var(--warning-text);
-    }
-
-    .default-terms {
       color: var(--warning-text);
     }
   }

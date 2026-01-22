@@ -1,36 +1,23 @@
 import NoAgreementWarning from "./NoAgreementWarning.vue";
 
-export default {
+import type { Meta, StoryObj } from "@storybook/vue3";
+
+const meta: Meta<typeof NoAgreementWarning> = {
   title: "Contract/NoAgreementWarning",
   component: NoAgreementWarning,
-};
-
-type Args = {
-  bountyPercentage: number;
-  bountyCapString: string;
-};
-
-const Template = (args: Args) => ({
-  components: { NoAgreementWarning },
-  setup() {
-    // Convert string to BigInt inside setup to avoid serialization issues
-    const defaultTerms = {
-      bountyPercentage: args.bountyPercentage,
-      bountyCap: BigInt(args.bountyCapString),
-    };
-    return { defaultTerms };
+  tags: ["autodocs"],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          "Displays a simple warning message when a contract does not have a registered Safe Harbor Agreement.",
+      },
+    },
   },
-  template: `<NoAgreementWarning :defaultTerms="defaultTerms" />`,
-});
-
-export const Default = Template.bind({}) as unknown as { args: Args };
-Default.args = {
-  bountyPercentage: 10,
-  bountyCapString: "5000000000000", // $5M USDC
 };
 
-export const CustomTerms = Template.bind({}) as unknown as { args: Args };
-CustomTerms.args = {
-  bountyPercentage: 5,
-  bountyCapString: "1000000000000", // $1M USDC
-};
+export default meta;
+
+type Story = StoryObj<typeof NoAgreementWarning>;
+
+export const Default: Story = {};
