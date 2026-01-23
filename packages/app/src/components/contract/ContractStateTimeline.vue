@@ -65,6 +65,20 @@
           </CopyButton>
           <span>until production</span>
         </span>
+        <Tooltip v-if="showCommitmentLock" :interactive="true" max-width="350px">
+          <span class="commitment-lock">
+            <LockClosedIcon class="lock-icon" />
+            <span>{{ t("contractState.termsUnlock") }}</span>
+            <CopyButton :value="formattedCommitmentLockedUntil!">
+              <span class="lock-time">{{ commitmentLockTimeAgo }}</span>
+            </CopyButton>
+          </span>
+          <template #content>
+            <div class="commitment-tooltip">
+              {{ t("contractState.termsLockedTooltip") }}
+            </div>
+          </template>
+        </Tooltip>
       </div>
     </div>
 
@@ -96,6 +110,7 @@ import { useI18n } from "vue-i18n";
 import {
   BadgeCheckIcon as BadgeCheckIconOutline,
   CubeIcon as CubeIconOutline,
+  LockClosedIcon,
   ShieldExclamationIcon as ShieldExclamationIconOutline,
 } from "@heroicons/vue/outline";
 import { BadgeCheckIcon, CubeIcon, ShieldExclamationIcon } from "@heroicons/vue/solid";
@@ -130,6 +145,10 @@ const props = defineProps({
     default: null,
   },
   productionAt: {
+    type: Number,
+    default: null,
+  },
+  commitmentLockedUntil: {
     type: Number,
     default: null,
   },
@@ -208,6 +227,18 @@ const countdownTimeAgo = useTimeAgo(promotionTimestampISO, { messages: countdown
 const hasCountdown = computed(() => {
   if (!promotionTimestamp.value) return false;
   return promotionTimestamp.value - Date.now() > 0;
+});
+
+// Show commitment lock message if in UNDER_ATTACK state and lock period hasn't expired
+const commitmentLockedUntilISO = computed(() => toISOString(props.commitmentLockedUntil));
+const formattedCommitmentLockedUntil = computed(() => formatTimestamp(props.commitmentLockedUntil));
+
+const commitmentLockTimeAgo = useTimeAgo(commitmentLockedUntilISO, { messages: countdownMessages });
+
+const showCommitmentLock = computed(() => {
+  if (props.state !== ContractState.UNDER_ATTACK) return false;
+  if (!props.commitmentLockedUntil) return false;
+  return props.commitmentLockedUntil > Date.now();
 });
 
 const showUnderAttackStep = computed(() => {
@@ -359,6 +390,28 @@ const getStepClass = (step: ContractState) => {
     }
   }
 
+  .commitment-lock {
+    @apply mt-1 flex items-center gap-1 text-xs;
+    color: var(--warning-text);
+
+    .lock-icon {
+      @apply h-3.5 w-3.5;
+      color: var(--warning);
+    }
+
+    :deep(.copy-button-container) {
+      @apply h-auto w-auto;
+    }
+
+    :deep(.copy-button) {
+      @apply static p-0 focus:ring-0;
+    }
+
+    .lock-time {
+      @apply cursor-pointer font-medium hover:underline;
+    }
+  }
+
   &.future {
     @apply opacity-50;
   }
@@ -405,6 +458,10 @@ const getStepClass = (step: ContractState) => {
 
 <style lang="scss">
 .promotion-tooltip {
+  @apply w-72;
+}
+
+.commitment-tooltip {
   @apply w-72;
 }
 </style>

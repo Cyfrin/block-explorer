@@ -841,6 +841,10 @@
     "refreshPage": "Refresh page",
     "tryAgain": "Try again"
   },
+  "contractState": {
+    "termsUnlock": "Terms unlock",
+    "termsLockedTooltip": "The Safe Harbor Agreement terms are locked and cannot be modified during this window. This protects rescuers by ensuring the bounty terms remain stable."
+  },
   "contractInfoTabs": {
     "contract": "Contract",
     "read": "Read",

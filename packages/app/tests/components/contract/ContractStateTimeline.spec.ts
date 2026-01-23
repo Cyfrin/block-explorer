@@ -152,4 +152,70 @@ describe("ContractStateTimeline", () => {
     expect(container.textContent).toContain("Registered");
     expect(container.textContent).toContain("Production");
   });
+
+  describe("commitment lock", () => {
+    it("shows terms locked message when under attack and within commitment window", () => {
+      const { container } = render(ContractStateTimeline, {
+        props: {
+          state: ContractState.UNDER_ATTACK,
+          wasUnderAttack: true,
+          registeredAt: Date.now() - 86400000,
+          underAttackAt: Date.now() - 3600000,
+          productionAt: null,
+          commitmentLockedUntil: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days in future
+        },
+        global,
+      });
+
+      expect(container.textContent).toContain("Terms locked for");
+    });
+
+    it("does not show terms locked message when commitment window has passed", () => {
+      const { container } = render(ContractStateTimeline, {
+        props: {
+          state: ContractState.UNDER_ATTACK,
+          wasUnderAttack: true,
+          registeredAt: Date.now() - 86400000,
+          underAttackAt: Date.now() - 3600000,
+          productionAt: null,
+          commitmentLockedUntil: Date.now() - 3600000, // 1 hour ago (expired)
+        },
+        global,
+      });
+
+      expect(container.textContent).not.toContain("Terms locked for");
+    });
+
+    it("does not show terms locked message when not in under attack state", () => {
+      const { container } = render(ContractStateTimeline, {
+        props: {
+          state: ContractState.REGISTERED,
+          wasUnderAttack: false,
+          registeredAt: Date.now() - 3600000,
+          underAttackAt: null,
+          productionAt: null,
+          commitmentLockedUntil: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        },
+        global,
+      });
+
+      expect(container.textContent).not.toContain("Terms locked for");
+    });
+
+    it("does not show terms locked message when commitmentLockedUntil is null", () => {
+      const { container } = render(ContractStateTimeline, {
+        props: {
+          state: ContractState.UNDER_ATTACK,
+          wasUnderAttack: true,
+          registeredAt: Date.now() - 86400000,
+          underAttackAt: Date.now() - 3600000,
+          productionAt: null,
+          commitmentLockedUntil: null,
+        },
+        global,
+      });
+
+      expect(container.textContent).not.toContain("Terms locked for");
+    });
+  });
 });

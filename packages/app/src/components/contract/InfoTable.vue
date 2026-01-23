@@ -44,6 +44,7 @@
               :registered-at="registeredAt"
               :under-attack-at="underAttackAt"
               :production-at="productionAt"
+              :commitment-locked-until="commitmentLockedUntil"
             />
           </template>
           <span v-else class="fetch-error">Unable to load</span>
@@ -131,6 +132,7 @@ const {
   registeredAt,
   underAttackAt,
   productionAt,
+  commitmentLockedUntil,
   fetch: fetchContractState,
 } = useBattlechainContractState(contractAddress);
 

@@ -13,6 +13,7 @@ type Args = {
   registeredAt: number | null;
   underAttackAt: number | null;
   productionAt: number | null;
+  commitmentLockedUntil: number | null;
 };
 
 const Template = (args: Args) => ({
@@ -29,6 +30,7 @@ const oneHourAgo = now - 60 * 60 * 1000;
 const oneDayAgo = now - 24 * 60 * 60 * 1000;
 const threeDaysAgo = now - 3 * 24 * 60 * 60 * 1000;
 const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
+const sevenDaysFromNow = now + 7 * 24 * 60 * 60 * 1000;
 
 export const Registered = Template.bind({}) as unknown as { args: Args };
 Registered.args = {
@@ -37,6 +39,7 @@ Registered.args = {
   registeredAt: oneHourAgo,
   underAttackAt: null,
   productionAt: null,
+  commitmentLockedUntil: null,
 };
 
 export const RegisteredThreeDaysAgo = Template.bind({}) as unknown as { args: Args };
@@ -46,6 +49,7 @@ RegisteredThreeDaysAgo.args = {
   registeredAt: threeDaysAgo,
   underAttackAt: null,
   productionAt: null,
+  commitmentLockedUntil: null,
 };
 
 export const UnderAttack = Template.bind({}) as unknown as { args: Args };
@@ -55,6 +59,17 @@ UnderAttack.args = {
   registeredAt: oneDayAgo,
   underAttackAt: oneHourAgo,
   productionAt: null,
+  commitmentLockedUntil: null,
+};
+
+export const UnderAttackWithTermsLocked = Template.bind({}) as unknown as { args: Args };
+UnderAttackWithTermsLocked.args = {
+  state: ContractState.UNDER_ATTACK,
+  wasUnderAttack: true,
+  registeredAt: oneDayAgo,
+  underAttackAt: oneHourAgo,
+  productionAt: null,
+  commitmentLockedUntil: sevenDaysFromNow,
 };
 
 export const ProductionDirect = Template.bind({}) as unknown as { args: Args };
@@ -64,6 +79,7 @@ ProductionDirect.args = {
   registeredAt: oneWeekAgo,
   underAttackAt: null,
   productionAt: oneDayAgo,
+  commitmentLockedUntil: null,
 };
 
 export const ProductionAfterAttack = Template.bind({}) as unknown as { args: Args };
@@ -73,6 +89,7 @@ ProductionAfterAttack.args = {
   registeredAt: oneWeekAgo,
   underAttackAt: threeDaysAgo,
   productionAt: oneDayAgo,
+  commitmentLockedUntil: null,
 };
 
 export const RegisteredNoTimestamp = Template.bind({}) as unknown as { args: Args };
@@ -82,4 +99,5 @@ RegisteredNoTimestamp.args = {
   registeredAt: null,
   underAttackAt: null,
   productionAt: null,
+  commitmentLockedUntil: null,
 };

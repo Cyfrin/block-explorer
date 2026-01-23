@@ -14,6 +14,7 @@ export interface BattlechainContractStateInfo {
   registeredAt: number | null; // Unix timestamp in milliseconds when registered in AttackRegistry
   underAttackAt: number | null;
   productionAt: number | null;
+  commitmentLockedUntil: number | null; // Unix timestamp in milliseconds until which Safe Harbor terms are locked
   attackDetails?: {
     attackerAddress: Address;
     attackRegisteredAt: number;
@@ -34,6 +35,7 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
   const registeredAt = computed(() => stateInfo.value?.registeredAt ?? null);
   const underAttackAt = computed(() => stateInfo.value?.underAttackAt ?? null);
   const productionAt = computed(() => stateInfo.value?.productionAt ?? null);
+  const commitmentLockedUntil = computed(() => stateInfo.value?.commitmentLockedUntil ?? null);
   const attackDetails = computed(() => stateInfo.value?.attackDetails ?? null);
 
   const fetch = async () => {
@@ -64,6 +66,7 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
     registeredAt,
     underAttackAt,
     productionAt,
+    commitmentLockedUntil,
     attackDetails,
     fetch,
   };
