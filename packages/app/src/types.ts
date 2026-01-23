@@ -110,6 +110,20 @@ export interface AgreementDocument {
   additionalTerms?: string;
 }
 
+// Form data for creating a new Safe Harbor Agreement
+export interface AgreementFormData {
+  protocolName: string;
+  bountyPercentage: number;
+  bountyCap: string; // String for form input, converted to bigint
+  bountyCapToken: Address;
+  allowAnonymous: boolean;
+  contactEmail: string;
+  contactDiscord: string;
+  contactTelegram: string;
+  assetRecoveryAddress: Address;
+  agreementURI: string;
+}
+
 export enum ContractState {
   NOT_REGISTERED = "NOT_REGISTERED",
   REGISTERED = "REGISTERED",

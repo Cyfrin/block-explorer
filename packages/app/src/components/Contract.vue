@@ -78,7 +78,12 @@
           <ContentLoader v-if="isAgreementLoading" class="agreement-loader" />
           <template v-else-if="isAgreementFetched">
             <AgreementDetails v-if="hasAgreement && agreement" :agreement="agreement" />
-            <NoAgreementWarning v-else :default-terms="defaultAgreementTerms" />
+            <NoAgreementWarning
+              v-else
+              :contract-address="contractAddress"
+              :creator-address="contract?.creatorAddress"
+              @agreement-created="handleAgreementCreated"
+            />
           </template>
           <span v-else class="fetch-error">Unable to load Safe Harbor data</span>
         </div>
@@ -153,6 +158,11 @@ watch(
   },
   { immediate: true }
 );
+
+const handleAgreementCreated = () => {
+  // Refetch agreement data after successful creation
+  fetchAgreement();
+};
 
 const tabs = computed(() => [
   { title: t("tabs.transactions"), hash: "#transactions" },

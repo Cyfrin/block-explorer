@@ -1,4 +1,10 @@
 {
+  "common": {
+    "cancel": "Cancel",
+    "done": "Done",
+    "processing": "Processing...",
+    "connecting": "Connecting..."
+  },
   "general": {
     "l2NetworkName": "ZKsync",
     "execution": "Execution",
@@ -824,7 +830,51 @@
     "termsUnlocked": "Terms Unlocked",
     "termsUnlock": "Terms unlock",
     "lockedUntil": "until",
-    "termsCanChange": "Protocol can modify terms at any time"
+    "termsCanChange": "Protocol can modify terms at any time",
+    "createAgreement": {
+      "title": "Create Safe Harbor Agreement",
+      "step1Label": "Create Agreement",
+      "step2Label": "Adopt Agreement",
+      "isYoursPrompt": "Is this contract yours?",
+      "connectWallet": "Connect your wallet",
+      "toCreateIt": "to set up a Safe Harbor Agreement.",
+      "notOwner": "Your connected wallet is not the deployer of this contract. Only the contract deployer can create a Safe Harbor Agreement.",
+      "createButton": "Create Safe Harbor Agreement",
+      "adoptButton": "Adopt Agreement",
+      "protocolName": "Protocol Name",
+      "protocolNamePlaceholder": "e.g., My Protocol",
+      "bountyPercentage": "Bounty Percentage",
+      "bountyCap": "Bounty Cap (USDC)",
+      "bountyCapPlaceholder": "e.g., 5000000",
+      "allowAnonymous": "Allow anonymous whitehats to claim bounties",
+      "contactSection": "Contact Information (at least one required)",
+      "email": "Email",
+      "emailPlaceholder": "security{'@'}example.com",
+      "discord": "Discord",
+      "discordPlaceholder": "discord.gg/invite or username",
+      "telegram": "Telegram",
+      "telegramPlaceholder": "{'@'}username or invite link",
+      "additionalSection": "Additional Settings",
+      "recoveryAddress": "Asset Recovery Address",
+      "recoveryAddressPlaceholder": "0x...",
+      "recoveryAddressHint": "Address where recovered assets will be sent",
+      "agreementURI": "Agreement Document URI",
+      "agreementURIPlaceholder": "ipfs://... or ar://...",
+      "agreementURIHint": "Link to the full legal agreement document (optional)",
+      "agreementCreated": "Agreement contract created!",
+      "viewTransaction": "View transaction",
+      "adoptDescription": "Now register this agreement for your contract in the BattleChain Safe Harbor Registry.",
+      "complete": "Safe Harbor Agreement Created!",
+      "completeDescription": "Your contract is now protected by your Safe Harbor Agreement.",
+      "errors": {
+        "protocolNameRequired": "Protocol name is required",
+        "bountyPercentageInvalid": "Bounty percentage must be between 1 and 100",
+        "bountyCapRequired": "Bounty cap is required",
+        "contactRequired": "At least one contact method is required",
+        "recoveryAddressRequired": "Asset recovery address is required",
+        "invalidAddress": "Invalid address format"
+      }
+    }
   },
   "contractRegistration": {
     "notRegistered": "Not Registered",

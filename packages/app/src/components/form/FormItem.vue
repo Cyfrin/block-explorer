@@ -1,7 +1,7 @@
 <template>
   <component :is="tag" class="form-item">
     <component v-if="label" :is="labelTag" :for="id" class="form-item-label">
-      {{ label }}
+      {{ label }}<span v-if="required" class="required-indicator">*</span>
     </component>
     <slot />
     <div v-if="$slots.underline" class="form-item-underline">
@@ -26,6 +26,10 @@ defineProps({
     type: String,
     default: "label",
   },
+  required: {
+    type: Boolean,
+    default: false,
+  },
 });
 </script>
 
@@ -35,6 +39,10 @@ defineProps({
 
   .form-item-label {
     @apply mb-1 block font-medium leading-snug;
+
+    .required-indicator {
+      @apply ml-0.5 text-red-500;
+    }
   }
   .form-item-underline {
     @apply mt-1 text-sm text-neutral-400;

@@ -19,6 +19,8 @@ export type NetworkConfig = {
   zkTokenAddress?: string;
   baseTokenAddress: string;
   attackRegistryAddress?: string;
+  agreementFactoryAddress?: string;
+  safeHarborRegistryAddress?: string;
 };
 
 export type SettlementChain = {
