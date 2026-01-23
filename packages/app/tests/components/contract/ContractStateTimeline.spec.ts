@@ -154,7 +154,7 @@ describe("ContractStateTimeline", () => {
   });
 
   describe("commitment lock", () => {
-    it("shows terms locked message when under attack and within commitment window", () => {
+    it("shows terms unlock message when under attack and within commitment window", () => {
       const { container } = render(ContractStateTimeline, {
         props: {
           state: ContractState.UNDER_ATTACK,
@@ -167,7 +167,7 @@ describe("ContractStateTimeline", () => {
         global,
       });
 
-      expect(container.textContent).toContain("Terms locked for");
+      expect(container.textContent).toContain("Terms unlock");
     });
 
     it("does not show terms locked message when commitment window has passed", () => {
@@ -183,7 +183,7 @@ describe("ContractStateTimeline", () => {
         global,
       });
 
-      expect(container.textContent).not.toContain("Terms locked for");
+      expect(container.textContent).not.toContain("Terms unlock");
     });
 
     it("does not show terms locked message when not in under attack state", () => {
@@ -199,7 +199,7 @@ describe("ContractStateTimeline", () => {
         global,
       });
 
-      expect(container.textContent).not.toContain("Terms locked for");
+      expect(container.textContent).not.toContain("Terms unlock");
     });
 
     it("does not show terms locked message when commitmentLockedUntil is null", () => {
@@ -215,7 +215,7 @@ describe("ContractStateTimeline", () => {
         global,
       });
 
-      expect(container.textContent).not.toContain("Terms locked for");
+      expect(container.textContent).not.toContain("Terms unlock");
     });
   });
 });

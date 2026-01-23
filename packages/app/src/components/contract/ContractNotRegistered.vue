@@ -45,7 +45,14 @@
         </p>
       </template>
 
-      <!-- Connected state -->
+      <!-- Connected but not owner state -->
+      <template v-else-if="!isOwner">
+        <p class="not-owner-message">
+          {{ t("contractRegistration.notOwner") }}
+        </p>
+      </template>
+
+      <!-- Connected and is owner state -->
       <template v-else>
         <button type="button" class="register-button" :disabled="isRegistering" @click="handleRegister">
           <span v-if="isRegistering" class="loading-spinner" />
@@ -74,6 +81,7 @@ import useContractRegistration from "@/composables/useContractRegistration";
 const props = withDefaults(
   defineProps<{
     contractAddress: string;
+    creatorAddress?: string | null;
     // Optional state overrides for Storybook - when provided, these take precedence
     overrideWalletConnected?: boolean;
     overrideMetamaskInstalled?: boolean;
@@ -81,14 +89,17 @@ const props = withDefaults(
     overrideRegistering?: boolean;
     overrideError?: string | null;
     overrideTxHash?: string | null;
+    overrideIsOwner?: boolean;
   }>(),
   {
+    creatorAddress: null,
     overrideWalletConnected: undefined,
     overrideMetamaskInstalled: undefined,
     overrideConnectPending: undefined,
     overrideRegistering: undefined,
     overrideError: undefined,
     overrideTxHash: undefined,
+    overrideIsOwner: undefined,
   }
 );
 
@@ -118,6 +129,13 @@ const registrationError = computed(() =>
 const registrationTxHash = computed(() =>
   props.overrideTxHash !== undefined ? props.overrideTxHash : registration.registrationTxHash.value
 );
+
+// Check if connected wallet is the contract owner/deployer
+const isOwner = computed(() => {
+  if (props.overrideIsOwner !== undefined) return props.overrideIsOwner;
+  if (!registration.walletAddress.value || !props.creatorAddress) return true; // Assume owner if we can't check
+  return registration.walletAddress.value.toLowerCase() === props.creatorAddress.toLowerCase();
+});
 
 const connectButtonText = computed(() => {
   if (isConnectPending.value) {
@@ -207,6 +225,11 @@ onMounted(async () => {
   .register-prompt {
     @apply text-sm;
     color: var(--text-secondary);
+  }
+
+  .not-owner-message {
+    @apply text-sm;
+    color: var(--text-muted);
   }
 
   .connect-link {

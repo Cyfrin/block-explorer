@@ -36,7 +36,11 @@
         <table-body-column class="contract-info-field-value contract-state-cell">
           <ContentLoader v-if="isContractStateLoading" />
           <template v-else-if="hasStateInfo">
-            <ContractNotRegistered v-if="isNotRegistered" :contract-address="contractAddress" />
+            <ContractNotRegistered
+              v-if="isNotRegistered"
+              :contract-address="contractAddress"
+              :creator-address="contract?.creatorAddress"
+            />
             <ContractStateTimeline
               v-else
               :state="contractState"

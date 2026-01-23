@@ -261,4 +261,62 @@ describe("ContractNotRegistered", () => {
       expect(txLink?.getAttribute("href")).toContain("0xabcdef1234567890");
     });
   });
+
+  describe("not owner", () => {
+    beforeEach(() => {
+      mockWalletState.walletAddress.value = "0x1111111111111111111111111111111111111111";
+    });
+
+    it("shows not owner message when wallet is not the contract deployer", () => {
+      const { container } = render(ContractNotRegistered, {
+        props: {
+          ...defaultProps,
+          creatorAddress: "0x2222222222222222222222222222222222222222",
+        },
+        global: { plugins: [i18n] },
+      });
+
+      expect(container.textContent).toContain("not the deployer");
+      expect(container.textContent).not.toContain("Register Contract");
+    });
+
+    it("shows register button when wallet matches creator address", () => {
+      const { container } = render(ContractNotRegistered, {
+        props: {
+          ...defaultProps,
+          creatorAddress: "0x1111111111111111111111111111111111111111",
+        },
+        global: { plugins: [i18n] },
+      });
+
+      expect(container.textContent).toContain("Register Contract");
+      expect(container.textContent).not.toContain("not the deployer");
+    });
+
+    it("handles case-insensitive address comparison", () => {
+      const { container } = render(ContractNotRegistered, {
+        props: {
+          ...defaultProps,
+          creatorAddress: "0x1111111111111111111111111111111111111111".toUpperCase(),
+        },
+        global: { plugins: [i18n] },
+      });
+
+      expect(container.textContent).toContain("Register Contract");
+      expect(container.textContent).not.toContain("not the deployer");
+    });
+
+    it("assumes owner when creatorAddress is null", () => {
+      const { container } = render(ContractNotRegistered, {
+        props: {
+          ...defaultProps,
+          creatorAddress: null,
+        },
+        global: { plugins: [i18n] },
+      });
+
+      expect(container.textContent).toContain("Register Contract");
+      expect(container.textContent).not.toContain("not the deployer");
+    });
+  });
 });

@@ -143,3 +143,21 @@ RegistrationSuccess.parameters = {
     },
   },
 };
+
+export const NotOwner: StoryFn = () => ({
+  components: { ContractNotRegistered },
+  template: `<ContractNotRegistered
+    contract-address="${contractAddress}"
+    creator-address="0x9876543210987654321098765432109876543210"
+    :override-wallet-connected="true"
+    :override-is-owner="false"
+  />`,
+});
+NotOwner.storyName = "Not Contract Owner";
+NotOwner.parameters = {
+  docs: {
+    description: {
+      story: "State when wallet is connected but is not the contract deployer/owner.",
+    },
+  },
+};

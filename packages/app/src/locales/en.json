@@ -839,7 +839,8 @@
     "success": "Contract registered!",
     "viewTransaction": "View transaction",
     "refreshPage": "Refresh page",
-    "tryAgain": "Try again"
+    "tryAgain": "Try again",
+    "notOwner": "Your connected wallet is not the deployer of this contract. Only the contract deployer can register it."
   },
   "contractState": {
     "termsUnlock": "Terms unlock",
