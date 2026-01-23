@@ -10,9 +10,9 @@
       </span>
       <template v-if="isLocked && deadline">
         <span class="status-deadline">
-          {{ t("safeHarbor.lockedUntil") }}
+          {{ t("safeHarbor.termsUnlock") }}
           <CopyButton :value="formattedDeadline!" class="deadline-copy">
-            <TimeField :value="deadlineISO" :format="TimeFormat.TIME_AGO" />
+            <span class="deadline-time">{{ deadlineTimeAgo }}</span>
           </CopyButton>
         </span>
       </template>
@@ -30,11 +30,10 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { LockClosedIcon, LockOpenIcon } from "@heroicons/vue/solid";
+import { useTimeAgo } from "@vueuse/core";
 
 import CopyButton from "@/components/common/CopyButton.vue";
-import TimeField from "@/components/common/table/fields/TimeField.vue";
 
-import { TimeFormat } from "@/types";
 import { ISOStringFromUnixTimestamp, localDateFromUnixTimestamp } from "@/utils/helpers";
 
 const { t } = useI18n();
@@ -60,6 +59,8 @@ const deadlineISO = computed(() => {
   if (!props.deadline) return "";
   return ISOStringFromUnixTimestamp(Math.floor(props.deadline / 1000));
 });
+
+const deadlineTimeAgo = useTimeAgo(deadlineISO);
 </script>
 
 <style scoped lang="scss">
@@ -121,11 +122,11 @@ const deadlineISO = computed(() => {
     .copy-button {
       @apply static p-0 focus:ring-0;
     }
+  }
 
-    .info-field-time {
-      @apply cursor-pointer hover:underline;
-      color: var(--text-secondary);
-    }
+  .deadline-time {
+    @apply cursor-pointer hover:underline;
+    color: var(--text-secondary);
   }
 
   .status-warning {

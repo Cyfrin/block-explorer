@@ -822,6 +822,7 @@
     "lastModified": "Last Modified",
     "termsLocked": "Terms Locked",
     "termsUnlocked": "Terms Unlocked",
+    "termsUnlock": "Terms unlock",
     "lockedUntil": "until",
     "termsCanChange": "Protocol can modify terms at any time"
   },
