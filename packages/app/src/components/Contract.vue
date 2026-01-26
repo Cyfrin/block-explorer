@@ -73,7 +73,7 @@
       <template #tab-4-content>
         <ContractEvents :contract="contract" />
       </template>
-      <template #tab-5-content>
+      <template v-if="!isBattlechainExcluded" #tab-5-content>
         <div class="safe-harbor-tab-content">
           <ContentLoader v-if="isAgreementLoading" class="agreement-loader" />
           <template v-else-if="isAgreementFetched">
@@ -124,6 +124,7 @@ import TransactionsTable from "@/components/transactions/Table.vue";
 import TransfersTable from "@/components/transfers/Table.vue";
 
 import useBattlechainContractState from "@/composables/useBattlechainContractState";
+import useIsBattlechainExcluded from "@/composables/useIsBattlechainExcluded";
 import useSafeHarborAgreement from "@/composables/useSafeHarborAgreement";
 
 import type { BreadcrumbItem } from "@/components/common/Breadcrumbs.vue";
@@ -162,6 +163,8 @@ const {
 
 const { state: contractState, fetch: fetchContractState } = useBattlechainContractState(contractAddress);
 
+const { isExcluded: isBattlechainExcluded } = useIsBattlechainExcluded(contractAddress);
+
 // Show the request under attack prompt when contract is REGISTERED and has an agreement
 const showRequestUnderAttackPrompt = computed(
   () => contractState.value === ContractState.REGISTERED && hasAgreement.value && agreement.value
@@ -183,21 +186,29 @@ const handleAgreementCreated = () => {
   fetchAgreement();
 };
 
-const tabs = computed(() => [
-  { title: t("tabs.transactions"), hash: "#transactions" },
-  { title: t("tabs.transfers"), hash: "#transfers" },
-  {
-    title: t("tabs.contract"),
-    hash: "#contract",
-    icon: props.contract?.verificationInfo ? CheckCircleIcon : null,
-  },
-  { title: t("tabs.events"), hash: "#events" },
-  {
-    title: t("tabs.safeHarbor"),
-    hash: "#safe-harbor",
-    icon: hasAgreement.value ? ShieldCheckIcon : null,
-  },
-]);
+const tabs = computed(() => {
+  const baseTabs = [
+    { title: t("tabs.transactions"), hash: "#transactions" },
+    { title: t("tabs.transfers"), hash: "#transfers" },
+    {
+      title: t("tabs.contract"),
+      hash: "#contract",
+      icon: props.contract?.verificationInfo ? CheckCircleIcon : null,
+    },
+    { title: t("tabs.events"), hash: "#events" },
+  ];
+
+  // Only include Safe Harbor tab if contract is not excluded from Battlechain
+  if (!isBattlechainExcluded.value) {
+    baseTabs.push({
+      title: t("tabs.safeHarbor"),
+      hash: "#safe-harbor",
+      icon: hasAgreement.value ? ShieldCheckIcon : null,
+    });
+  }
+
+  return baseTabs;
+});
 
 const breadcrumbItems = computed((): BreadcrumbItem[] | [] => {
   if (props.contract?.address) {

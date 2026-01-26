@@ -31,7 +31,7 @@
           {{ contract.totalTransactions }}
         </table-body-column>
       </tr>
-      <tr>
+      <tr v-if="!isBattlechainExcluded">
         <table-body-column class="contract-info-field-label"> Contract state </table-body-column>
         <table-body-column class="contract-info-field-value contract-state-cell">
           <ContentLoader v-if="isContractStateLoading" />
@@ -54,7 +54,7 @@
           <span v-else class="fetch-error">Unable to load</span>
         </table-body-column>
       </tr>
-      <tr>
+      <tr v-if="!isBattlechainExcluded">
         <table-body-column class="contract-info-field-label">
           {{ t("tabs.safeHarbor") }}
         </table-body-column>
@@ -99,6 +99,7 @@ import ContractNotRegistered from "@/components/contract/ContractNotRegistered.v
 import ContractStateTimeline from "@/components/contract/ContractStateTimeline.vue";
 
 import useBattlechainContractState from "@/composables/useBattlechainContractState";
+import useIsBattlechainExcluded from "@/composables/useIsBattlechainExcluded";
 import useSafeHarborAgreement from "@/composables/useSafeHarborAgreement";
 
 import type { Contract } from "@/composables/useAddress";
@@ -139,6 +140,8 @@ const {
   commitmentLockedUntil,
   fetch: fetchContractState,
 } = useBattlechainContractState(contractAddress);
+
+const { isExcluded: isBattlechainExcluded } = useIsBattlechainExcluded(contractAddress);
 
 watch(
   () => props.contract?.address,
