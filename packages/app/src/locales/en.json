@@ -893,6 +893,22 @@
     "tryAgain": "Try again",
     "notOwner": "Your connected wallet is not the deployer of this contract. Only the contract deployer can register it."
   },
+  "requestAttackableMode": {
+    "title": "Request Attackable Mode",
+    "description": "Ready to stress test your contract? Request Attackable Mode to allow ethical hackers to test your contract under the protection of your Safe Harbor agreement. Your request will be reviewed by the DAO. Your agreement must have a commitment window of at least 7 days to ensure whitehats have stable terms.",
+    "promptPrefix": "Ready to start stress testing?",
+    "promptSuffix": "to request Attackable Mode.",
+    "connectWallet": "Connect your wallet",
+    "connecting": "Connecting...",
+    "noWallet": "No wallet detected",
+    "requestButton": "Request Attackable Mode",
+    "requesting": "Requesting...",
+    "notOwner": "Only the contract deployer can request Attackable Mode.",
+    "success": "Attackable Mode requested! Your request will be reviewed by the DAO.",
+    "viewTransaction": "View transaction",
+    "refreshPage": "Refresh to see updated status",
+    "tryAgain": "Try again"
+  },
   "contractState": {
     "termsUnlock": "Terms unlock",
     "termsLockedTooltip": "The Safe Harbor Agreement terms are locked and cannot be modified during this window. This protects rescuers by ensuring the bounty terms remain stable."

@@ -77,7 +77,15 @@
         <div class="safe-harbor-tab-content">
           <ContentLoader v-if="isAgreementLoading" class="agreement-loader" />
           <template v-else-if="isAgreementFetched">
-            <AgreementDetails v-if="hasAgreement && agreement" :agreement="agreement" />
+            <template v-if="hasAgreement && agreement">
+              <RequestUnderAttackPrompt
+                v-if="showRequestUnderAttackPrompt"
+                :contract-address="contractAddress"
+                :agreement-address="agreement.agreementAddress"
+                :creator-address="contract?.creatorAddress"
+              />
+              <AgreementDetails :agreement="agreement" />
+            </template>
             <NoAgreementWarning
               v-else
               :contract-address="contractAddress"
@@ -109,16 +117,19 @@ import AgreementDetails from "@/components/contract/AgreementDetails.vue";
 import ContractInfoTab from "@/components/contract/ContractInfoTab.vue";
 import ContractInfoTable from "@/components/contract/InfoTable.vue";
 import NoAgreementWarning from "@/components/contract/NoAgreementWarning.vue";
+import RequestUnderAttackPrompt from "@/components/contract/RequestUnderAttackPrompt.vue";
 import TransactionEmptyState from "@/components/contract/TransactionEmptyState.vue";
 import ContractEvents from "@/components/event/ContractEvents.vue";
 import TransactionsTable from "@/components/transactions/Table.vue";
 import TransfersTable from "@/components/transfers/Table.vue";
 
+import useBattlechainContractState from "@/composables/useBattlechainContractState";
 import useSafeHarborAgreement from "@/composables/useSafeHarborAgreement";
 
 import type { BreadcrumbItem } from "@/components/common/Breadcrumbs.vue";
 import type { Contract } from "@/composables/useAddress";
 
+import { ContractState } from "@/types";
 import { shortValue } from "@/utils/formatters";
 
 const { t } = useI18n();
@@ -149,11 +160,19 @@ const {
   fetch: fetchAgreement,
 } = useSafeHarborAgreement(contractAddress);
 
+const { state: contractState, fetch: fetchContractState } = useBattlechainContractState(contractAddress);
+
+// Show the request under attack prompt when contract is REGISTERED and has an agreement
+const showRequestUnderAttackPrompt = computed(
+  () => contractState.value === ContractState.REGISTERED && hasAgreement.value && agreement.value
+);
+
 watch(
   () => props.contract?.address,
   (address) => {
     if (address) {
       fetchAgreement();
+      fetchContractState();
     }
   },
   { immediate: true }
