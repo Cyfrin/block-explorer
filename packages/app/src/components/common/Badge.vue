@@ -108,14 +108,14 @@ defineProps({
 }
 
 .badge-icon {
-  @apply flex items-center justify-center w-3.5 h-3.5 flex-shrink-0;
+  @apply flex items-center justify-center shrink-0;
 
-  svg {
-    @apply w-full h-full;
+  :deep(svg) {
+    @apply w-3.5 h-3.5;
   }
 }
 
 .badge-text {
-  @apply leading-none;
+  @apply leading-tight;
 }
 </style>

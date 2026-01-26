@@ -1,4 +1,4 @@
-import vueRouter from "storybook-vue3-router";
+import { vueRouter } from "storybook-vue3-router";
 
 import BlocksTable from "./Table.vue";
 

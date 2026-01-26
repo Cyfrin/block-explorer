@@ -1,5 +1,5 @@
 import { action, type HandlerFunction } from "@storybook/addon-actions";
-import vueRouter from "storybook-vue3-router";
+import { vueRouter } from "storybook-vue3-router";
 
 import TransactionsTable from "./Table.vue";
 
@@ -47,8 +47,9 @@ const transactions: TransactionItem[] = [ExecuteTx as TransactionItem];
 const columns: string[] = ["status", "transactionHash", "age", "from", "direction", "to", "nonce", "value", "fee"];
 const routes = vueRouter([
   { path: "/", name: "home", component: {} },
-  { path: "/address", name: "address", component: {} },
-  { path: "/tx", name: "transaction", component: {} },
+  { path: "/address/:address", name: "address", component: {} },
+  { path: "/tx/:hash", name: "transaction", component: {} },
+  { path: "/token/:address", name: "token", component: {} },
 ]);
 
 export const Default = Template.bind({}) as unknown as { args: Args; decorators: unknown[] };

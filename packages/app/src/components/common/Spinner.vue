@@ -42,10 +42,10 @@ defineProps({
   }
   &:not(.is-outlined) {
     &.neutral {
-      @apply border-l-neutral-700;
+      @apply border-neutral-300 border-l-neutral-700;
     }
     &.primary {
-      @apply border-l-primary-600;
+      @apply border-primary-200 border-l-primary-600;
     }
   }
   &.dark-neutral {

@@ -120,6 +120,7 @@ const selected = computed({
     }
   }
   .loading {
+    @apply m-auto;
     color: var(--text-secondary);
   }
 }

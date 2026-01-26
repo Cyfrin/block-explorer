@@ -1,18 +1,12 @@
 <template>
-  <div :class="[`transaction-status`, { 'single-badge-status': badges.length === 1 }]">
+  <div class="transaction-status">
     <template v-for="(item, index) in badges" :key="index">
       <Badge
         size="md"
         :data-testid="item.testId"
         :color="item.color"
         :tooltip="item.tooltip"
-        :class="[
-          {
-            badge: badges.length > 1 && index % 2 === 0,
-            'status-badge': badges.length > 1 && index % 2 !== 0,
-            'only-desktop': item.withDetailedPopup,
-          },
-        ]"
+        :class="{ 'only-desktop': item.withDetailedPopup }"
       >
         <template #precontent v-if="item.finishedStatuses?.length">
           <ol v-for="(finishedStatus, index) in item.finishedStatuses" :key="index">
@@ -45,14 +39,7 @@
         :data-testid="item.testId"
         :color="item.color"
         :tooltip="item.tooltip"
-        class="badge-with-content"
-        :class="[
-          {
-            badge: badges.length > 1 && index % 2 === 0,
-            'status-badge': badges.length > 1 && index % 2 !== 0,
-            'only-mobile': item.withDetailedPopup,
-          },
-        ]"
+        class="badge-with-content only-mobile"
         @click="showStatusPopup"
       >
         <template #icon v-if="item.icon">
@@ -323,20 +310,10 @@ const badges = computed(() => {
 }
 
 .transaction-status {
-  &.single-badge-status {
-    @apply flex items-center;
-  }
-
-  .badge {
-    @apply float-left clear-both my-1 md:clear-none md:my-0;
-  }
+  @apply flex flex-wrap items-center gap-1;
 
   .info-tooltip {
     @apply ml-1;
-  }
-
-  .status-badge {
-    @apply relative float-left my-1 -ml-4 mr-3 md:my-0;
   }
 }
 

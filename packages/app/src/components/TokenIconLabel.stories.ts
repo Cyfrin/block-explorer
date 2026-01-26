@@ -1,4 +1,4 @@
-import vueRouter from "storybook-vue3-router";
+import { vueRouter } from "storybook-vue3-router";
 
 import TokenIconLabel from "./TokenIconLabel.vue";
 
@@ -26,7 +26,8 @@ const Template = (args: Args) => ({
 });
 const routes = vueRouter([
   { path: "/", name: "home", component: {} },
-  { path: "/address", name: "address", component: {} },
+  { path: "/address/:address", name: "address", component: {} },
+  { path: "/token/:address", name: "token", component: {} },
 ]);
 
 export const Default = Template.bind({}) as unknown as { args: Args; decorators: unknown[] };

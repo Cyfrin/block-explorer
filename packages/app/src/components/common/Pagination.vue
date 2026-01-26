@@ -180,7 +180,7 @@ const nextButtonQuery = computed(() => ({
 
 <style lang="scss">
 .pagination-container {
-  @apply flex flex-col-reverse items-center justify-center relative sm:flex-row;
+  @apply flex flex-col-reverse items-center justify-between sm:flex-row;
   .page-numbers-container {
     @apply flex space-x-1 transition-opacity justify-center p-3;
     &.disabled {
@@ -222,7 +222,7 @@ const nextButtonQuery = computed(() => ({
     }
   }
   .page-size-container {
-    @apply relative left-0 flex items-center justify-center pb-2 sm:absolute sm:pb-0 sm:left-6;
+    @apply flex items-center pb-2 sm:pb-0;
     .page-size-text {
       @apply pl-2;
       color: var(--text-muted);
