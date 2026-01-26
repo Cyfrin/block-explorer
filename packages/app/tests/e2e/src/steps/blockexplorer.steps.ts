@@ -205,6 +205,16 @@ Then(
 );
 
 Then(
+  "Element with {string} {string} should not be visible",
+  async function (this: ICustomWorld, elementType: string, value: string) {
+    basePage = new BasePage(this);
+    element = await basePage.returnElementByType(elementType, value);
+
+    await expect(element).not.toBeVisible(config.defaultTimeout);
+  }
+);
+
+Then(
   "Element with {string} {string} should have {string} value",
   async function (this: ICustomWorld, elementType: string, text: string, value: string) {
     mainPage = new MainPage(this);
