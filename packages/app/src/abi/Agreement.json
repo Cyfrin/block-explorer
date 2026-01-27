@@ -1,0 +1,73 @@
+[
+  {
+    "inputs": [{ "name": "newName", "type": "string" }],
+    "name": "setProtocolName",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          { "name": "bountyPercentage", "type": "uint256" },
+          { "name": "bountyCapUsd", "type": "uint256" },
+          { "name": "retainable", "type": "bool" },
+          { "name": "identity", "type": "uint8" },
+          { "name": "diligenceRequirements", "type": "string" },
+          { "name": "aggregateBountyCapUsd", "type": "uint256" }
+        ],
+        "name": "newBountyTerms",
+        "type": "tuple"
+      }
+    ],
+    "name": "setBountyTerms",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          { "name": "name", "type": "string" },
+          { "name": "contact", "type": "string" }
+        ],
+        "name": "newContactDetails",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "setContactDetails",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "name": "newAgreementURI", "type": "string" }],
+    "name": "setAgreementURI",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "name": "newCantChangeUntil", "type": "uint256" }],
+    "name": "extendCommitmentWindow",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "name": "accounts", "type": "address[]" }],
+    "name": "addAccounts",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "name": "accounts", "type": "address[]" }],
+    "name": "removeAccounts",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

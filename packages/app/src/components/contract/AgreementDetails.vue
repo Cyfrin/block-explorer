@@ -6,13 +6,41 @@
         <ShieldCheckIcon class="icon" />
       </div>
       <div class="header-content">
-        <h2 class="protocol-name">{{ agreement.protocolName || t("safeHarbor.defaultProtocolName") }}</h2>
+        <div class="header-name-row">
+          <template v-if="isEditingProtocolName">
+            <input
+              v-model="editForms.protocolName"
+              type="text"
+              class="protocol-name-input"
+              :placeholder="t('safeHarbor.edit.protocolNamePlaceholder')"
+            />
+            <button @click="saveProtocolName" :disabled="isSaving" class="btn-inline-save">
+              <Spinner v-if="isSaving" size="xs" />
+              <CheckIcon v-else class="icon" />
+            </button>
+            <button @click="cancelEditing" :disabled="isSaving" class="btn-inline-cancel">
+              <XIcon class="icon" />
+            </button>
+          </template>
+          <template v-else>
+            <h2 class="protocol-name">{{ agreement.protocolName || t("safeHarbor.defaultProtocolName") }}</h2>
+            <button
+              v-if="isOwner"
+              @click="startEditingProtocolName"
+              class="btn-inline-edit"
+              :title="t('safeHarbor.edit.editProtocolName')"
+            >
+              <PencilIcon class="icon" />
+            </button>
+          </template>
+        </div>
         <span class="agreement-address">
           {{ t("safeHarbor.agreementContract") }}:
           <AddressLink :address="agreement.agreementAddress">
             {{ shortValue(agreement.agreementAddress) }}
           </AddressLink>
         </span>
+        <div v-if="saveError && activeSection === 'protocolName'" class="header-error">{{ saveError }}</div>
       </div>
     </div>
 
@@ -22,9 +50,17 @@
     <!-- Details Grid -->
     <div class="details-grid">
       <!-- Bounty Terms Section -->
-      <div class="details-section">
-        <h3 class="section-title">{{ t("safeHarbor.bountyTerms") }}</h3>
-        <div class="section-content">
+      <EditableSection
+        :title="t('safeHarbor.bountyTerms')"
+        :is-editing="activeSection === 'bountyTerms'"
+        :can-edit="isOwner"
+        :is-saving="isSaving"
+        :error="activeSection === 'bountyTerms' ? saveError : null"
+        @edit="startEditing('bountyTerms')"
+        @save="saveBountyTerms"
+        @cancel="cancelEditing"
+      >
+        <template #default>
           <div class="detail-row">
             <span class="detail-label">{{ t("safeHarbor.bountyPercentage") }}</span>
             <span class="detail-value highlight">{{ agreement.bountyPercentage }}%</span>
@@ -45,13 +81,28 @@
               {{ agreement.retainable ? t("safeHarbor.yes") : t("safeHarbor.no") }}
             </span>
           </div>
-        </div>
-      </div>
+          <div v-if="agreement.aggregateBountyCapUsd && agreement.aggregateBountyCapUsd !== '0'" class="detail-row">
+            <span class="detail-label">{{ t("safeHarbor.aggregateBountyCap") }}</span>
+            <span class="detail-value">{{ formattedAggregateBountyCap }}</span>
+          </div>
+        </template>
+        <template #edit-form>
+          <BountyTermsForm v-model="editForms.bountyTerms" />
+        </template>
+      </EditableSection>
 
       <!-- Contact Information Section -->
-      <div class="details-section">
-        <h3 class="section-title">{{ t("safeHarbor.contactInfo") }}</h3>
-        <div class="section-content">
+      <EditableSection
+        :title="t('safeHarbor.contactInfo')"
+        :is-editing="activeSection === 'contacts'"
+        :can-edit="isOwner"
+        :is-saving="isSaving"
+        :error="activeSection === 'contacts' ? saveError : null"
+        @edit="startEditing('contacts')"
+        @save="saveContacts"
+        @cancel="cancelEditing"
+      >
+        <template #default>
           <template v-if="agreement.contactDetails && agreement.contactDetails.length > 0">
             <div v-for="(contact, index) in agreement.contactDetails" :key="index" class="detail-row">
               <span class="detail-label">{{ contact.name }}</span>
@@ -73,41 +124,88 @@
           <div v-else class="no-contacts">
             {{ t("safeHarbor.noContactInfo") }}
           </div>
-        </div>
-      </div>
+        </template>
+        <template #edit-form>
+          <ContactsForm v-model="editForms.contacts" />
+        </template>
+      </EditableSection>
 
       <!-- Covered Contracts Section -->
-      <div
-        v-if="agreement.coveredContracts && agreement.coveredContracts.length > 0"
-        class="details-section full-width"
+      <EditableSection
+        v-if="(agreement.coveredContracts && agreement.coveredContracts.length > 0) || isOwner"
+        class="full-width"
+        :title="t('safeHarbor.coveredContracts')"
+        :is-editing="activeSection === 'coveredContracts'"
+        :can-edit="isOwner"
+        :is-saving="isSaving"
+        :error="activeSection === 'coveredContracts' ? saveError : null"
+        @edit="startEditing('coveredContracts')"
+        @save="saveCoveredContracts"
+        @cancel="cancelEditing"
       >
-        <h3 class="section-title">{{ t("safeHarbor.coveredContracts") }}</h3>
-        <div class="section-content">
-          <div class="covered-contracts-list">
+        <template #default>
+          <div
+            v-if="agreement.coveredContracts && agreement.coveredContracts.length > 0"
+            class="covered-contracts-list"
+          >
             <div v-for="contractAddr in agreement.coveredContracts" :key="contractAddr" class="covered-contract">
               <AddressLink :address="contractAddr">
                 {{ shortValue(contractAddr) }}
               </AddressLink>
             </div>
           </div>
-        </div>
-      </div>
+          <div v-else class="no-contracts">
+            {{ t("safeHarbor.noCoveredContracts") }}
+          </div>
+        </template>
+        <template #edit-form>
+          <CoveredContractsForm
+            v-model="editForms.coveredContracts"
+            :existing-contracts="agreement.coveredContracts || []"
+          />
+        </template>
+      </EditableSection>
 
       <!-- Legal Document Section -->
-      <div v-if="agreement.agreementURI" class="details-section full-width">
-        <h3 class="section-title">{{ t("safeHarbor.legalDocument") }}</h3>
-        <div class="section-content">
-          <div class="detail-row">
+      <EditableSection
+        v-if="agreement.agreementURI || isOwner"
+        class="full-width"
+        :title="t('safeHarbor.legalDocument')"
+        :is-editing="activeSection === 'agreementURI'"
+        :can-edit="isOwner"
+        :is-saving="isSaving"
+        :error="activeSection === 'agreementURI' ? saveError : null"
+        @edit="startEditing('agreementURI')"
+        @save="saveAgreementURI"
+        @cancel="cancelEditing"
+      >
+        <template #default>
+          <div v-if="agreement.agreementURI" class="detail-row">
             <span class="detail-label">{{ t("safeHarbor.agreementURI") }}</span>
             <a :href="agreementLink" target="_blank" rel="noopener noreferrer" class="detail-value link external">
               {{ agreement.agreementURI }}
               <ExternalLinkIcon class="external-icon" />
             </a>
           </div>
-        </div>
-      </div>
+          <div v-else class="no-uri">
+            {{ t("safeHarbor.noAgreementURI") }}
+          </div>
+        </template>
+        <template #edit-form>
+          <div class="uri-form">
+            <label class="form-label">{{ t("safeHarbor.agreementURI") }}</label>
+            <input
+              v-model="editForms.agreementURI"
+              type="text"
+              class="form-input"
+              :placeholder="t('safeHarbor.edit.agreementURIPlaceholder')"
+            />
+            <span class="help-text">{{ t("safeHarbor.edit.agreementURIHelp") }}</span>
+          </div>
+        </template>
+      </EditableSection>
 
-      <!-- Timestamps Section -->
+      <!-- Timestamps Section (not editable) -->
       <div v-if="agreement.registeredAt || agreement.lastModified" class="details-section full-width">
         <h3 class="section-title">{{ t("safeHarbor.timestamps") }}</h3>
         <div class="section-content timestamps">
@@ -130,16 +228,25 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { ExternalLinkIcon, ShieldCheckIcon } from "@heroicons/vue/solid";
+import { CheckIcon, ExternalLinkIcon, PencilIcon, ShieldCheckIcon, XIcon } from "@heroicons/vue/solid";
 
 import AddressLink from "@/components/AddressLink.vue";
 import CopyButton from "@/components/common/CopyButton.vue";
+import Spinner from "@/components/common/Spinner.vue";
 import TimeField from "@/components/common/table/fields/TimeField.vue";
+import BountyTermsForm from "@/components/contract/BountyTermsForm.vue";
 import CommitmentWindowStatus from "@/components/contract/CommitmentWindowStatus.vue";
+import ContactsForm from "@/components/contract/ContactsForm.vue";
+import CoveredContractsForm from "@/components/contract/CoveredContractsForm.vue";
+import EditableSection from "@/components/contract/EditableSection.vue";
 
+import useAgreementEditing, { type EditSection } from "@/composables/useAgreementEditing";
+
+import type { BountyTermsFormData } from "@/components/contract/BountyTermsForm.vue";
+import type { CoveredContractsChange } from "@/components/contract/CoveredContractsForm.vue";
 import type { ContactDetail, SafeHarborAgreement } from "@/types";
 import type { PropType } from "vue";
 
@@ -154,15 +261,176 @@ const props = defineProps({
     type: Object as PropType<SafeHarborAgreement>,
     required: true,
   },
+  owner: {
+    type: String as PropType<string | null>,
+    default: null,
+  },
+  walletAddress: {
+    type: String as PropType<string | null>,
+    default: null,
+  },
 });
 
+const emit = defineEmits<{
+  (e: "agreementUpdated"): void;
+}>();
+
+// Ownership check
+const isOwner = computed(() => {
+  if (!props.owner || !props.walletAddress) return false;
+  return props.owner.toLowerCase() === props.walletAddress.toLowerCase();
+});
+
+// Edit state management
+const agreementAddressRef = computed(() => props.agreement.agreementAddress);
+const {
+  activeSection,
+  isSaving,
+  saveError,
+  startEditing: startEditingSection,
+  cancelEditing: cancelEditingSection,
+  setProtocolName,
+  setBountyTerms,
+  setContactDetails,
+  setAgreementURI,
+  addAccounts,
+  removeAccounts,
+} = useAgreementEditing(agreementAddressRef);
+
+// Form state for edits
+const editForms = reactive({
+  protocolName: props.agreement.protocolName || "",
+  bountyTerms: {
+    bountyPercentage: props.agreement.bountyPercentage || 10,
+    bountyCapUsd: props.agreement.bountyCapUsd || "0",
+    retainable: props.agreement.retainable || false,
+    identityRequirement: props.agreement.identityRequirement || "Anonymous",
+    diligenceRequirements: props.agreement.diligenceRequirements || "",
+    aggregateBountyCapUsd: props.agreement.aggregateBountyCapUsd || "0",
+  } as BountyTermsFormData,
+  contacts: [...(props.agreement.contactDetails || [])] as ContactDetail[],
+  coveredContracts: { toAdd: [], toRemove: [] } as CoveredContractsChange,
+  agreementURI: props.agreement.agreementURI || "",
+});
+
+// Reset form when agreement changes
+watch(
+  () => props.agreement,
+  (newAgreement) => {
+    editForms.protocolName = newAgreement.protocolName || "";
+    editForms.bountyTerms = {
+      bountyPercentage: newAgreement.bountyPercentage || 10,
+      bountyCapUsd: newAgreement.bountyCapUsd || "0",
+      retainable: newAgreement.retainable || false,
+      identityRequirement: newAgreement.identityRequirement || "Anonymous",
+      diligenceRequirements: newAgreement.diligenceRequirements || "",
+      aggregateBountyCapUsd: newAgreement.aggregateBountyCapUsd || "0",
+    };
+    editForms.contacts = [...(newAgreement.contactDetails || [])];
+    editForms.coveredContracts = { toAdd: [], toRemove: [] };
+    editForms.agreementURI = newAgreement.agreementURI || "";
+  },
+  { deep: true }
+);
+
+const isEditingProtocolName = computed(() => activeSection.value === "protocolName");
+
+const startEditing = (section: EditSection) => {
+  // Reset form for the section being edited
+  if (section === "bountyTerms") {
+    editForms.bountyTerms = {
+      bountyPercentage: props.agreement.bountyPercentage || 10,
+      bountyCapUsd: props.agreement.bountyCapUsd || "0",
+      retainable: props.agreement.retainable || false,
+      identityRequirement: props.agreement.identityRequirement || "Anonymous",
+      diligenceRequirements: props.agreement.diligenceRequirements || "",
+      aggregateBountyCapUsd: props.agreement.aggregateBountyCapUsd || "0",
+    };
+  } else if (section === "contacts") {
+    editForms.contacts = [...(props.agreement.contactDetails || [])];
+  } else if (section === "coveredContracts") {
+    editForms.coveredContracts = { toAdd: [], toRemove: [] };
+  } else if (section === "agreementURI") {
+    editForms.agreementURI = props.agreement.agreementURI || "";
+  }
+  startEditingSection(section);
+};
+
+const startEditingProtocolName = () => {
+  editForms.protocolName = props.agreement.protocolName || "";
+  startEditingSection("protocolName");
+};
+
+const cancelEditing = () => {
+  cancelEditingSection();
+};
+
+// Save functions
+const saveProtocolName = async () => {
+  const success = await setProtocolName(editForms.protocolName);
+  if (success) {
+    emit("agreementUpdated");
+  }
+};
+
+const saveBountyTerms = async () => {
+  // Convert form values to raw values for contract
+  const terms = {
+    ...editForms.bountyTerms,
+    // Remove commas from formatted numbers
+    bountyCapUsd: editForms.bountyTerms.bountyCapUsd.replace(/,/g, ""),
+    aggregateBountyCapUsd: editForms.bountyTerms.aggregateBountyCapUsd.replace(/,/g, "") || "0",
+  };
+  const success = await setBountyTerms(terms);
+  if (success) {
+    emit("agreementUpdated");
+  }
+};
+
+const saveContacts = async () => {
+  const success = await setContactDetails(editForms.contacts);
+  if (success) {
+    emit("agreementUpdated");
+  }
+};
+
+const saveCoveredContracts = async () => {
+  let success = true;
+
+  // First remove contracts
+  if (editForms.coveredContracts.toRemove.length > 0) {
+    success = await removeAccounts(editForms.coveredContracts.toRemove);
+  }
+
+  // Then add new contracts
+  if (success && editForms.coveredContracts.toAdd.length > 0) {
+    success = await addAccounts(editForms.coveredContracts.toAdd);
+  }
+
+  if (success) {
+    editForms.coveredContracts = { toAdd: [], toRemove: [] };
+    emit("agreementUpdated");
+  }
+};
+
+const saveAgreementURI = async () => {
+  const success = await setAgreementURI(editForms.agreementURI);
+  if (success) {
+    emit("agreementUpdated");
+  }
+};
+
+// Computed values
 const formattedBountyCap = computed(() => {
-  // bountyCapUsd is stored as a string from the API (could be bigint)
   const cap = Number(props.agreement.bountyCapUsd ?? 0);
   return cap.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 });
 
-// Anonymous whitehats are allowed if identityRequirement is "Anonymous" or not set
+const formattedAggregateBountyCap = computed(() => {
+  const cap = Number(props.agreement.aggregateBountyCapUsd ?? 0);
+  return cap.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+});
+
 const allowsAnonymous = computed(() => {
   return props.agreement.identityRequirement === "Anonymous" || props.agreement.identityRequirement === undefined;
 });
@@ -199,18 +467,15 @@ const formatContactLink = (contact: ContactDetail): string => {
   const value = contact.contact;
   const nameLower = contact.name.toLowerCase();
 
-  // Already a full URL
   if (value.startsWith("http")) {
     return value;
   }
 
-  // Telegram handle
   if (value.startsWith("@") || nameLower.includes("telegram")) {
     const handle = value.startsWith("@") ? value.slice(1) : value;
     return `https://t.me/${handle}`;
   }
 
-  // Discord
   if (nameLower.includes("discord") || value.includes("discord.gg")) {
     if (value.startsWith("discord.gg")) {
       return `https://${value}`;
@@ -218,7 +483,6 @@ const formatContactLink = (contact: ContactDetail): string => {
     return `https://discord.gg/${value}`;
   }
 
-  // Default: return as-is (may not be linkable)
   return value;
 };
 
@@ -257,12 +521,87 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
   }
 
   .header-content {
-    @apply flex min-w-0 flex-col gap-1;
+    @apply flex min-w-0 flex-1 flex-col gap-1;
+  }
+
+  .header-name-row {
+    @apply flex items-center gap-2;
   }
 
   .protocol-name {
-    @apply text-lg font-semibold sm:text-xl;
+    @apply mb-0 text-lg font-semibold sm:text-xl;
     color: var(--success-text);
+  }
+
+  .protocol-name-input {
+    @apply flex-1 rounded-md border px-3 py-1 text-lg font-semibold sm:text-xl;
+    border-color: var(--border-default);
+    background-color: var(--bg-primary);
+    color: var(--success-text);
+    max-width: 300px;
+
+    &:focus {
+      @apply outline-none ring-2;
+      ring-color: var(--accent);
+    }
+  }
+
+  .btn-inline-edit,
+  .btn-inline-save,
+  .btn-inline-cancel {
+    @apply flex-shrink-0 rounded p-1 transition-colors;
+  }
+
+  .btn-inline-edit {
+    color: var(--text-muted);
+
+    &:hover {
+      color: var(--accent);
+      background-color: var(--bg-tertiary);
+    }
+
+    .icon {
+      @apply h-4 w-4;
+    }
+  }
+
+  .btn-inline-save {
+    background-color: var(--success);
+    color: white;
+
+    &:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+
+    &:disabled {
+      @apply cursor-not-allowed opacity-60;
+    }
+
+    .icon {
+      @apply h-4 w-4;
+    }
+  }
+
+  .btn-inline-cancel {
+    color: var(--text-muted);
+
+    &:hover:not(:disabled) {
+      color: var(--error-text);
+      background-color: var(--error-muted);
+    }
+
+    &:disabled {
+      @apply cursor-not-allowed opacity-60;
+    }
+
+    .icon {
+      @apply h-4 w-4;
+    }
+  }
+
+  .header-error {
+    @apply mt-1 text-xs;
+    color: var(--error-text);
   }
 
   .agreement-address {
@@ -358,7 +697,9 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
     @apply h-3.5 w-3.5 flex-shrink-0;
   }
 
-  .no-contacts {
+  .no-contacts,
+  .no-contracts,
+  .no-uri {
     @apply text-sm italic;
     color: var(--text-muted);
   }
@@ -371,7 +712,6 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
     @apply rounded-md px-2 py-1 text-xs sm:text-sm;
     background-color: var(--bg-tertiary);
 
-    // Truncate long addresses on mobile
     :deep(a) {
       @apply block truncate;
     }
@@ -383,6 +723,43 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
     .copy-button {
       @apply static p-0 focus:ring-0;
     }
+  }
+
+  // Form styles for inline URI editing
+  .uri-form {
+    @apply space-y-2;
+  }
+
+  .form-label {
+    @apply block text-xs font-medium;
+    color: var(--text-muted);
+  }
+
+  .form-input {
+    @apply w-full rounded-md border px-3 py-2 text-sm;
+    border-color: var(--border-default);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+
+    &:focus {
+      @apply outline-none ring-2;
+      ring-color: var(--accent);
+      border-color: var(--accent);
+    }
+  }
+
+  .help-text {
+    @apply text-xs;
+    color: var(--text-muted);
+  }
+
+  // EditableSection full-width override
+  :deep(.editable-section.full-width) {
+    @apply md:col-span-2;
+  }
+
+  .full-width {
+    @apply md:col-span-2;
   }
 }
 </style>

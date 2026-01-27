@@ -214,4 +214,109 @@ describe("AgreementDetails", () => {
 
     expect(container.textContent).toContain("$100,000");
   });
+
+  describe("edit mode", () => {
+    const globalWithEditStubs = {
+      ...global,
+      stubs: {
+        ...global.stubs,
+        EditableSection: {
+          template: `<div class="editable-section" :class="{ editing: isEditing, 'full-width': $attrs.class?.includes('full-width') }">
+            <div class="section-header">
+              <span class="section-title">{{ title }}</span>
+              <button v-if="canEdit && !isEditing" class="btn-edit" @click="$emit('edit')">Edit</button>
+              <button v-if="isEditing" class="btn-save" @click="$emit('save')">Save</button>
+              <button v-if="isEditing" class="btn-cancel" @click="$emit('cancel')">Cancel</button>
+            </div>
+            <slot v-if="!isEditing" />
+            <slot v-else name="edit-form" />
+          </div>`,
+          props: ["title", "isEditing", "canEdit", "isSaving", "error"],
+        },
+        BountyTermsForm: {
+          template: "<div class='bounty-terms-form'>Bounty Form</div>",
+          props: ["modelValue"],
+        },
+        ContactsForm: {
+          template: "<div class='contacts-form'>Contacts Form</div>",
+          props: ["modelValue"],
+        },
+        CoveredContractsForm: {
+          template: "<div class='covered-contracts-form'>Covered Contracts Form</div>",
+          props: ["modelValue", "existingContracts"],
+        },
+        Spinner: {
+          template: "<span class='spinner' />",
+        },
+      },
+    };
+
+    it("does not show edit buttons when not owner", () => {
+      const { container } = render(AgreementDetails, {
+        props: {
+          agreement: fullAgreement,
+          owner: fullAgreement.owner,
+          walletAddress: null,
+        },
+        global: globalWithEditStubs,
+      });
+
+      expect(container.querySelectorAll(".btn-edit").length).toBe(0);
+    });
+
+    it("does not show edit buttons when different wallet connected", () => {
+      const { container } = render(AgreementDetails, {
+        props: {
+          agreement: fullAgreement,
+          owner: fullAgreement.owner,
+          walletAddress: "0x9999999999999999999999999999999999999999",
+        },
+        global: globalWithEditStubs,
+      });
+
+      expect(container.querySelectorAll(".btn-edit").length).toBe(0);
+    });
+
+    it("shows edit buttons when owner wallet is connected", () => {
+      const { container } = render(AgreementDetails, {
+        props: {
+          agreement: fullAgreement,
+          owner: fullAgreement.owner,
+          walletAddress: fullAgreement.owner,
+        },
+        global: globalWithEditStubs,
+      });
+
+      // Should have edit buttons for bounty terms, contacts, covered contracts, and agreement URI
+      const editButtons = container.querySelectorAll(".btn-edit");
+      expect(editButtons.length).toBeGreaterThan(0);
+    });
+
+    it("shows edit button for protocol name when owner", () => {
+      const { container } = render(AgreementDetails, {
+        props: {
+          agreement: fullAgreement,
+          owner: fullAgreement.owner,
+          walletAddress: fullAgreement.owner,
+        },
+        global: globalWithEditStubs,
+      });
+
+      // The inline edit button for protocol name
+      expect(container.querySelector(".btn-inline-edit")).toBeTruthy();
+    });
+
+    it("hides protocol name edit button when not owner", () => {
+      const { container } = render(AgreementDetails, {
+        props: {
+          agreement: fullAgreement,
+          owner: fullAgreement.owner,
+          walletAddress: null,
+        },
+        global: globalWithEditStubs,
+      });
+
+      expect(container.querySelector(".btn-inline-edit")).toBeFalsy();
+    });
+  });
 });

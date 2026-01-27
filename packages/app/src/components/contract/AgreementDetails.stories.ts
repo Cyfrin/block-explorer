@@ -9,14 +9,16 @@ export default {
 
 type Args = {
   agreement: SafeHarborAgreement;
+  owner?: string | null;
+  walletAddress?: string | null;
 };
 
 const Template = (args: Args) => ({
   components: { AgreementDetails },
   setup() {
-    return { agreement: args.agreement };
+    return { agreement: args.agreement, owner: args.owner, walletAddress: args.walletAddress };
   },
-  template: `<AgreementDetails :agreement="agreement" />`,
+  template: `<AgreementDetails :agreement="agreement" :owner="owner" :wallet-address="walletAddress" />`,
 });
 
 const now = Date.now();
@@ -91,4 +93,28 @@ MinimalDetails.args = {
 export const NoContactInfo = Template.bind({}) as unknown as { args: Args };
 NoContactInfo.args = {
   agreement: noContactAgreement,
+};
+
+// Owner view with edit buttons visible
+export const OwnerView = Template.bind({}) as unknown as { args: Args };
+OwnerView.args = {
+  agreement: fullAgreement,
+  owner: fullAgreement.owner,
+  walletAddress: fullAgreement.owner,
+};
+
+// Non-owner view (different wallet connected)
+export const NonOwnerView = Template.bind({}) as unknown as { args: Args };
+NonOwnerView.args = {
+  agreement: fullAgreement,
+  owner: fullAgreement.owner,
+  walletAddress: "0x9999999999999999999999999999999999999999",
+};
+
+// No wallet connected
+export const NotConnected = Template.bind({}) as unknown as { args: Args };
+NotConnected.args = {
+  agreement: fullAgreement,
+  owner: fullAgreement.owner,
+  walletAddress: null,
 };

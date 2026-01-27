@@ -84,7 +84,12 @@
                 :agreement-address="agreement.agreementAddress"
                 :creator-address="contract?.creatorAddress"
               />
-              <AgreementDetails :agreement="agreement" />
+              <AgreementDetails
+                :agreement="agreement"
+                :owner="agreement.owner"
+                :wallet-address="walletAddress"
+                @agreement-updated="handleAgreementUpdated"
+              />
             </template>
             <NoAgreementWarning
               v-else
@@ -124,8 +129,10 @@ import TransactionsTable from "@/components/transactions/Table.vue";
 import TransfersTable from "@/components/transfers/Table.vue";
 
 import useBattlechainContractState from "@/composables/useBattlechainContractState";
+import useContext from "@/composables/useContext";
 import useIsBattlechainExcluded from "@/composables/useIsBattlechainExcluded";
 import useSafeHarborAgreement from "@/composables/useSafeHarborAgreement";
+import { default as useWallet } from "@/composables/useWallet";
 
 import type { BreadcrumbItem } from "@/components/common/Breadcrumbs.vue";
 import type { Contract } from "@/composables/useAddress";
@@ -134,6 +141,22 @@ import { ContractState } from "@/types";
 import { shortValue } from "@/utils/formatters";
 
 const { t } = useI18n();
+const context = useContext();
+
+// Setup wallet for ownership checks in AgreementDetails
+const walletContext = {
+  isReady: context.isReady,
+  currentNetwork: computed(() => ({
+    ...context.currentNetwork.value,
+    explorerUrl: context.currentNetwork.value.rpcUrl,
+    chainName: context.currentNetwork.value.l2NetworkName,
+    l1ChainId: null as unknown as number,
+  })),
+  networks: context.networks,
+  getL2Provider: () => context.getL2Provider(),
+};
+
+const { address: walletAddress } = useWallet(walletContext);
 
 const props = defineProps({
   contract: {
@@ -183,6 +206,11 @@ watch(
 
 const handleAgreementCreated = () => {
   // Refetch agreement data after successful creation
+  fetchAgreement();
+};
+
+const handleAgreementUpdated = () => {
+  // Refetch agreement data after successful update
   fetchAgreement();
 };
 
