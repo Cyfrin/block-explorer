@@ -4,9 +4,10 @@ import { BattlechainController } from "./battlechain.controller";
 import { BattlechainService } from "./battlechain.service";
 import { ContractStateChange } from "./contractState.entity";
 import { AgreementCreated } from "./agreement.entity";
+import { AgreementScope } from "./agreementScope.entity";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ContractStateChange, AgreementCreated])],
+  imports: [TypeOrmModule.forFeature([ContractStateChange, AgreementCreated, AgreementScope])],
   controllers: [BattlechainController],
   providers: [BattlechainService],
   exports: [BattlechainService],

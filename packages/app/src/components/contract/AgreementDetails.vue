@@ -6,7 +6,7 @@
         <ShieldCheckIcon class="icon" />
       </div>
       <div class="header-content">
-        <h2 class="protocol-name">{{ agreement.protocolName }}</h2>
+        <h2 class="protocol-name">{{ agreement.protocolName || t("safeHarbor.defaultProtocolName") }}</h2>
         <span class="agreement-address">
           {{ t("safeHarbor.agreementContract") }}:
           <AddressLink :address="agreement.agreementAddress">
@@ -74,7 +74,7 @@
       </div>
 
       <!-- Asset Recovery Section -->
-      <div class="details-section">
+      <div v-if="agreement.assetRecoveryAddress" class="details-section">
         <h3 class="section-title">{{ t("safeHarbor.assetRecovery") }}</h3>
         <div class="section-content">
           <div class="detail-row">
@@ -87,7 +87,10 @@
       </div>
 
       <!-- Covered Contracts Section -->
-      <div class="details-section full-width">
+      <div
+        v-if="agreement.coveredContracts && agreement.coveredContracts.length > 0"
+        class="details-section full-width"
+      >
         <h3 class="section-title">{{ t("safeHarbor.coveredContracts") }}</h3>
         <div class="section-content">
           <div class="covered-contracts-list">
@@ -101,7 +104,7 @@
       </div>
 
       <!-- Legal Document Section -->
-      <div class="details-section full-width">
+      <div v-if="agreement.agreementURI" class="details-section full-width">
         <h3 class="section-title">{{ t("safeHarbor.legalDocument") }}</h3>
         <div class="section-content">
           <div class="detail-row">
@@ -115,16 +118,16 @@
       </div>
 
       <!-- Timestamps Section -->
-      <div class="details-section full-width">
+      <div v-if="agreement.registeredAt || agreement.lastModified" class="details-section full-width">
         <h3 class="section-title">{{ t("safeHarbor.timestamps") }}</h3>
         <div class="section-content timestamps">
-          <div class="detail-row">
+          <div v-if="agreement.registeredAt" class="detail-row">
             <span class="detail-label">{{ t("safeHarbor.registeredAt") }}</span>
             <CopyButton :value="formattedRegisteredAt!" class="timestamp-copy">
               <TimeField :value="registeredAtISO" :format="TimeFormat.TIME_AGO_AND_FULL" />
             </CopyButton>
           </div>
-          <div class="detail-row">
+          <div v-if="agreement.lastModified" class="detail-row">
             <span class="detail-label">{{ t("safeHarbor.lastModified") }}</span>
             <CopyButton :value="formattedLastModified!" class="timestamp-copy">
               <TimeField :value="lastModifiedISO" :format="TimeFormat.TIME_AGO_AND_FULL" />
@@ -175,6 +178,7 @@ const formattedBountyCap = computed(() => {
 
 const agreementLink = computed(() => {
   const uri = props.agreement.agreementURI;
+  if (!uri) return "";
   if (uri.startsWith("ipfs://")) {
     return `https://ipfs.io/ipfs/${uri.slice(7)}`;
   }

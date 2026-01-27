@@ -5,12 +5,13 @@ export enum ContractState {
   REGISTERED = 0, // Contract registered in AttackRegistry (was NEW_DEPLOYMENT)
   UNDER_ATTACK = 1,
   PRODUCTION = 2,
+  ATTACK_REQUESTED = 3, // Owner has requested attack mode but it hasn't been activated yet
 }
 
 export class ContractStateInfoDto {
   @ApiProperty({
     description: "Current state of the contract",
-    enum: ["NOT_REGISTERED", "REGISTERED", "UNDER_ATTACK", "PRODUCTION"],
+    enum: ["NOT_REGISTERED", "REGISTERED", "UNDER_ATTACK", "PRODUCTION", "ATTACK_REQUESTED"],
     example: "REGISTERED",
   })
   state: string;
@@ -38,6 +39,12 @@ export class ContractStateInfoDto {
     example: null,
   })
   productionAt: number | null;
+
+  @ApiPropertyOptional({
+    description: "Unix timestamp in milliseconds when attack mode was requested",
+    example: null,
+  })
+  attackRequestedAt?: number | null;
 
   @ApiPropertyOptional({
     description: "Details about the attack if the contract was attacked",

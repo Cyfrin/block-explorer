@@ -818,6 +818,7 @@
     "discord": "Discord",
     "telegram": "Telegram",
     "noContactInfo": "No contact information provided",
+    "defaultProtocolName": "Safe Harbor Agreement",
     "assetRecovery": "Asset Recovery",
     "recoveryAddress": "Recovery Address",
     "coveredContracts": "Covered Contracts",

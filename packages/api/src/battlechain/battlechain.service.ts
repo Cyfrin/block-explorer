@@ -3,6 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { ContractStateChange } from "./contractState.entity";
 import { AgreementCreated } from "./agreement.entity";
+import { AgreementScope } from "./agreementScope.entity";
 import { ContractState, ContractStateInfoDto, AgreementDto } from "./battlechain.dto";
 
 @Injectable()
@@ -13,7 +14,9 @@ export class BattlechainService {
     @InjectRepository(ContractStateChange)
     private readonly contractStateRepository: Repository<ContractStateChange>,
     @InjectRepository(AgreementCreated)
-    private readonly agreementCreatedRepository: Repository<AgreementCreated>
+    private readonly agreementCreatedRepository: Repository<AgreementCreated>,
+    @InjectRepository(AgreementScope)
+    private readonly agreementScopeRepository: Repository<AgreementScope>
   ) {}
 
   /**
@@ -46,6 +49,7 @@ export class BattlechainService {
     let registeredAt: number | null = null;
     let underAttackAt: number | null = null;
     let productionAt: number | null = null;
+    let attackRequestedAt: number | null = null;
 
     for (const change of stateChanges) {
       const timestamp = change.blockTimestamp ? change.blockTimestamp.getTime() : null;
@@ -66,6 +70,10 @@ export class BattlechainService {
           currentState = ContractState.PRODUCTION;
           productionAt = timestamp;
           break;
+        case ContractState.ATTACK_REQUESTED:
+          currentState = ContractState.ATTACK_REQUESTED;
+          attackRequestedAt = timestamp;
+          break;
       }
     }
 
@@ -74,6 +82,7 @@ export class BattlechainService {
       [ContractState.REGISTERED]: "REGISTERED",
       [ContractState.UNDER_ATTACK]: "UNDER_ATTACK",
       [ContractState.PRODUCTION]: "PRODUCTION",
+      [ContractState.ATTACK_REQUESTED]: "ATTACK_REQUESTED",
     };
 
     return {
@@ -82,6 +91,7 @@ export class BattlechainService {
       registeredAt,
       underAttackAt,
       productionAt,
+      attackRequestedAt,
     };
   }
 
@@ -110,13 +120,22 @@ export class BattlechainService {
 
   /**
    * Get the agreement covering a specific contract address.
-   * Note: This currently returns null as scope events are not yet indexed.
-   * TODO: Implement when BattlechainScopeAddressAdded/Removed events are indexed.
+   * Queries the agreement_scope table to find which agreement covers this contract.
    */
-  async getAgreementByContract(_contractAddress: string): Promise<AgreementDto | null> {
-    // Scope tracking events are not yet indexed
-    // When they are, this method will check if the contract is covered by any agreement
-    return null;
+  async getAgreementByContract(contractAddress: string): Promise<AgreementDto | null> {
+    const normalizedAddress = contractAddress.toLowerCase();
+
+    // Find scope entry for this contract
+    const scope = await this.agreementScopeRepository.findOne({
+      where: { contractAddress: normalizedAddress },
+    });
+
+    if (!scope) {
+      return null;
+    }
+
+    // Get the agreement details
+    return this.getAgreement(scope.agreementAddress);
   }
 
   /**
