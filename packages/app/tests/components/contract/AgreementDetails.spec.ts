@@ -45,15 +45,18 @@ const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
 
 const fullAgreement: SafeHarborAgreement = {
   agreementAddress: "0x1234567890123456789012345678901234567890",
+  owner: "0x1111111111111111111111111111111111111111",
   protocolName: "Test DeFi Protocol",
   bountyPercentage: 15,
-  bountyCap: BigInt("5000000000000"), // $5M USDC
-  allowAnonymous: true,
+  bountyCapUsd: "5000000", // $5M
+  identityRequirement: "Anonymous",
+  retainable: false,
   coveredContracts: ["0xabcdef1234567890abcdef1234567890abcdef12", "0x1111111111111111111111111111111111111111"],
-  contactEmail: "security@example.com",
-  contactDiscord: "example-protocol",
-  contactTelegram: "@exampleprotocol",
-  assetRecoveryAddress: "0x9999999999999999999999999999999999999999",
+  contactDetails: [
+    { name: "Email", contact: "security@example.com" },
+    { name: "Discord", contact: "example-protocol" },
+    { name: "Telegram", contact: "@exampleprotocol" },
+  ],
   commitmentDeadline: now + 7 * 24 * 60 * 60 * 1000,
   agreementURI: "ipfs://QmYwAPJzv5CZsnAzt8auVZRn1W2R5sHMN8LNxmhQHBvqJ4",
   registeredAt: oneWeekAgo,
@@ -91,7 +94,7 @@ describe("AgreementDetails", () => {
       global,
     });
 
-    expect(container.textContent).toContain("$5M");
+    expect(container.textContent).toContain("$5,000,000");
   });
 
   it("renders allowed indicator when anonymous is true", () => {
@@ -105,11 +108,11 @@ describe("AgreementDetails", () => {
     expect(container.querySelector(".allowed")).toBeTruthy();
   });
 
-  it("renders not-allowed indicator when anonymous is false", () => {
-    const agreementNoAnon = { ...fullAgreement, allowAnonymous: false };
+  it("renders not-allowed indicator when identityRequirement is Named", () => {
+    const agreementNamed: SafeHarborAgreement = { ...fullAgreement, identityRequirement: "Named" };
     const { container } = render(AgreementDetails, {
       props: {
-        agreement: agreementNoAnon,
+        agreement: agreementNamed,
       },
       global,
     });
@@ -151,11 +154,9 @@ describe("AgreementDetails", () => {
   });
 
   it("renders no contact info message when no contacts", () => {
-    const noContactAgreement = {
+    const noContactAgreement: SafeHarborAgreement = {
       ...fullAgreement,
-      contactEmail: undefined,
-      contactDiscord: undefined,
-      contactTelegram: undefined,
+      contactDetails: [],
     };
     const { container } = render(AgreementDetails, {
       props: {
@@ -203,7 +204,7 @@ describe("AgreementDetails", () => {
   });
 
   it("formats smaller bounty cap correctly", () => {
-    const smallCapAgreement = { ...fullAgreement, bountyCap: BigInt("100000000000") }; // $100K
+    const smallCapAgreement: SafeHarborAgreement = { ...fullAgreement, bountyCapUsd: "100000" }; // $100K
     const { container } = render(AgreementDetails, {
       props: {
         agreement: smallCapAgreement,
@@ -211,6 +212,6 @@ describe("AgreementDetails", () => {
       global,
     });
 
-    expect(container.textContent).toContain("$100K");
+    expect(container.textContent).toContain("$100,000");
   });
 });

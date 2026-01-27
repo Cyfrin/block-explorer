@@ -76,7 +76,8 @@
     "ts-jest": "29.0.3",
     "ts-loader": "^9.2.3",
     "ts-node": "^10.0.0",
-    "tsconfig-paths": "4.1.0"
+    "tsconfig-paths": "4.1.0",
+    "webpack": "^5.104.1"
   },
   "jest": {
     "moduleFileExtensions": [

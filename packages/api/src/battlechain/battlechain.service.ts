@@ -4,11 +4,14 @@ import { Repository } from "typeorm";
 import { ContractStateChange } from "./contractState.entity";
 import { AgreementCreated } from "./agreement.entity";
 import { AgreementScope } from "./agreementScope.entity";
-import { ContractState, ContractStateInfoDto, AgreementDto } from "./battlechain.dto";
+import { AgreementCurrentState } from "./agreementCurrentState.entity";
+import { ContractState, ContractStateInfoDto, AgreementDto, IdentityRequirement } from "./battlechain.dto";
 
 @Injectable()
 export class BattlechainService {
   private readonly logger = new Logger(BattlechainService.name);
+
+  private readonly identityMap: IdentityRequirement[] = ["Anonymous", "Pseudonymous", "Named"];
 
   constructor(
     @InjectRepository(ContractStateChange)
@@ -16,7 +19,9 @@ export class BattlechainService {
     @InjectRepository(AgreementCreated)
     private readonly agreementCreatedRepository: Repository<AgreementCreated>,
     @InjectRepository(AgreementScope)
-    private readonly agreementScopeRepository: Repository<AgreementScope>
+    private readonly agreementScopeRepository: Repository<AgreementScope>,
+    @InjectRepository(AgreementCurrentState)
+    private readonly agreementStateRepository: Repository<AgreementCurrentState>
   ) {}
 
   /**
@@ -96,62 +101,75 @@ export class BattlechainService {
   }
 
   /**
-   * Get agreement by its address
+   * Map AgreementCurrentState entity to AgreementDto
    */
-  async getAgreement(agreementAddress: string): Promise<AgreementDto | null> {
-    const normalizedAddress = agreementAddress.toLowerCase();
-
-    const agreement = await this.agreementCreatedRepository.findOne({
-      where: { agreementAddress: normalizedAddress },
-    });
-
-    if (!agreement) {
-      return null;
-    }
-
+  private mapStateToDto(state: AgreementCurrentState): AgreementDto {
     return {
-      agreementAddress: agreement.agreementAddress,
-      owner: agreement.owner,
-      coveredContracts: [], // TODO: Populate when scope events are indexed
-      createdAtBlock: agreement.blockNumber,
-      createdAt: agreement.blockTimestamp ? agreement.blockTimestamp.getTime() : null,
+      agreementAddress: state.agreementAddress,
+      owner: state.owner,
+      protocolName: state.protocolName ?? undefined,
+      agreementUri: state.agreementUri ?? undefined,
+      bountyPercentage: state.bountyPercentage ? Number(state.bountyPercentage) : undefined,
+      bountyCapUsd: state.bountyCapUsd ?? undefined,
+      retainable: state.retainable ?? undefined,
+      identityRequirement: state.identityRequirement != null ? this.identityMap[state.identityRequirement] : undefined,
+      diligenceRequirements: state.diligenceRequirements ?? undefined,
+      aggregateBountyCapUsd: state.aggregateBountyCapUsd ?? undefined,
+      contactDetails: state.contactDetails ?? undefined,
+      commitmentDeadline: state.commitmentDeadline ? Number(state.commitmentDeadline) * 1000 : undefined,
+      coveredContracts: state.coveredContracts ?? [],
+      createdAtBlock: state.createdAtBlock,
+      createdAt: state.createdAt ? state.createdAt.getTime() : null,
     };
   }
 
   /**
+   * Get agreement by its address.
+   * Uses the materialized agreement_current_state table for single-query lookup.
+   */
+  async getAgreement(agreementAddress: string): Promise<AgreementDto | null> {
+    const normalizedAddress = agreementAddress.toLowerCase();
+
+    const state = await this.agreementStateRepository.findOne({
+      where: { agreementAddress: normalizedAddress },
+    });
+
+    if (!state) {
+      return null;
+    }
+
+    return this.mapStateToDto(state);
+  }
+
+  /**
    * Get the agreement covering a specific contract address.
-   * Queries the agreement_scope table to find which agreement covers this contract.
+   * Uses the GIN index on covered_contracts for efficient array contains query.
    */
   async getAgreementByContract(contractAddress: string): Promise<AgreementDto | null> {
     const normalizedAddress = contractAddress.toLowerCase();
 
-    // Find scope entry for this contract
-    const scope = await this.agreementScopeRepository.findOne({
-      where: { contractAddress: normalizedAddress },
-    });
+    // Use GIN index for array contains query
+    const state = await this.agreementStateRepository
+      .createQueryBuilder("state")
+      .where(":address = ANY(state.covered_contracts)", { address: normalizedAddress })
+      .getOne();
 
-    if (!scope) {
+    if (!state) {
       return null;
     }
 
-    // Get the agreement details
-    return this.getAgreement(scope.agreementAddress);
+    return this.mapStateToDto(state);
   }
 
   /**
-   * Get all agreements
+   * Get all agreements.
+   * Uses the materialized agreement_current_state table for efficient retrieval.
    */
   async getAllAgreements(): Promise<AgreementDto[]> {
-    const agreements = await this.agreementCreatedRepository.find({
-      order: { blockNumber: "DESC" },
+    const states = await this.agreementStateRepository.find({
+      order: { createdAtBlock: "DESC" },
     });
 
-    return agreements.map((agreement) => ({
-      agreementAddress: agreement.agreementAddress,
-      owner: agreement.owner,
-      coveredContracts: [], // TODO: Populate when scope events are indexed
-      createdAtBlock: agreement.blockNumber,
-      createdAt: agreement.blockTimestamp ? agreement.blockTimestamp.getTime() : null,
-    }));
+    return states.map((state) => this.mapStateToDto(state));
   }
 }

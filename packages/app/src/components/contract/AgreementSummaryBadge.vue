@@ -17,8 +17,8 @@
             <span class="detail-label">{{ t("safeHarbor.cap") }}:</span>
             <span class="detail-value">{{ formattedBountyCap }}</span>
           </span>
-          <span v-if="agreement.allowAnonymous" class="detail-separator">|</span>
-          <span v-if="agreement.allowAnonymous" class="detail-item anonymous-allowed">
+          <span v-if="allowsAnonymous" class="detail-separator">|</span>
+          <span v-if="allowsAnonymous" class="detail-item anonymous-allowed">
             {{ t("safeHarbor.anonymousAllowed") }}
           </span>
         </div>
@@ -62,14 +62,15 @@ const props = defineProps({
 
 const formattedBountyCap = computed(() => {
   if (!props.agreement) return "";
-  // Assuming USDC with 6 decimals
-  const cap = Number(props.agreement.bountyCap) / 1e6;
-  if (cap >= 1_000_000) {
-    return `$${(cap / 1_000_000).toFixed(0)}M`;
-  } else if (cap >= 1_000) {
-    return `$${(cap / 1_000).toFixed(0)}K`;
-  }
-  return `$${cap.toFixed(0)}`;
+  // bountyCapUsd is now stored as a string (could be large number)
+  const cap = Number(props.agreement.bountyCapUsd ?? 0);
+  return cap.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+});
+
+// Anonymous whitehats are allowed if identityRequirement is "Anonymous" or not set
+const allowsAnonymous = computed(() => {
+  if (!props.agreement) return false;
+  return props.agreement.identityRequirement === "Anonymous" || props.agreement.identityRequirement === undefined;
 });
 </script>
 

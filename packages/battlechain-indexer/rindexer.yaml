@@ -32,3 +32,24 @@ contracts:
     abi: ./abis/AgreementFactory.abi.json
     include_events:
       - AgreementCreated
+
+  # Individual Agreement contracts - indexed via factory pattern
+  - name: Agreement
+    details:
+      - network: battlechain
+        factory:
+          name: AgreementFactory
+          address: "0x0000000000000000000000000000000000000000"
+          abi: ./abis/AgreementFactory.abi.json
+          event_name: AgreementCreated
+          input_name: "agreementAddress"
+    abi: ./abis/Agreement.abi.json
+    include_events:
+      - ProtocolNameUpdated
+      - AgreementURIUpdated
+      - BountyTermsUpdated
+      - ContactDetailsSet
+      - CommitmentWindowExtended
+      - BattleChainScopeAddressAdded
+      - BattleChainScopeAddressRemoved
+      - BattleChainScopeCleared

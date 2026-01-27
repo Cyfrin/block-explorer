@@ -35,8 +35,14 @@
           </div>
           <div class="detail-row">
             <span class="detail-label">{{ t("safeHarbor.anonymousWhitehats") }}</span>
-            <span class="detail-value" :class="agreement.allowAnonymous ? 'allowed' : 'not-allowed'">
-              {{ agreement.allowAnonymous ? t("safeHarbor.allowed") : t("safeHarbor.notAllowed") }}
+            <span class="detail-value" :class="allowsAnonymous ? 'allowed' : 'not-allowed'">
+              {{ allowsAnonymous ? t("safeHarbor.allowed") : t("safeHarbor.notAllowed") }}
+            </span>
+          </div>
+          <div v-if="agreement.retainable !== undefined" class="detail-row">
+            <span class="detail-label">{{ t("safeHarbor.retainable") }}</span>
+            <span class="detail-value" :class="agreement.retainable ? 'allowed' : 'not-allowed'">
+              {{ agreement.retainable ? t("safeHarbor.yes") : t("safeHarbor.no") }}
             </span>
           </div>
         </div>
@@ -46,42 +52,26 @@
       <div class="details-section">
         <h3 class="section-title">{{ t("safeHarbor.contactInfo") }}</h3>
         <div class="section-content">
-          <div v-if="agreement.contactEmail" class="detail-row">
-            <span class="detail-label">{{ t("safeHarbor.email") }}</span>
-            <a :href="`mailto:${agreement.contactEmail}`" class="detail-value link">
-              {{ agreement.contactEmail }}
-            </a>
-          </div>
-          <div v-if="agreement.contactDiscord" class="detail-row">
-            <span class="detail-label">{{ t("safeHarbor.discord") }}</span>
-            <a :href="discordLink" target="_blank" rel="noopener noreferrer" class="detail-value link">
-              {{ agreement.contactDiscord }}
-            </a>
-          </div>
-          <div v-if="agreement.contactTelegram" class="detail-row">
-            <span class="detail-label">{{ t("safeHarbor.telegram") }}</span>
-            <a :href="telegramLink" target="_blank" rel="noopener noreferrer" class="detail-value link">
-              {{ agreement.contactTelegram }}
-            </a>
-          </div>
-          <div
-            v-if="!agreement.contactEmail && !agreement.contactDiscord && !agreement.contactTelegram"
-            class="no-contacts"
-          >
+          <template v-if="agreement.contactDetails && agreement.contactDetails.length > 0">
+            <div v-for="(contact, index) in agreement.contactDetails" :key="index" class="detail-row">
+              <span class="detail-label">{{ contact.name }}</span>
+              <a v-if="isEmailContact(contact.contact)" :href="`mailto:${contact.contact}`" class="detail-value link">
+                {{ contact.contact }}
+              </a>
+              <a
+                v-else-if="isLinkableContact(contact.contact)"
+                :href="formatContactLink(contact)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="detail-value link"
+              >
+                {{ contact.contact }}
+              </a>
+              <span v-else class="detail-value">{{ contact.contact }}</span>
+            </div>
+          </template>
+          <div v-else class="no-contacts">
             {{ t("safeHarbor.noContactInfo") }}
-          </div>
-        </div>
-      </div>
-
-      <!-- Asset Recovery Section -->
-      <div v-if="agreement.assetRecoveryAddress" class="details-section">
-        <h3 class="section-title">{{ t("safeHarbor.assetRecovery") }}</h3>
-        <div class="section-content">
-          <div class="detail-row">
-            <span class="detail-label">{{ t("safeHarbor.recoveryAddress") }}</span>
-            <AddressLink :address="agreement.assetRecoveryAddress" class="detail-value">
-              {{ shortValue(agreement.assetRecoveryAddress) }}
-            </AddressLink>
           </div>
         </div>
       </div>
@@ -150,7 +140,7 @@ import CopyButton from "@/components/common/CopyButton.vue";
 import TimeField from "@/components/common/table/fields/TimeField.vue";
 import CommitmentWindowStatus from "@/components/contract/CommitmentWindowStatus.vue";
 
-import type { SafeHarborAgreement } from "@/types";
+import type { ContactDetail, SafeHarborAgreement } from "@/types";
 import type { PropType } from "vue";
 
 import { TimeFormat } from "@/types";
@@ -167,13 +157,14 @@ const props = defineProps({
 });
 
 const formattedBountyCap = computed(() => {
-  const cap = Number(props.agreement.bountyCap) / 1e6;
-  if (cap >= 1_000_000) {
-    return `$${(cap / 1_000_000).toFixed(0)}M`;
-  } else if (cap >= 1_000) {
-    return `$${(cap / 1_000).toFixed(0)}K`;
-  }
-  return `$${cap.toFixed(0)}`;
+  // bountyCapUsd is stored as a string from the API (could be bigint)
+  const cap = Number(props.agreement.bountyCapUsd ?? 0);
+  return cap.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+});
+
+// Anonymous whitehats are allowed if identityRequirement is "Anonymous" or not set
+const allowsAnonymous = computed(() => {
+  return props.agreement.identityRequirement === "Anonymous" || props.agreement.identityRequirement === undefined;
 });
 
 const agreementLink = computed(() => {
@@ -188,24 +179,48 @@ const agreementLink = computed(() => {
   return uri;
 });
 
-const discordLink = computed(() => {
-  const discord = props.agreement.contactDiscord;
-  if (!discord) return "";
-  // If it's already a full URL or discord.gg link, use as-is
-  if (discord.startsWith("http") || discord.startsWith("discord.gg")) {
-    return discord.startsWith("http") ? discord : `https://${discord}`;
-  }
-  // Otherwise assume it's an invite code
-  return `https://discord.gg/${discord}`;
-});
+// Contact helpers
+const isEmailContact = (contact: string): boolean => {
+  return contact.includes("@") && !contact.startsWith("@") && contact.includes(".");
+};
 
-const telegramLink = computed(() => {
-  const telegram = props.agreement.contactTelegram;
-  if (!telegram) return "";
-  // Remove @ prefix if present
-  const handle = telegram.startsWith("@") ? telegram.slice(1) : telegram;
-  return `https://t.me/${handle}`;
-});
+const isLinkableContact = (contact: string): boolean => {
+  const lowerContact = contact.toLowerCase();
+  return (
+    lowerContact.startsWith("http") ||
+    lowerContact.startsWith("@") ||
+    lowerContact.includes("discord") ||
+    lowerContact.includes("t.me") ||
+    lowerContact.includes("telegram")
+  );
+};
+
+const formatContactLink = (contact: ContactDetail): string => {
+  const value = contact.contact;
+  const nameLower = contact.name.toLowerCase();
+
+  // Already a full URL
+  if (value.startsWith("http")) {
+    return value;
+  }
+
+  // Telegram handle
+  if (value.startsWith("@") || nameLower.includes("telegram")) {
+    const handle = value.startsWith("@") ? value.slice(1) : value;
+    return `https://t.me/${handle}`;
+  }
+
+  // Discord
+  if (nameLower.includes("discord") || value.includes("discord.gg")) {
+    if (value.startsWith("discord.gg")) {
+      return `https://${value}`;
+    }
+    return `https://discord.gg/${value}`;
+  }
+
+  // Default: return as-is (may not be linkable)
+  return value;
+};
 
 const formatTimestamp = (timestamp: number | null): string | null => {
   if (!timestamp) return null;

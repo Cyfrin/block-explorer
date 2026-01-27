@@ -7,11 +7,8 @@ export default {
   component: AgreementSummaryBadge,
 };
 
-// Use serializable args (string for bountyCap) to avoid BigInt serialization issues
-type SerializableAgreement = Omit<SafeHarborAgreement, "bountyCap"> & { bountyCap: string };
-
 type Args = {
-  agreement: SerializableAgreement | null;
+  agreement: SafeHarborAgreement | null;
   hasAgreement: boolean;
   linkToTab: boolean;
 };
@@ -19,33 +16,26 @@ type Args = {
 const Template = (args: Args) => ({
   components: { AgreementSummaryBadge },
   setup() {
-    // Convert string bountyCap to BigInt inside setup
-    const agreement: SafeHarborAgreement | null = args.agreement
-      ? {
-          ...args.agreement,
-          bountyCap: BigInt(args.agreement.bountyCap),
-        }
-      : null;
-    return { agreement, hasAgreement: args.hasAgreement, linkToTab: args.linkToTab };
+    return { agreement: args.agreement, hasAgreement: args.hasAgreement, linkToTab: args.linkToTab };
   },
   template: `<AgreementSummaryBadge :agreement="agreement" :hasAgreement="hasAgreement" :linkToTab="linkToTab" />`,
 });
 
-const mockAgreement: SerializableAgreement = {
+const mockAgreement: SafeHarborAgreement = {
   agreementAddress: "0x1234567890123456789012345678901234567890",
   protocolName: "Example Protocol",
   bountyPercentage: 15,
-  bountyCap: "5000000000000", // $5M USDC (6 decimals)
-  allowAnonymous: true,
+  bountyCapUsd: "5000000", // $5M
+  identityRequirement: "Anonymous",
   coveredContracts: ["0xabcdef1234567890abcdef1234567890abcdef12"],
 };
 
-const mockAgreementNoCap: SerializableAgreement = {
+const mockAgreementNoCap: SafeHarborAgreement = {
   agreementAddress: "0x1234567890123456789012345678901234567890",
   protocolName: "Small Protocol",
   bountyPercentage: 10,
-  bountyCap: "500000000000", // $500K USDC
-  allowAnonymous: false,
+  bountyCapUsd: "500000", // $500K
+  identityRequirement: "Named",
   coveredContracts: [],
 };
 

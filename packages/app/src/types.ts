@@ -64,30 +64,32 @@ export enum TimeFormat {
 }
 
 // Safe Harbor Agreement Types
-// Note: Many fields are optional because the indexer only stores basic info
-// (agreementAddress, coveredContracts, registeredAt). Full details may be
-// fetched from the agreement contract or IPFS in the future.
+export type IdentityRequirement = "Anonymous" | "Pseudonymous" | "Named";
+
+export interface ContactDetail {
+  name: string;
+  contact: string;
+}
+
 export interface SafeHarborAgreement {
   // Core identification - the agreement is its own smart contract
   agreementAddress: Address;
+  owner?: Address;
   protocolName?: string;
 
   // Bounty terms (machine-readable)
   bountyPercentage?: number;
-  bountyCap?: bigint;
-  bountyCapToken?: Address;
-  allowAnonymous?: boolean;
+  bountyCapUsd?: string;
+  retainable?: boolean;
+  identityRequirement?: IdentityRequirement;
+  diligenceRequirements?: string;
+  aggregateBountyCapUsd?: string;
 
   // Scope
   coveredContracts: Address[];
 
-  // Contacts
-  contactEmail?: string;
-  contactDiscord?: string;
-  contactTelegram?: string;
-
-  // Asset recovery
-  assetRecoveryAddress?: Address;
+  // Contacts - new format from API
+  contactDetails?: ContactDetail[];
 
   // Commitment window
   commitmentDeadline?: number;
@@ -96,6 +98,7 @@ export interface SafeHarborAgreement {
   agreementURI?: string;
 
   // Metadata
+  createdAtBlock?: number;
   registeredAt?: number | null;
   lastModified?: number;
 }

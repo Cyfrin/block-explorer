@@ -107,7 +107,7 @@ VALUES
   ('0xaaaa000000000000000000000000000000000007', '0x1111111111111111111111111111111111111111', '\x04', '0x' || repeat('5', 64), 109, '1', NOW() - INTERVAL '14 days', '0x' || repeat('0', 40), '0x' || repeat('e', 64), 'local', 1);
 
 -- ============================================
--- 4. Create agreement_scope table and seed data
+-- 4. Create agreement_scope table and seed data (legacy, kept for compatibility)
 -- ============================================
 CREATE TABLE IF NOT EXISTS battlechainindexer_agreement_factory.agreement_scope (
   id SERIAL PRIMARY KEY,
@@ -140,7 +140,172 @@ VALUES
   ('0xaaaa000000000000000000000000000000000007', '0x0000000000000000000000000000000000000007');
 
 -- ============================================
--- 5. Summary output
+-- 5. Create agreement current state table (materialized view)
+-- ============================================
+CREATE SCHEMA IF NOT EXISTS battlechainindexer_agreement;
+
+CREATE TABLE IF NOT EXISTS battlechainindexer_agreement.agreement_current_state (
+  agreement_address CHAR(42) PRIMARY KEY,
+
+  -- From agreement_created (via AgreementFactory)
+  owner CHAR(42),
+  created_at_block NUMERIC,
+  created_at TIMESTAMPTZ,
+
+  -- From ProtocolNameUpdated
+  protocol_name TEXT,
+  protocol_name_updated_at TIMESTAMPTZ,
+
+  -- From AgreementURIUpdated
+  agreement_uri TEXT,
+  agreement_uri_updated_at TIMESTAMPTZ,
+
+  -- From BountyTermsUpdated
+  bounty_percentage NUMERIC,
+  bounty_cap_usd NUMERIC,
+  retainable BOOLEAN,
+  identity_requirement SMALLINT,  -- 0=Anonymous, 1=Pseudonymous, 2=Named
+  diligence_requirements TEXT,
+  aggregate_bounty_cap_usd NUMERIC,
+  bounty_terms_updated_at TIMESTAMPTZ,
+
+  -- From ContactDetailsSet
+  contact_details JSONB,  -- Array of {name, contact}
+  contact_details_updated_at TIMESTAMPTZ,
+
+  -- From CommitmentWindowExtended
+  commitment_deadline NUMERIC,  -- Unix timestamp
+  commitment_deadline_updated_at TIMESTAMPTZ,
+
+  -- From scope events (computed)
+  covered_contracts TEXT[],  -- Array of addresses
+  scope_updated_at TIMESTAMPTZ,
+
+  -- Metadata
+  last_updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for reverse lookup (find agreement by covered contract)
+CREATE INDEX IF NOT EXISTS idx_agreement_covered_contracts
+  ON battlechainindexer_agreement.agreement_current_state
+  USING GIN (covered_contracts);
+
+-- ============================================
+-- 6. Seed agreement current state with test data
+-- ============================================
+-- Clear existing seed data
+DELETE FROM battlechainindexer_agreement.agreement_current_state
+WHERE agreement_address IN (
+  '0xaaaa000000000000000000000000000000000003',
+  '0xaaaa000000000000000000000000000000000004',
+  '0xaaaa000000000000000000000000000000000005',
+  '0xaaaa000000000000000000000000000000000006',
+  '0xaaaa000000000000000000000000000000000007'
+);
+
+-- Insert test agreement states with full details
+-- Agreement for 0x03: REGISTERED with full agreement details
+INSERT INTO battlechainindexer_agreement.agreement_current_state (
+  agreement_address, owner, created_at_block, created_at,
+  protocol_name, agreement_uri, bounty_percentage, bounty_cap_usd,
+  retainable, identity_requirement, diligence_requirements, aggregate_bounty_cap_usd,
+  contact_details, commitment_deadline,
+  covered_contracts, last_updated_at
+)
+VALUES (
+  '0xaaaa000000000000000000000000000000000003',
+  '0x1111111111111111111111111111111111111111',
+  101, NOW() - INTERVAL '6 days',
+  'Test Protocol Alpha', 'ipfs://QmTestHash123456789', 10, 5000000,
+  false, 0, NULL, 10000000,
+  '[{"name":"Security Team","contact":"security@testprotocol.com"},{"name":"Discord","contact":"discord.gg/testprotocol"}]'::jsonb,
+  EXTRACT(EPOCH FROM NOW() + INTERVAL '30 days'),
+  ARRAY['0x0000000000000000000000000000000000000003'],
+  NOW()
+);
+
+-- Agreement for 0x04: ATTACK_REQUESTED with terms locked
+INSERT INTO battlechainindexer_agreement.agreement_current_state (
+  agreement_address, owner, created_at_block, created_at,
+  protocol_name, agreement_uri, bounty_percentage, bounty_cap_usd,
+  retainable, identity_requirement, diligence_requirements, aggregate_bounty_cap_usd,
+  contact_details, commitment_deadline,
+  covered_contracts, last_updated_at
+)
+VALUES (
+  '0xaaaa000000000000000000000000000000000004',
+  '0x1111111111111111111111111111111111111111',
+  102, NOW() - INTERVAL '5 days',
+  'Vault Finance', 'ar://ArweaveHashXYZ789', 15, 10000000,
+  true, 1, NULL, 0,
+  '[{"name":"Telegram","contact":"@vaultfinance_security"}]'::jsonb,
+  EXTRACT(EPOCH FROM NOW() + INTERVAL '90 days'),
+  ARRAY['0x0000000000000000000000000000000000000004'],
+  NOW()
+);
+
+-- Agreement for 0x05: UNDER_ATTACK with Named identity requirement
+INSERT INTO battlechainindexer_agreement.agreement_current_state (
+  agreement_address, owner, created_at_block, created_at,
+  protocol_name, agreement_uri, bounty_percentage, bounty_cap_usd,
+  retainable, identity_requirement, diligence_requirements, aggregate_bounty_cap_usd,
+  contact_details, commitment_deadline,
+  covered_contracts, last_updated_at
+)
+VALUES (
+  '0xaaaa000000000000000000000000000000000005',
+  '0x1111111111111111111111111111111111111111',
+  104, NOW() - INTERVAL '4 days',
+  'DeFi Lending Pool', 'https://example.com/agreement.pdf', 20, 25000000,
+  false, 2, 'Must provide valid government ID and proof of address', 50000000,
+  '[{"name":"Emergency Contact","contact":"emergency@defilending.io"},{"name":"Legal Team","contact":"legal@defilending.io"}]'::jsonb,
+  EXTRACT(EPOCH FROM NOW() + INTERVAL '180 days'),
+  ARRAY['0x0000000000000000000000000000000000000005'],
+  NOW()
+);
+
+-- Agreement for 0x06: PRODUCTION (was under attack), commitment expired
+INSERT INTO battlechainindexer_agreement.agreement_current_state (
+  agreement_address, owner, created_at_block, created_at,
+  protocol_name, agreement_uri, bounty_percentage, bounty_cap_usd,
+  retainable, identity_requirement, diligence_requirements, aggregate_bounty_cap_usd,
+  contact_details, commitment_deadline,
+  covered_contracts, last_updated_at
+)
+VALUES (
+  '0xaaaa000000000000000000000000000000000006',
+  '0x1111111111111111111111111111111111111111',
+  106, NOW() - INTERVAL '10 days',
+  'Staking Protocol', 'ipfs://QmStakingProtocolAgreement', 12, 8000000,
+  false, 0, NULL, 0,
+  '[{"name":"Security","contact":"security@stakingprotocol.xyz"}]'::jsonb,
+  EXTRACT(EPOCH FROM NOW() - INTERVAL '5 days'),
+  ARRAY['0x0000000000000000000000000000000000000006'],
+  NOW()
+);
+
+-- Agreement for 0x07: PRODUCTION (no attack history), multiple covered contracts
+INSERT INTO battlechainindexer_agreement.agreement_current_state (
+  agreement_address, owner, created_at_block, created_at,
+  protocol_name, agreement_uri, bounty_percentage, bounty_cap_usd,
+  retainable, identity_requirement, diligence_requirements, aggregate_bounty_cap_usd,
+  contact_details, commitment_deadline,
+  covered_contracts, last_updated_at
+)
+VALUES (
+  '0xaaaa000000000000000000000000000000000007',
+  '0x1111111111111111111111111111111111111111',
+  109, NOW() - INTERVAL '14 days',
+  'Multi-Sig Treasury', NULL, 5, 1000000,
+  false, 1, NULL, 5000000,
+  '[{"name":"Treasury Team","contact":"treasury@multisig.org"}]'::jsonb,
+  EXTRACT(EPOCH FROM NOW() + INTERVAL '365 days'),
+  ARRAY['0x0000000000000000000000000000000000000007', '0x0000000000000000000000000000000000000008', '0x0000000000000000000000000000000000000009'],
+  NOW()
+);
+
+-- ============================================
+-- 7. Summary output
 -- ============================================
 SELECT 'Seeding complete!' AS status;
 SELECT 'Contracts seeded:' AS info;

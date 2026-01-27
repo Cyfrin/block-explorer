@@ -32,8 +32,8 @@ const mockAgreement: SafeHarborAgreement = {
   agreementAddress: "0x1234567890123456789012345678901234567890",
   protocolName: "Test Protocol",
   bountyPercentage: 15,
-  bountyCap: BigInt("5000000000000"), // $5M USDC (6 decimals)
-  allowAnonymous: true,
+  bountyCapUsd: "5000000", // $5M
+  identityRequirement: "Anonymous",
   coveredContracts: [],
 };
 
@@ -74,7 +74,7 @@ describe("AgreementSummaryBadge", () => {
       global,
     });
 
-    expect(container.textContent).toContain("$5M");
+    expect(container.textContent).toContain("$5,000,000");
   });
 
   it("shows anonymous allowed indicator when true", () => {
@@ -90,11 +90,11 @@ describe("AgreementSummaryBadge", () => {
     expect(container.textContent).toContain("Anonymous");
   });
 
-  it("hides anonymous indicator when false", () => {
-    const agreementNoAnon = { ...mockAgreement, allowAnonymous: false };
+  it("hides anonymous indicator when identityRequirement is Named", () => {
+    const agreementNamed: SafeHarborAgreement = { ...mockAgreement, identityRequirement: "Named" };
     const { container } = render(AgreementSummaryBadge, {
       props: {
-        agreement: agreementNoAnon,
+        agreement: agreementNamed,
         hasAgreement: true,
         linkToTab: true,
       },
@@ -170,7 +170,7 @@ describe("AgreementSummaryBadge", () => {
   });
 
   it("formats smaller bounty cap correctly", () => {
-    const smallCapAgreement = { ...mockAgreement, bountyCap: BigInt("500000000000") }; // $500K
+    const smallCapAgreement: SafeHarborAgreement = { ...mockAgreement, bountyCapUsd: "500000" }; // $500K
     const { container } = render(AgreementSummaryBadge, {
       props: {
         agreement: smallCapAgreement,
@@ -180,6 +180,6 @@ describe("AgreementSummaryBadge", () => {
       global,
     });
 
-    expect(container.textContent).toContain("$500K");
+    expect(container.textContent).toContain("$500,000");
   });
 });
