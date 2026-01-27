@@ -111,10 +111,26 @@ NonOwnerView.args = {
   walletAddress: "0x9999999999999999999999999999999999999999",
 };
 
-// No wallet connected
+// No wallet connected - shows "connect wallet to edit" prompt
 export const NotConnected = Template.bind({}) as unknown as { args: Args };
 NotConnected.args = {
   agreement: fullAgreement,
   owner: fullAgreement.owner,
   walletAddress: null,
+};
+
+// Owner view with locked terms - shows restriction banner
+export const LockedOwnerView = Template.bind({}) as unknown as { args: Args };
+LockedOwnerView.args = {
+  agreement: fullAgreement, // fullAgreement has commitmentDeadline in the future
+  owner: fullAgreement.owner,
+  walletAddress: fullAgreement.owner,
+};
+
+// Owner view with unlocked terms (commitment deadline passed)
+export const UnlockedOwnerView = Template.bind({}) as unknown as { args: Args };
+UnlockedOwnerView.args = {
+  agreement: minimalAgreement, // minimalAgreement has commitmentDeadline in the past
+  owner: minimalAgreement.owner,
+  walletAddress: minimalAgreement.owner,
 };

@@ -4,7 +4,7 @@
       <h3 class="section-title">{{ title }}</h3>
       <div class="section-actions">
         <template v-if="isEditing">
-          <button @click="$emit('save')" :disabled="isSaving" class="btn-save">
+          <button @click="$emit('save')" :disabled="isSaving || !canSave" class="btn-save">
             <Spinner v-if="isSaving" size="xs" class="spinner" />
             {{ isSaving ? t("common.saving") : t("common.save") }}
           </button>
@@ -49,6 +49,10 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  canSave: {
+    type: Boolean,
+    default: true,
+  },
   error: {
     type: String,
     default: null,
@@ -77,7 +81,7 @@ const { t } = useI18n();
   }
 
   .section-header {
-    @apply mb-2 flex items-center justify-between border-b pb-2 sm:mb-3;
+    @apply mb-2 flex items-center justify-between gap-4 border-b pb-2 sm:mb-3;
     border-color: var(--border-subtle);
   }
 

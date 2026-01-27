@@ -6,7 +6,7 @@
         <input
           v-model.number="form.bountyPercentage"
           type="number"
-          min="1"
+          :min="isLocked && originalValues ? originalValues.bountyPercentage : 1"
           max="100"
           class="form-input"
           :class="{ error: errors.bountyPercentage }"
@@ -25,27 +25,35 @@
           type="text"
           inputmode="numeric"
           class="form-input"
-          :class="{ error: errors.bountyCapUsd }"
+          :class="{ error: errors.bountyCapUsd || errors.bountyCapLocked }"
           @input="formatBountyCap"
         />
       </div>
       <span v-if="errors.bountyCapUsd" class="error-text">{{ errors.bountyCapUsd }}</span>
+      <span v-else-if="errors.bountyCapLocked" class="error-text">{{ errors.bountyCapLocked }}</span>
     </div>
 
     <div class="form-row">
       <label class="form-label">{{ t("safeHarbor.identityRequirement") }}</label>
       <select v-model="form.identityRequirement" class="form-select">
-        <option value="Anonymous">{{ t("safeHarbor.edit.identityAnonymous") }}</option>
-        <option value="Pseudonymous">{{ t("safeHarbor.edit.identityPseudonymous") }}</option>
-        <option value="Named">{{ t("safeHarbor.edit.identityNamed") }}</option>
+        <option v-for="opt in identityOptions" :key="opt.value" :value="opt.value" :disabled="opt.disabled">
+          {{ opt.label }}
+        </option>
       </select>
+      <span v-if="errors.identityLocked" class="error-text">{{ errors.identityLocked }}</span>
     </div>
 
     <div class="form-row checkbox-row">
-      <label class="checkbox-label">
-        <input v-model="form.retainable" type="checkbox" class="form-checkbox" />
+      <label class="checkbox-label" :class="{ disabled: isLocked && originalValues?.retainable && !form.retainable }">
+        <input
+          v-model="form.retainable"
+          type="checkbox"
+          class="form-checkbox"
+          :disabled="isLocked && originalValues?.retainable"
+        />
         <span>{{ t("safeHarbor.retainable") }}</span>
       </label>
+      <span v-if="errors.retainableLocked" class="error-text">{{ errors.retainableLocked }}</span>
     </div>
 
     <div v-if="form.identityRequirement === 'Named'" class="form-row">
@@ -67,16 +75,18 @@
           type="text"
           inputmode="numeric"
           class="form-input"
+          :class="{ error: errors.aggregateCapLocked }"
           @input="formatAggregateCap"
         />
       </div>
-      <span class="help-text">{{ t("safeHarbor.edit.aggregateCapHelp") }}</span>
+      <span v-if="errors.aggregateCapLocked" class="error-text">{{ errors.aggregateCapLocked }}</span>
+      <span v-else class="help-text">{{ t("safeHarbor.edit.aggregateCapHelp") }}</span>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { reactive, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 import type { IdentityRequirement } from "@/types";
@@ -96,6 +106,14 @@ const props = defineProps({
     type: Object as PropType<BountyTermsFormData>,
     required: true,
   },
+  isLocked: {
+    type: Boolean,
+    default: false,
+  },
+  originalValues: {
+    type: Object as PropType<BountyTermsFormData | null>,
+    default: null,
+  },
 });
 
 const emit = defineEmits<{
@@ -109,6 +127,50 @@ const form = reactive<BountyTermsFormData>({ ...props.modelValue });
 const errors = reactive({
   bountyPercentage: "",
   bountyCapUsd: "",
+  bountyCapLocked: "",
+  aggregateCapLocked: "",
+  identityLocked: "",
+  retainableLocked: "",
+});
+
+// Identity strictness levels (higher = stricter)
+const identityStrictness: Record<IdentityRequirement, number> = {
+  Anonymous: 0,
+  Pseudonymous: 1,
+  Named: 2,
+};
+
+// Check if an identity requirement is stricter than another
+const isStricterIdentity = (newIdentity: IdentityRequirement, originalIdentity: IdentityRequirement): boolean => {
+  return identityStrictness[newIdentity] > identityStrictness[originalIdentity];
+};
+
+// Get available identity options based on lock state
+const identityOptions = computed(() => {
+  const options = [
+    { value: "Anonymous" as IdentityRequirement, label: t("safeHarbor.edit.identityAnonymous"), disabled: false },
+    { value: "Pseudonymous" as IdentityRequirement, label: t("safeHarbor.edit.identityPseudonymous"), disabled: false },
+    { value: "Named" as IdentityRequirement, label: t("safeHarbor.edit.identityNamed"), disabled: false },
+  ];
+
+  if (props.isLocked && props.originalValues) {
+    const originalStrictness = identityStrictness[props.originalValues.identityRequirement];
+    return options.map((opt) => ({
+      ...opt,
+      disabled: identityStrictness[opt.value] > originalStrictness,
+    }));
+  }
+
+  return options;
+});
+
+// Check if retainable can be changed (can only go true -> true or false -> true when locked)
+const canChangeRetainable = computed(() => {
+  if (!props.isLocked || !props.originalValues) return true;
+  // If original was true, can stay true
+  // If original was false, can change to true
+  // Cannot go from true to false when locked
+  return props.originalValues.retainable === false || form.retainable === true;
 });
 
 // Validate and emit on change
@@ -128,6 +190,52 @@ watch(
       errors.bountyCapUsd = t("safeHarbor.edit.bountyCapError");
     } else {
       errors.bountyCapUsd = "";
+    }
+
+    // Lock-state validations
+    if (props.isLocked && props.originalValues) {
+      // Check bounty percentage decrease
+      if (newForm.bountyPercentage < props.originalValues.bountyPercentage) {
+        errors.bountyPercentage = t("safeHarbor.edit.cannotDecreaseWhenLocked");
+      }
+
+      // Check bounty cap decrease
+      const newCapNum = parseInt(newForm.bountyCapUsd.replace(/,/g, ""), 10) || 0;
+      const originalCapNum = parseInt(props.originalValues.bountyCapUsd.replace(/,/g, ""), 10) || 0;
+      if (newCapNum < originalCapNum) {
+        errors.bountyCapLocked = t("safeHarbor.edit.cannotDecreaseWhenLocked");
+      } else {
+        errors.bountyCapLocked = "";
+      }
+
+      // Check aggregate cap decrease
+      const newAggCapNum = parseInt(newForm.aggregateBountyCapUsd.replace(/,/g, ""), 10) || 0;
+      const originalAggCapNum = parseInt(props.originalValues.aggregateBountyCapUsd.replace(/,/g, ""), 10) || 0;
+      if (newAggCapNum < originalAggCapNum && newAggCapNum > 0) {
+        errors.aggregateCapLocked = t("safeHarbor.edit.cannotDecreaseWhenLocked");
+      } else {
+        errors.aggregateCapLocked = "";
+      }
+
+      // Check identity strictness
+      if (isStricterIdentity(newForm.identityRequirement, props.originalValues.identityRequirement)) {
+        errors.identityLocked = t("safeHarbor.edit.cannotRestrictWhenLocked");
+      } else {
+        errors.identityLocked = "";
+      }
+
+      // Check retainable (cannot go from true to false)
+      if (props.originalValues.retainable && !newForm.retainable) {
+        errors.retainableLocked = t("safeHarbor.edit.cannotDecreaseWhenLocked");
+      } else {
+        errors.retainableLocked = "";
+      }
+    } else {
+      // Clear lock-state errors when not locked
+      errors.bountyCapLocked = "";
+      errors.aggregateCapLocked = "";
+      errors.identityLocked = "";
+      errors.retainableLocked = "";
     }
 
     emit("update:modelValue", { ...newForm });
@@ -165,6 +273,14 @@ const formatAggregateCap = (e: Event) => {
     form.aggregateBountyCapUsd = "";
   }
 };
+
+// Check if form has any errors
+const hasErrors = computed(() => {
+  return Object.values(errors).some((error) => error !== "");
+});
+
+// Expose hasErrors for parent component
+defineExpose({ hasErrors });
 </script>
 
 <style scoped lang="scss">
@@ -246,6 +362,10 @@ const formatAggregateCap = (e: Event) => {
 .checkbox-label {
   @apply flex cursor-pointer items-center gap-2 text-sm;
   color: var(--text-secondary);
+
+  &.disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
 }
 
 .form-checkbox {

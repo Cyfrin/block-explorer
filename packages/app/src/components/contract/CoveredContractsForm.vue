@@ -3,6 +3,9 @@
     <!-- Current contracts as removable chips -->
     <div v-if="form.existingContracts.length > 0" class="existing-contracts">
       <span class="section-label">{{ t("safeHarbor.edit.currentContracts") }}</span>
+      <div v-if="isLocked" class="locked-note">
+        {{ t("safeHarbor.edit.cannotRemoveWhenLocked") }}
+      </div>
       <div class="contracts-list">
         <div
           v-for="address in form.existingContracts"
@@ -11,25 +14,28 @@
           :class="{ 'to-remove': form.toRemove.includes(address) }"
         >
           <span class="address">{{ shortValue(address) }}</span>
-          <button
-            v-if="!form.toRemove.includes(address)"
-            @click="markForRemoval(address)"
-            class="btn-chip-action remove"
-            :title="t('safeHarbor.edit.markForRemoval')"
-          >
-            <XIcon class="icon" />
-          </button>
-          <button
-            v-else
-            @click="unmarkForRemoval(address)"
-            class="btn-chip-action undo"
-            :title="t('safeHarbor.edit.undoRemoval')"
-          >
-            <RefreshIcon class="icon" />
-          </button>
+          <!-- Hide remove/undo buttons when locked -->
+          <template v-if="!isLocked">
+            <button
+              v-if="!form.toRemove.includes(address)"
+              @click="markForRemoval(address)"
+              class="btn-chip-action remove"
+              :title="t('safeHarbor.edit.markForRemoval')"
+            >
+              <XIcon class="icon" />
+            </button>
+            <button
+              v-else
+              @click="unmarkForRemoval(address)"
+              class="btn-chip-action undo"
+              :title="t('safeHarbor.edit.undoRemoval')"
+            >
+              <RefreshIcon class="icon" />
+            </button>
+          </template>
         </div>
       </div>
-      <div v-if="form.toRemove.length > 0" class="removal-note">
+      <div v-if="form.toRemove.length > 0 && !isLocked" class="removal-note">
         {{ t("safeHarbor.edit.contractsToRemove", { count: form.toRemove.length }) }}
       </div>
     </div>
@@ -89,6 +95,10 @@ const props = defineProps({
   modelValue: {
     type: Object as PropType<CoveredContractsChange>,
     required: true,
+  },
+  isLocked: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -190,6 +200,11 @@ const unmarkForRemoval = (address: Address) => {
 
 .existing-contracts {
   @apply space-y-2;
+}
+
+.locked-note {
+  @apply text-xs italic;
+  color: var(--text-muted);
 }
 
 .contracts-list {

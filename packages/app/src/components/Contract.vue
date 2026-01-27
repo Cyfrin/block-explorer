@@ -89,6 +89,7 @@
                 :owner="agreement.owner"
                 :wallet-address="walletAddress"
                 @agreement-updated="handleAgreementUpdated"
+                @connect-wallet="connectWallet"
               />
             </template>
             <NoAgreementWarning
@@ -156,7 +157,7 @@ const walletContext = {
   getL2Provider: () => context.getL2Provider(),
 };
 
-const { address: walletAddress } = useWallet(walletContext);
+const { address: walletAddress, connect: connectWallet } = useWallet(walletContext);
 
 const props = defineProps({
   contract: {

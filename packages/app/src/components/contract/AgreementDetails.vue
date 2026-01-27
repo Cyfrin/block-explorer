@@ -45,7 +45,51 @@
     </div>
 
     <!-- Commitment Window Status -->
-    <CommitmentWindowStatus :deadline="agreement.commitmentDeadline" class="commitment-status" />
+    <EditableSection
+      class="commitment-section"
+      :title="t('safeHarbor.commitmentWindow')"
+      :is-editing="activeSection === 'commitmentWindow'"
+      :can-edit="isOwner"
+      :is-saving="isSaving"
+      :can-save="canSaveCommitmentWindow"
+      :error="activeSection === 'commitmentWindow' ? saveError : null"
+      @edit="startEditing('commitmentWindow')"
+      @save="saveCommitmentWindow"
+      @cancel="cancelCommitmentWindowEdit"
+    >
+      <CommitmentWindowStatus :deadline="agreement.commitmentDeadline" :is-editing="false" />
+      <template #edit-form>
+        <CommitmentWindowStatus
+          ref="commitmentWindowFormRef"
+          :deadline="agreement.commitmentDeadline"
+          :is-editing="true"
+          @update:deadline="newCommitmentDeadline = $event"
+        />
+      </template>
+    </EditableSection>
+
+    <!-- Owner Edit Prompt - shows when not connected -->
+    <div v-if="!walletAddress" class="edit-prompt-banner">
+      <PencilIcon class="icon" />
+      <div class="prompt-content">
+        <span class="prompt-text">
+          {{ t("safeHarbor.edit.ownerPrompt") }}
+          <button type="button" class="connect-link" @click="handleConnectWallet">
+            {{ t("safeHarbor.edit.connectWallet") }}
+          </button>
+          {{ t("safeHarbor.edit.toEditTerms") }}
+        </span>
+        <span class="prompt-subtext">
+          {{ t("safeHarbor.edit.commitmentWindowNote") }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Commitment Window Restrictions Banner - shows when owner & locked -->
+    <div v-if="isOwner && isTermsLocked" class="restriction-banner">
+      <InformationCircleIcon class="icon" />
+      <span>{{ t("safeHarbor.edit.lockedRestrictions") }}</span>
+    </div>
 
     <!-- Details Grid -->
     <div class="details-grid">
@@ -55,6 +99,7 @@
         :is-editing="activeSection === 'bountyTerms'"
         :can-edit="isOwner"
         :is-saving="isSaving"
+        :can-save="canSaveBountyTerms"
         :error="activeSection === 'bountyTerms' ? saveError : null"
         @edit="startEditing('bountyTerms')"
         @save="saveBountyTerms"
@@ -87,7 +132,12 @@
           </div>
         </template>
         <template #edit-form>
-          <BountyTermsForm v-model="editForms.bountyTerms" />
+          <BountyTermsForm
+            ref="bountyTermsFormRef"
+            v-model="editForms.bountyTerms"
+            :is-locked="isTermsLocked"
+            :original-values="originalBountyTerms"
+          />
         </template>
       </EditableSection>
 
@@ -162,17 +212,18 @@
           <CoveredContractsForm
             v-model="editForms.coveredContracts"
             :existing-contracts="agreement.coveredContracts || []"
+            :is-locked="isTermsLocked"
           />
         </template>
       </EditableSection>
 
-      <!-- Legal Document Section -->
+      <!-- Legal Document Section (not editable during commitment window) -->
       <EditableSection
         v-if="agreement.agreementURI || isOwner"
         class="full-width"
         :title="t('safeHarbor.legalDocument')"
         :is-editing="activeSection === 'agreementURI'"
-        :can-edit="isOwner"
+        :can-edit="isOwner && !isTermsLocked"
         :is-saving="isSaving"
         :error="activeSection === 'agreementURI' ? saveError : null"
         @edit="startEditing('agreementURI')"
@@ -228,10 +279,17 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { CheckIcon, ExternalLinkIcon, PencilIcon, ShieldCheckIcon, XIcon } from "@heroicons/vue/solid";
+import {
+  CheckIcon,
+  ExternalLinkIcon,
+  InformationCircleIcon,
+  PencilIcon,
+  ShieldCheckIcon,
+  XIcon,
+} from "@heroicons/vue/solid";
 
 import AddressLink from "@/components/AddressLink.vue";
 import CopyButton from "@/components/common/CopyButton.vue";
@@ -273,6 +331,7 @@ const props = defineProps({
 
 const emit = defineEmits<{
   (e: "agreementUpdated"): void;
+  (e: "connectWallet"): void;
 }>();
 
 // Ownership check
@@ -280,6 +339,38 @@ const isOwner = computed(() => {
   if (!props.owner || !props.walletAddress) return false;
   return props.owner.toLowerCase() === props.walletAddress.toLowerCase();
 });
+
+// Check if terms are currently locked (in commitment window)
+const isTermsLocked = computed(() => {
+  if (!props.agreement.commitmentDeadline) return false;
+  return Date.now() < props.agreement.commitmentDeadline;
+});
+
+// Handle connect wallet request
+const handleConnectWallet = () => {
+  emit("connectWallet");
+};
+
+// Original bounty terms for comparison during locked state edits
+const originalBountyTerms = computed(() => ({
+  bountyPercentage: props.agreement.bountyPercentage || 10,
+  bountyCapUsd: (props.agreement.bountyCapUsd || "0").replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+  retainable: props.agreement.retainable || false,
+  identityRequirement: props.agreement.identityRequirement || "Anonymous",
+  diligenceRequirements: props.agreement.diligenceRequirements || "",
+  aggregateBountyCapUsd: (props.agreement.aggregateBountyCapUsd || "0").replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+}));
+
+// Template ref for BountyTermsForm
+const bountyTermsFormRef = ref<{ hasErrors: boolean } | null>(null);
+
+// Check if bounty terms form is valid
+const canSaveBountyTerms = computed(() => {
+  return !bountyTermsFormRef.value?.hasErrors;
+});
+
+// Template ref for CommitmentWindowStatus (edit mode)
+const commitmentWindowFormRef = ref<{ hasErrors: boolean } | null>(null);
 
 // Edit state management
 const agreementAddressRef = computed(() => props.agreement.agreementAddress);
@@ -293,9 +384,34 @@ const {
   setBountyTerms,
   setContactDetails,
   setAgreementURI,
+  extendCommitmentWindow,
   addAccounts,
   removeAccounts,
 } = useAgreementEditing(agreementAddressRef);
+
+// State for commitment window extension
+const newCommitmentDeadline = ref<number | null>(null);
+
+// Check if commitment window extension is valid
+const canSaveCommitmentWindow = computed(() => {
+  return !commitmentWindowFormRef.value?.hasErrors;
+});
+
+// Cancel commitment window edit
+const cancelCommitmentWindowEdit = () => {
+  newCommitmentDeadline.value = null;
+  cancelEditingSection();
+};
+
+// Save commitment window extension
+const saveCommitmentWindow = async () => {
+  if (!newCommitmentDeadline.value) return;
+  const success = await extendCommitmentWindow(newCommitmentDeadline.value);
+  if (success) {
+    newCommitmentDeadline.value = null;
+    emit("agreementUpdated");
+  }
+};
 
 // Form state for edits
 const editForms = reactive({
@@ -352,6 +468,8 @@ const startEditing = (section: EditSection) => {
     editForms.coveredContracts = { toAdd: [], toRemove: [] };
   } else if (section === "agreementURI") {
     editForms.agreementURI = props.agreement.agreementURI || "";
+  } else if (section === "commitmentWindow") {
+    newCommitmentDeadline.value = null;
   }
   startEditingSection(section);
 };
@@ -616,8 +734,52 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
     }
   }
 
-  .commitment-status {
+  .commitment-section {
     @apply w-full sm:w-fit;
+  }
+
+  .edit-prompt-banner {
+    @apply flex items-start gap-3 rounded-lg border p-3 sm:items-center sm:p-4;
+    border-color: var(--border-default);
+    background-color: var(--bg-secondary);
+
+    > .icon {
+      @apply h-5 w-5 flex-shrink-0;
+      color: var(--text-muted);
+    }
+
+    .prompt-content {
+      @apply flex flex-col gap-1;
+    }
+
+    .prompt-text {
+      @apply text-sm;
+      color: var(--text-secondary);
+    }
+
+    .prompt-subtext {
+      @apply text-xs;
+      color: var(--text-muted);
+    }
+
+    .connect-link {
+      @apply font-medium underline;
+      color: var(--accent);
+
+      &:hover {
+        color: var(--accent-hover);
+      }
+    }
+  }
+
+  .restriction-banner {
+    @apply flex items-start gap-2 rounded-lg p-3 text-sm sm:items-center sm:p-4;
+    background-color: var(--info-muted);
+    color: var(--info-text);
+
+    > .icon {
+      @apply h-5 w-5 flex-shrink-0;
+    }
   }
 
   .details-grid {

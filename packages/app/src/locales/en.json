@@ -843,6 +843,7 @@
     "termsUnlock": "Terms unlock",
     "lockedUntil": "until",
     "termsCanChange": "Protocol can modify terms at any time",
+    "commitmentWindow": "Commitment Window",
     "edit": {
       "editSection": "Edit this section",
       "editProtocolName": "Edit protocol name",
@@ -867,7 +868,18 @@
       "undoRemoval": "Undo removal",
       "contractsToRemove": "{count} contract(s) will be removed",
       "agreementURIPlaceholder": "ipfs://... or https://...",
-      "agreementURIHelp": "Link to the full legal agreement document (IPFS, Arweave, or HTTP)"
+      "agreementURIHelp": "Link to the full legal agreement document (IPFS, Arweave, or HTTP)",
+      "ownerPrompt": "Are you the agreement owner?",
+      "connectWallet": "Connect your wallet",
+      "toEditTerms": "to edit agreement terms.",
+      "commitmentWindowNote": "During the commitment window, only whitehat-favorable changes are allowed.",
+      "lockedRestrictions": "Terms are locked. You can only make whitehat-favorable changes: increase bounties, loosen identity requirements, add covered contracts, or extend the commitment window.",
+      "cannotDecreaseWhenLocked": "Cannot decrease when terms are locked",
+      "cannotRemoveWhenLocked": "Cannot remove contracts when terms are locked",
+      "cannotRestrictWhenLocked": "Cannot make identity requirements stricter when locked",
+      "newDeadline": "New deadline",
+      "extendDeadlineHelp": "Must be later than the current deadline",
+      "deadlineMustBeAfterCurrent": "New deadline must be after the current deadline"
     },
     "createAgreement": {
       "title": "Create Safe Harbor Agreement",
