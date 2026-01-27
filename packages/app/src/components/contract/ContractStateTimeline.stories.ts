@@ -52,6 +52,16 @@ RegisteredThreeDaysAgo.args = {
   commitmentLockedUntil: null,
 };
 
+export const AttackRequested = Template.bind({}) as unknown as { args: Args };
+AttackRequested.args = {
+  state: ContractState.ATTACK_REQUESTED,
+  wasUnderAttack: false,
+  registeredAt: oneDayAgo,
+  underAttackAt: null,
+  productionAt: null,
+  commitmentLockedUntil: null,
+};
+
 export const UnderAttack = Template.bind({}) as unknown as { args: Args };
 UnderAttack.args = {
   state: ContractState.UNDER_ATTACK,

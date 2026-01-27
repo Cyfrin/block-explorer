@@ -53,6 +53,59 @@ describe("ContractStateTimeline", () => {
     expect(container.textContent).not.toContain("Under Attack");
   });
 
+  it("renders attack requested state with 4 steps", () => {
+    const { container } = render(ContractStateTimeline, {
+      props: {
+        state: ContractState.ATTACK_REQUESTED,
+        wasUnderAttack: false,
+        registeredAt: Date.now() - 86400000,
+        underAttackAt: null,
+        productionAt: null,
+      },
+      global,
+    });
+
+    expect(container.textContent).toContain("Registered");
+    expect(container.textContent).toContain("Attack Requested");
+    expect(container.textContent).toContain("Under Attack");
+    expect(container.textContent).toContain("Production");
+
+    const steps = container.querySelectorAll(".timeline-step");
+    expect(steps.length).toBe(4);
+  });
+
+  it("shows dashed connectors for attack requested step (both before and after)", () => {
+    const { container } = render(ContractStateTimeline, {
+      props: {
+        state: ContractState.ATTACK_REQUESTED,
+        wasUnderAttack: false,
+        registeredAt: Date.now() - 86400000,
+        underAttackAt: null,
+        productionAt: null,
+      },
+      global,
+    });
+
+    const dashedConnectors = container.querySelectorAll(".timeline-connector.dashed");
+    expect(dashedConnectors.length).toBe(2); // Before and after Attack Requested step
+  });
+
+  it("shows attack requested step as current with amber styling", () => {
+    const { container } = render(ContractStateTimeline, {
+      props: {
+        state: ContractState.ATTACK_REQUESTED,
+        wasUnderAttack: false,
+        registeredAt: Date.now() - 86400000,
+        underAttackAt: null,
+        productionAt: null,
+      },
+      global,
+    });
+
+    const attackRequestedStep = container.querySelector(".timeline-step.attack-requested");
+    expect(attackRequestedStep?.classList.contains("current")).toBe(true);
+  });
+
   it("renders under attack state", () => {
     const { container } = render(ContractStateTimeline, {
       props: {

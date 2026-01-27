@@ -36,6 +36,30 @@
       </div>
     </div>
 
+    <!-- Attack Requested Step (shown when in ATTACK_REQUESTED state) -->
+    <div
+      v-if="showAttackRequestedStep"
+      class="timeline-step attack-requested"
+      :class="getStepClass(ContractState.ATTACK_REQUESTED)"
+    >
+      <div class="step-indicator-column">
+        <div class="step-indicator-wrapper">
+          <span v-if="isCurrent(ContractState.ATTACK_REQUESTED)" class="ping-animation"></span>
+          <div class="step-indicator">
+            <ClockIcon v-if="isCurrentOrCompleted(ContractState.ATTACK_REQUESTED)" class="step-icon" />
+            <ClockIconOutline v-else class="step-icon" />
+          </div>
+        </div>
+        <div class="timeline-connector-wrapper">
+          <div class="timeline-connector dashed" :class="connectorClassAfterAttackRequested"></div>
+        </div>
+      </div>
+      <div class="step-content">
+        <span class="step-label">{{ t("contractState.attackRequested") }}</span>
+        <span class="step-subtitle">{{ t("contractState.pendingApproval") }}</span>
+      </div>
+    </div>
+
     <!-- Under Attack Step (optional) -->
     <div
       v-if="showUnderAttackStep"
@@ -109,11 +133,12 @@ import { useI18n } from "vue-i18n";
 
 import {
   BadgeCheckIcon as BadgeCheckIconOutline,
+  ClockIcon as ClockIconOutline,
   CubeIcon as CubeIconOutline,
   LockClosedIcon,
   ShieldExclamationIcon as ShieldExclamationIconOutline,
 } from "@heroicons/vue/outline";
-import { BadgeCheckIcon, CubeIcon, ShieldExclamationIcon } from "@heroicons/vue/solid";
+import { BadgeCheckIcon, ClockIcon, CubeIcon, ShieldExclamationIcon } from "@heroicons/vue/solid";
 import { useTimeAgo } from "@vueuse/core";
 
 import CopyButton from "@/components/common/CopyButton.vue";
@@ -241,15 +266,32 @@ const showCommitmentLock = computed(() => {
   return props.commitmentLockedUntil > Date.now();
 });
 
+const showAttackRequestedStep = computed(() => {
+  return props.state === ContractState.ATTACK_REQUESTED;
+});
+
 const showUnderAttackStep = computed(() => {
-  return props.state === ContractState.UNDER_ATTACK || props.wasUnderAttack;
+  return (
+    props.state === ContractState.UNDER_ATTACK || props.state === ContractState.ATTACK_REQUESTED || props.wasUnderAttack
+  );
 });
 
 const connectorClassAfterRegistered = computed(() => {
   // Completed if we're past REGISTERED
+  // Dashed if we're in ATTACK_REQUESTED (indicates reversible state)
+  const isAttackRequested = props.state === ContractState.ATTACK_REQUESTED;
   return {
-    completed: props.state === ContractState.UNDER_ATTACK || props.state === ContractState.PRODUCTION,
+    completed:
+      props.state === ContractState.UNDER_ATTACK ||
+      props.state === ContractState.PRODUCTION ||
+      props.state === ContractState.ATTACK_REQUESTED,
+    dashed: isAttackRequested,
   };
+});
+
+const connectorClassAfterAttackRequested = computed(() => {
+  // Never completed since we're still in ATTACK_REQUESTED when this shows
+  return {};
 });
 
 const connectorClassAfterUnderAttack = computed(() => {
@@ -266,6 +308,10 @@ const isCurrentOrCompleted = (step: ContractState) => isCurrent(step) || isCompl
 const isCompleted = (step: ContractState) => {
   if (step === ContractState.REGISTERED) {
     return props.state !== ContractState.REGISTERED;
+  }
+  if (step === ContractState.ATTACK_REQUESTED) {
+    // Attack requested is never "completed" - it transitions to UNDER_ATTACK or back to REGISTERED
+    return false;
   }
   if (step === ContractState.UNDER_ATTACK) {
     return props.state === ContractState.PRODUCTION && props.wasUnderAttack;
@@ -339,6 +385,16 @@ const getStepClass = (step: ContractState) => {
     &.completed {
       background-color: var(--success);
     }
+
+    &.dashed {
+      background: none;
+      border-left: 2px dashed var(--border-strong);
+      width: 0;
+
+      &.completed {
+        border-color: var(--success);
+      }
+    }
   }
 
   .step-icon {
@@ -352,6 +408,11 @@ const getStepClass = (step: ContractState) => {
   .step-label {
     @apply text-sm font-medium;
     color: var(--text-muted);
+  }
+
+  .step-subtitle {
+    @apply text-xs;
+    color: var(--text-faint);
   }
 
   :deep(.step-timestamp.copy-button-container) {
@@ -436,6 +497,19 @@ const getStepClass = (step: ContractState) => {
     }
     .step-label {
       color: var(--error-text);
+    }
+  }
+
+  &.current.attack-requested {
+    .ping-animation {
+      background-color: var(--warning);
+    }
+    .step-indicator {
+      background-color: var(--warning);
+      color: white;
+    }
+    .step-label {
+      color: var(--warning-text);
     }
   }
 
