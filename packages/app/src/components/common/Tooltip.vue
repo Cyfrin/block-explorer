@@ -41,5 +41,9 @@ defineProps({
       border-bottom-color: var(--text-muted);
     }
   }
+
+  .tippy-content {
+    @apply px-2 py-1;
+  }
 }
 </style>
