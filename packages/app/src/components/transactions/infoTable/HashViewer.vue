@@ -60,13 +60,18 @@ const options: DecodingType[] = ["hex", "number", "text", "address"];
 const selected = ref(props.defaultType);
 
 const convertedValue = computed(() => {
-  if (selected.value === "number") {
-    return formatHexDecimals(props.hash, "Dec");
-  } else if (selected.value === "address") {
-    return formatAddressFromHash(props.hash);
-  } else if (selected.value === "text") {
-    return hexStringToUTF8(props.hash);
-  } else {
+  try {
+    if (selected.value === "number") {
+      return formatHexDecimals(props.hash, "Dec");
+    } else if (selected.value === "address") {
+      return formatAddressFromHash(props.hash);
+    } else if (selected.value === "text") {
+      return hexStringToUTF8(props.hash);
+    } else {
+      return props.hash;
+    }
+  } catch {
+    // If conversion fails (e.g., invalid hash length for address), return raw hash
     return props.hash;
   }
 });

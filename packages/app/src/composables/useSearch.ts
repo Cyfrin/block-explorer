@@ -8,42 +8,43 @@ import { FetchInstance } from "./useFetchInstance";
 
 import { isAddress, isBlockNumber, isTransactionHash } from "@/utils/validators";
 
+// Standalone function that can be used outside of Vue setup context
+export const getSearchRoute = (param: string) => {
+  try {
+    const searchRoutes = [
+      {
+        routeParam: { address: param },
+        apiRoute: "address",
+        isValid: () => isAddress(param),
+        routeName: "address",
+        prefetch: true,
+      },
+      {
+        routeParam: { id: param },
+        apiRoute: "blocks",
+        isValid: () => isBlockNumber(param),
+        routeName: "block",
+        prefetch: true,
+      },
+      {
+        routeParam: { hash: param },
+        apiRoute: "transactions",
+        isValid: () => isTransactionHash(param),
+        routeName: "transaction",
+        prefetch: false,
+      },
+    ];
+
+    return searchRoutes.find((searchRoute) => searchRoute.isValid());
+  } catch {
+    return null;
+  }
+};
+
 export default (context = useContext()) => {
   const router = useRouter();
   const isRequestPending = ref(false);
   const isRequestFailed = ref(false);
-
-  const getSearchRoute = (param: string) => {
-    try {
-      const searchRoutes = [
-        {
-          routeParam: { address: param },
-          apiRoute: "address",
-          isValid: () => isAddress(param),
-          routeName: "address",
-          prefetch: true,
-        },
-        {
-          routeParam: { id: param },
-          apiRoute: "blocks",
-          isValid: () => isBlockNumber(param),
-          routeName: "block",
-          prefetch: true,
-        },
-        {
-          routeParam: { hash: param },
-          apiRoute: "transactions",
-          isValid: () => isTransactionHash(param),
-          routeName: "transaction",
-          prefetch: false,
-        },
-      ];
-
-      return searchRoutes.find((searchRoute) => searchRoute.isValid());
-    } catch {
-      return null;
-    }
-  };
 
   const search = async (param: string) => {
     isRequestPending.value = true;

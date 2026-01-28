@@ -1,4 +1,4 @@
-import useSearch from "@/composables/useSearch";
+import { getSearchRoute } from "@/composables/useSearch";
 
 import type { RouteLocation, RouteRecordRaw } from "vue-router";
 
@@ -6,7 +6,6 @@ import AuthCallbackView from "@/views/AuthCallbackView.vue";
 import HomeView from "@/views/HomeView.vue";
 import LoginView from "@/views/LoginView.vue";
 import NotAuthorizedView from "@/views/NotAuthorizedView.vue";
-const { getSearchRoute } = useSearch();
 
 export default [
   {
