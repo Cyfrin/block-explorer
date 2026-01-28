@@ -42,10 +42,7 @@
         class="status-col"
       >
         <Badge :color="item.statusColor" :data-testid="$testId.statusBadge">
-          <template #default>
-            {{ te(`transactions.status.${item.status}`) ? t(`transactions.status.${item.status}`) : item.status
-            }}<component :is="item.statusIcon" />
-          </template>
+          {{ te(`transactions.status.${item.status}`) ? t(`transactions.status.${item.status}`) : item.status }}
         </Badge>
       </TableBodyColumn>
       <TableBodyColumn v-if="columns.includes('transactionHash')" :data-heading="t('transactions.table.txnHash')">
@@ -231,7 +228,6 @@ import Table from "@/components/common/table/Table.vue";
 import TableBodyColumn from "@/components/common/table/TableBodyColumn.vue";
 import TableHeadColumn from "@/components/common/table/TableHeadColumn.vue";
 import TimeField from "@/components/common/table/fields/TimeField.vue";
-import ZkSyncIcon from "@/components/icons/ZkSync.vue";
 import TokenAmountPriceTableCell from "@/components/transactions/TokenAmountPriceTableCell.vue";
 import TransactionDirectionTableCell from "@/components/transactions/TransactionDirectionTableCell.vue";
 import TransactionNetworkSquareBlock from "@/components/transactions/TransactionNetworkSquareBlock.vue";
@@ -344,7 +340,6 @@ type TransactionListItemMapped = TransactionListItem & {
   methodName: string;
   fromNetwork: NetworkOrigin;
   toNetwork: NetworkOrigin;
-  statusIcon: unknown;
   statusColor: "danger" | "dark-success";
   isContractDeploymentTx: boolean;
   displayedTxReceiver: string | null;
@@ -361,7 +356,6 @@ const transactions = computed<TransactionListItemMapped[] | undefined>(() => {
       statusColor: transaction.status === "failed" ? "danger" : "dark-success",
       // replace finality status with execution status here
       status: ["verified", "proved", "committed"].includes(transaction.status) ? "included" : transaction.status,
-      statusIcon: ZkSyncIcon,
       isContractDeploymentTx,
       displayedTxReceiver: isContractDeploymentTx ? transaction.contractAddress : transaction.to,
     };
@@ -527,13 +521,6 @@ const toggleAgeTimestamp = () => {
     @apply my-0 table-cell items-start justify-start p-4 text-left;
     background-color: var(--bg-primary);
     color: var(--text-secondary);
-  }
-  .badge-content {
-    @apply flex items-center;
-
-    svg {
-      @apply ml-1;
-    }
   }
   .badge-container.type-label {
     @apply pr-2 normal-case	normal-case;

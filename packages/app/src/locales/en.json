@@ -198,11 +198,11 @@
       "matchesTopicAlert": "Address matches transaction recipient"
     },
     "status": {
-      "included": "Processed on",
-      "committed": "Sent on",
-      "proved": "Validated on",
-      "verified": "Executed on",
-      "failed": "Failed on"
+      "included": "Processed",
+      "committed": "Sent",
+      "proved": "Validated",
+      "verified": "Executed",
+      "failed": "Failed"
     },
     "statusComponent": {
       "processed": "Processed",
