@@ -23,7 +23,9 @@
             </button>
           </template>
           <template v-else>
-            <h2 class="protocol-name">{{ agreement.protocolName || t("safeHarbor.defaultProtocolName") }}</h2>
+            <h2 class="protocol-name" :title="agreement.protocolName || undefined">
+              {{ agreement.protocolName || t("safeHarbor.defaultProtocolName") }}
+            </h2>
             <button
               v-if="isOwner"
               @click="startEditingProtocolName"
@@ -155,20 +157,34 @@
         <template #default>
           <template v-if="agreement.contactDetails && agreement.contactDetails.length > 0">
             <div v-for="(contact, index) in agreement.contactDetails" :key="index" class="detail-row">
-              <span class="detail-label">{{ contact.name }}</span>
-              <a v-if="isEmailContact(contact.contact)" :href="`mailto:${contact.contact}`" class="detail-value link">
-                {{ contact.contact }}
+              <span class="detail-label contact-name" :title="contact.name.length > 30 ? contact.name : undefined">
+                {{ truncateString(contact.name, 30) }}
+              </span>
+              <a
+                v-if="isEmailContact(contact.contact)"
+                :href="`mailto:${contact.contact}`"
+                class="detail-value link contact-value"
+                :title="contact.contact.length > 50 ? contact.contact : undefined"
+              >
+                {{ truncateString(contact.contact, 50) }}
               </a>
               <a
                 v-else-if="isLinkableContact(contact.contact)"
                 :href="formatContactLink(contact)"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="detail-value link"
+                class="detail-value link contact-value"
+                :title="contact.contact.length > 50 ? contact.contact : undefined"
               >
-                {{ contact.contact }}
+                {{ truncateString(contact.contact, 50) }}
               </a>
-              <span v-else class="detail-value">{{ contact.contact }}</span>
+              <span
+                v-else
+                class="detail-value contact-value"
+                :title="contact.contact.length > 50 ? contact.contact : undefined"
+              >
+                {{ truncateString(contact.contact, 50) }}
+              </span>
             </div>
           </template>
           <div v-else class="no-contacts">
@@ -233,8 +249,14 @@
         <template #default>
           <div v-if="agreement.agreementURI" class="detail-row">
             <span class="detail-label">{{ t("safeHarbor.agreementURI") }}</span>
-            <a :href="agreementLink" target="_blank" rel="noopener noreferrer" class="detail-value link external">
-              {{ agreement.agreementURI }}
+            <a
+              :href="agreementLink"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="detail-value link external agreement-uri"
+              :title="agreement.agreementURI.length > 60 ? agreement.agreementURI : undefined"
+            >
+              {{ truncateMiddle(agreement.agreementURI, 60) }}
               <ExternalLinkIcon class="external-icon" />
             </a>
           </div>
@@ -309,7 +331,7 @@ import type { ContactDetail, SafeHarborAgreement } from "@/types";
 import type { PropType } from "vue";
 
 import { TimeFormat } from "@/types";
-import { shortValue } from "@/utils/formatters";
+import { shortValue, truncateMiddle, truncateString } from "@/utils/formatters";
 import { ISOStringFromUnixTimestamp, localDateFromUnixTimestamp } from "@/utils/helpers";
 
 const { t } = useI18n();
@@ -647,8 +669,13 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
   }
 
   .protocol-name {
-    @apply mb-0 text-lg font-semibold sm:text-xl;
+    @apply mb-0 truncate text-lg font-semibold sm:text-xl;
     color: var(--success-text);
+    max-width: 250px;
+
+    @media (min-width: 640px) {
+      max-width: 400px;
+    }
   }
 
   .protocol-name-input {

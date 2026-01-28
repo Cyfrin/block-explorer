@@ -134,3 +134,46 @@ UnlockedOwnerView.args = {
   owner: minimalAgreement.owner,
   walletAddress: minimalAgreement.owner,
 };
+
+// Agreement with very long strings to test truncation
+const longStringAgreement: SafeHarborAgreement = {
+  agreementAddress: "0x1234567890123456789012345678901234567890",
+  owner: "0x1111111111111111111111111111111111111111",
+  protocolName:
+    "This Is An Extremely Long Protocol Name That Should Be Truncated In The UI Because It Exceeds The Maximum Display Width",
+  bountyPercentage: 15,
+  bountyCapUsd: "5000000",
+  identityRequirement: "Named",
+  retainable: true,
+  diligenceRequirements:
+    "This is a very long diligence requirements text that goes on and on and on. It includes many detailed requirements that must be met by the whitehat researcher before they can claim the bounty. The requirements include but are not limited to: providing valid government-issued identification, completing a background check, signing a non-disclosure agreement, and agreeing to the terms of service. Additionally, the researcher must demonstrate that they did not cause any harm to the protocol or its users during the course of their research.",
+  coveredContracts: ["0xabcdef1234567890abcdef1234567890abcdef12", "0x1111111111111111111111111111111111111111"],
+  contactDetails: [
+    {
+      name: "This Is A Very Long Contact Name That Should Be Truncated When Displayed",
+      contact: "security-team-very-long-email-address-that-should-be-truncated@extremely-long-domain-name-example.com",
+    },
+    {
+      name: "Support Contact With Long Name",
+      contact: "https://example.com/very/long/path/to/support/page/that/goes/on/and/on/and/never/seems/to/end",
+    },
+  ],
+  commitmentDeadline: inOneWeek,
+  agreementURI:
+    "ipfs://QmYwAPJzv5CZsnAzt8auVZRn1W2R5sHMN8LNxmhQHBvqJ4/very/long/path/to/document/that/exceeds/normal/display/width",
+  registeredAt: oneMonthAgo,
+  lastModified: oneWeekAgo,
+};
+
+export const LongStrings = Template.bind({}) as unknown as { args: Args };
+LongStrings.args = {
+  agreement: longStringAgreement,
+};
+
+// Long strings with owner view to test editing
+export const LongStringsOwnerView = Template.bind({}) as unknown as { args: Args };
+LongStringsOwnerView.args = {
+  agreement: longStringAgreement,
+  owner: longStringAgreement.owner,
+  walletAddress: longStringAgreement.owner,
+};

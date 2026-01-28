@@ -100,3 +100,22 @@ export function formatShortAddress(address: string | null | undefined, prefixLen
   if (!address) return "-";
   return `${address.slice(0, prefixLength)}...${address.slice(-suffixLength)}`;
 }
+
+/**
+ * Truncate a string with ellipsis at the end
+ */
+export function truncateString(str: string | null | undefined, maxLength: number): string {
+  if (!str || str.length <= maxLength) return str ?? "";
+  return str.slice(0, maxLength - 1) + "…";
+}
+
+/**
+ * Truncate a string in the middle (useful for URIs/addresses)
+ */
+export function truncateMiddle(str: string | null | undefined, maxLength: number): string {
+  if (!str || str.length <= maxLength) return str ?? "";
+  const charsToShow = maxLength - 3; // account for '...'
+  const frontChars = Math.ceil(charsToShow / 2);
+  const backChars = Math.floor(charsToShow / 2);
+  return str.slice(0, frontChars) + "..." + str.slice(-backChars);
+}
