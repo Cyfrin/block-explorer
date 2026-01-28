@@ -1,16 +1,22 @@
-import CreateAgreementModal from "./CreateAgreementModal.vue";
+import CreateAgreementContent from "./CreateAgreementContent.vue";
 
 import type { Meta, StoryFn } from "@storybook/vue3";
 
-const meta: Meta<typeof CreateAgreementModal> = {
-  title: "Contract/CreateAgreementModal",
-  component: CreateAgreementModal,
+const meta: Meta<typeof CreateAgreementContent> = {
+  title: "Contract/CreateAgreementContent",
+  component: CreateAgreementContent,
   tags: ["autodocs"],
+  decorators: [
+    () => ({
+      template:
+        '<div style="display: flex; justify-content: center; padding: 1rem; background: var(--bg-secondary);"><story /></div>',
+    }),
+  ],
   parameters: {
     docs: {
       description: {
         component:
-          "A two-step wizard modal for creating and adopting a Safe Harbor Agreement. Step 1 creates the agreement contract, Step 2 adopts it in the registry.",
+          "A two-step wizard for creating and adopting a Safe Harbor Agreement. Step 1 creates the agreement contract, Step 2 adopts it in the registry. This is the content component used inside CreateAgreementModal.",
       },
     },
   },
@@ -23,9 +29,8 @@ const agreementAddress = "0x1234567890abcdef1234567890abcdef12345678";
 const txHash = "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
 
 export const Step1Default: StoryFn = () => ({
-  components: { CreateAgreementModal },
-  template: `<CreateAgreementModal
-    :is-open="true"
+  components: { CreateAgreementContent },
+  template: `<CreateAgreementContent
     contract-address="${contractAddress}"
     :override-step="1"
   />`,
@@ -41,9 +46,8 @@ Step1Default.parameters = {
 };
 
 export const Step1Creating: StoryFn = () => ({
-  components: { CreateAgreementModal },
-  template: `<CreateAgreementModal
-    :is-open="true"
+  components: { CreateAgreementContent },
+  template: `<CreateAgreementContent
     contract-address="${contractAddress}"
     :override-step="1"
     :override-creating="true"
@@ -59,9 +63,8 @@ Step1Creating.parameters = {
 };
 
 export const Step1Error: StoryFn = () => ({
-  components: { CreateAgreementModal },
-  template: `<CreateAgreementModal
-    :is-open="true"
+  components: { CreateAgreementContent },
+  template: `<CreateAgreementContent
     contract-address="${contractAddress}"
     :override-step="1"
     override-create-error="User rejected the transaction"
@@ -77,9 +80,8 @@ Step1Error.parameters = {
 };
 
 export const Step2Default: StoryFn = () => ({
-  components: { CreateAgreementModal },
-  template: `<CreateAgreementModal
-    :is-open="true"
+  components: { CreateAgreementContent },
+  template: `<CreateAgreementContent
     contract-address="${contractAddress}"
     :override-step="2"
     override-agreement-address="${agreementAddress}"
@@ -96,9 +98,8 @@ Step2Default.parameters = {
 };
 
 export const Step2Adopting: StoryFn = () => ({
-  components: { CreateAgreementModal },
-  template: `<CreateAgreementModal
-    :is-open="true"
+  components: { CreateAgreementContent },
+  template: `<CreateAgreementContent
     contract-address="${contractAddress}"
     :override-step="2"
     override-agreement-address="${agreementAddress}"
@@ -116,9 +117,8 @@ Step2Adopting.parameters = {
 };
 
 export const Step2Error: StoryFn = () => ({
-  components: { CreateAgreementModal },
-  template: `<CreateAgreementModal
-    :is-open="true"
+  components: { CreateAgreementContent },
+  template: `<CreateAgreementContent
     contract-address="${contractAddress}"
     :override-step="2"
     override-agreement-address="${agreementAddress}"
@@ -136,9 +136,8 @@ Step2Error.parameters = {
 };
 
 export const Complete: StoryFn = () => ({
-  components: { CreateAgreementModal },
-  template: `<CreateAgreementModal
-    :is-open="true"
+  components: { CreateAgreementContent },
+  template: `<CreateAgreementContent
     contract-address="${contractAddress}"
     :override-step="3"
     override-agreement-address="${agreementAddress}"
