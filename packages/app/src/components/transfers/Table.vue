@@ -244,10 +244,10 @@ watch(
   }
 
   .transfers-data-link {
-    @apply flex items-center gap-x-1;
+    @apply flex items-center gap-x-1 flex-nowrap;
     a,
     .transfers-data-link-value {
-      @apply block cursor-pointer text-sm font-medium;
+      @apply block cursor-pointer text-sm font-medium truncate;
     }
     span.transfers-data-link-value {
       @apply cursor-default;

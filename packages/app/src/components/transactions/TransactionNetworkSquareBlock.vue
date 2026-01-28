@@ -1,10 +1,14 @@
 <template>
-  <div class="transactions-data-link-network">
-    {{ network }}
-  </div>
+  <span class="network-badge-wrapper">
+    <Badge color="neutral">
+      {{ network }}
+    </Badge>
+  </span>
 </template>
 
 <script lang="ts" setup>
+import Badge from "@/components/common/Badge.vue";
+
 import type { NetworkOrigin } from "@/types";
 import type { PropType } from "vue";
 
@@ -18,7 +22,11 @@ defineProps({
 </script>
 
 <style scoped lang="scss">
-.transactions-data-link-network {
-  @apply h-[20px] w-[20px] rounded bg-neutral-200 text-center text-sm text-neutral-800;
+.network-badge-wrapper {
+  @apply shrink-0;
+
+  :deep(.badge) {
+    @apply w-6 justify-center px-0;
+  }
 }
 </style>

@@ -495,10 +495,10 @@ const toggleAgeTimestamp = () => {
     @apply text-xs md:hidden;
   }
   .transactions-data-link {
-    @apply flex items-center gap-x-1;
+    @apply flex items-center gap-x-1 flex-nowrap;
     a,
     .transactions-data-link-value {
-      @apply block cursor-pointer text-sm font-medium;
+      @apply block cursor-pointer text-sm font-medium truncate;
     }
     span.transactions-data-link-value {
       @apply cursor-default;
