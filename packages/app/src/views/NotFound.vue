@@ -1,7 +1,7 @@
 <template>
   <div class="not-found">
     <SearchIcon class="search-icon"></SearchIcon>
-    <h1 class="header">{{ t("notFound.title") }}</h1>
+    <h1 class="title">{{ t("notFound.title") }}</h1>
     <p class="description">
       {{ t("notFound.description") }}
     </p>
@@ -27,16 +27,21 @@ const { t } = useI18n();
 <style lang="scss" scoped>
 .not-found {
   @apply flex min-h-[calc(100vh-260px)] flex-col items-center justify-center text-center;
+
   .search-icon {
-    @apply my-12 w-24 rounded-lg bg-white p-4 text-neutral-800;
+    @apply my-12 w-24 rounded-lg p-4;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
   }
 
-  .header {
-    @apply mb-4 text-3xl text-neutral-800 sm:text-4xl;
+  .title {
+    @apply mb-4 text-3xl sm:text-4xl;
+    color: var(--text-primary);
   }
 
   .description {
-    @apply mb-6 max-w-xl text-xl leading-6 text-neutral-500 sm:text-2xl;
+    @apply mb-6 max-w-xl text-xl leading-6 sm:text-2xl;
+    color: var(--text-secondary);
   }
 
   .search-form {
@@ -44,7 +49,16 @@ const { t } = useI18n();
   }
 
   .contact-support {
-    @apply text-base text-neutral-500;
+    @apply text-base;
+    color: var(--text-secondary);
+
+    a {
+      color: var(--accent);
+
+      &:hover {
+        color: var(--accent-hover);
+      }
+    }
   }
 }
 </style>
