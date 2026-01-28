@@ -17,6 +17,7 @@
 @theme {
   /* Font families */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Geist", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Roboto Mono", ui-monospace, monospace;
 
   /* Alias semantic colors to Tailwind defaults */
@@ -169,6 +170,10 @@
   }
 
   /* Typography hierarchy */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+
   h1 {
     @apply text-3xl font-semibold tracking-tight;
     color: var(--text-primary);

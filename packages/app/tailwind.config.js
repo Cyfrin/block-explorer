@@ -8,6 +8,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ["Inter", ...defaultTheme.fontFamily.sans],
+        heading: ["Geist", "Inter", ...defaultTheme.fontFamily.sans],
         mono: ["JetBrains Mono", "Roboto Mono", ...defaultTheme.fontFamily.mono],
       },
       colors: {
@@ -17,17 +18,17 @@ module.exports = {
           hover: "var(--accent-hover)",
           muted: "var(--accent-muted)",
           text: "var(--accent-text)",
-          // Numeric scale for backwards compatibility with existing Tailwind classes
-          50: "#eff6ff",
-          100: "#dbeafe",
-          200: "#bfdbfe",
-          300: "#93c5fd",
-          400: "#60a5fa",
-          500: "#3b82f6",
-          600: "#2563eb",
-          700: "#1d4ed8",
-          800: "#1e40af",
-          900: "#1e3a8a",
+          // Numeric scale based on brand color #004DFF
+          50: "#E6EDFF",
+          100: "#CCE0FF",
+          200: "#99C2FF",
+          300: "#66A3FF",
+          400: "#3385FF",
+          500: "#004DFF",
+          600: "#003ECC",
+          700: "#002E99",
+          800: "#001F66",
+          900: "#000F33",
         },
         // Slate-based neutral system
         slate: {

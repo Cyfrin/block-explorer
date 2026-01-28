@@ -561,7 +561,8 @@ async function submitForm() {
   }
 }
 .subtitle {
-  @apply mt-2 text-sm text-white;
+  @apply mt-2 text-sm;
+  color: var(--text-secondary);
 }
 .form-container {
   @apply md:grid-cols-4;
@@ -608,6 +609,7 @@ async function submitForm() {
   }
   .form-divider {
     @apply w-full border-t;
+    border-color: var(--border-default);
   }
   .form-footer {
     @apply flex flex-col items-center sm:flex-row;

@@ -21,19 +21,20 @@ import useRuntimeConfig from "@/composables/useRuntimeConfig";
 const { t } = useI18n();
 const config = useRuntimeConfig();
 
+// TODO: Update to BattleChain URLs when available
 const navigation = reactive([
-  {
-    label: computed(() => t("footer.nav.docs")),
-    url: "https://docs.zksync.io/zksync-era/tooling/block-explorers",
-  },
-  {
-    label: computed(() => t("footer.nav.terms")),
-    url: "https://zksync.io/terms",
-  },
-  {
-    label: computed(() => t("footer.nav.contact")),
-    url: "https://zksync.io/contact",
-  },
+  // {
+  //   label: computed(() => t("footer.nav.docs")),
+  //   url: "https://docs.battlechain.io",
+  // },
+  // {
+  //   label: computed(() => t("footer.nav.terms")),
+  //   url: "https://battlechain.io/terms",
+  // },
+  // {
+  //   label: computed(() => t("footer.nav.contact")),
+  //   url: "https://battlechain.io/contact",
+  // },
 ]);
 </script>
 

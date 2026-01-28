@@ -7,7 +7,7 @@ import { FetchInstance } from "@/composables/useFetchInstance";
 import type { Address, ContractState } from "@/types";
 import type { ComputedRef, Ref } from "vue";
 
-// Contract state info returned from the Battlechain API
+// Contract state info returned from the BattleChain API
 export interface BattlechainContractStateInfo {
   state: ContractState;
   wasUnderAttack: boolean;

@@ -227,7 +227,7 @@ const tabs = computed(() => {
     { title: t("tabs.events"), hash: "#events" },
   ];
 
-  // Only include Safe Harbor tab if contract is not excluded from Battlechain
+  // Only include Safe Harbor tab if contract is not excluded from BattleChain
   if (!isBattlechainExcluded.value) {
     baseTabs.push({
       title: t("tabs.safeHarbor"),

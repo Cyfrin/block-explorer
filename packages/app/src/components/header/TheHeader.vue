@@ -5,7 +5,7 @@
         <!-- Logo -->
         <div class="header-logo">
           <router-link :to="{ name: 'home' }" class="logo-link">
-            <span class="logo-text">BattleChain</span>
+            <LogomarkIcon class="logo-image" />
           </router-link>
         </div>
 
@@ -67,7 +67,7 @@
         <div class="mobile-menu-inner">
           <div class="mobile-menu-header">
             <div class="mobile-logo">
-              <span class="logo-text">BattleChain</span>
+              <LogoIcon class="logo-icon" />
             </div>
             <PopoverButton class="mobile-close-btn">
               <span class="sr-only">Close menu</span>
@@ -131,21 +131,25 @@ import WalletButton from "../prividium/WalletButton.vue";
 
 import NetworkSwitch from "@/components/NetworkSwitch.vue";
 import ThemeToggle from "@/components/ThemeToggle.vue";
-import DiscordIcon from "@/components/icons/DiscordIcon.vue";
-import TwitterIcon from "@/components/icons/TwitterIcon.vue";
+import LogoIcon from "@/components/icons/LogoIcon.vue";
+import LogomarkIcon from "@/components/icons/LogomarkIcon.vue";
 
 import useContext from "@/composables/useContext";
 import useRuntimeConfig from "@/composables/useRuntimeConfig";
+
+import type DiscordIcon from "@/components/icons/DiscordIcon.vue";
+import type TwitterIcon from "@/components/icons/TwitterIcon.vue";
 
 const { t } = useI18n({ useScope: "global" });
 const { currentNetwork } = useContext();
 const runtimeConfig = useRuntimeConfig();
 
 const navigation = reactive([
-  {
-    label: computed(() => t("header.nav.documentation")),
-    url: "https://docs.zksync.io/zksync-era/tooling/block-explorers",
-  },
+  // TODO: Update to BattleChain documentation URL when available
+  // {
+  //   label: computed(() => t("header.nav.documentation")),
+  //   url: "https://docs.battlechain.io",
+  // },
 ]);
 
 const blockExplorerLinks = reactive([
@@ -183,9 +187,10 @@ if (currentNetwork.value.bridgeUrl) {
 
 const toolsLinks = reactive(links);
 
-const socials = [
-  { url: "https://join.zksync.dev/", component: DiscordIcon },
-  { url: "https://x.com/zksync", component: TwitterIcon },
+// TODO: Update to BattleChain social URLs when available
+const socials: { url: string; component: typeof DiscordIcon | typeof TwitterIcon }[] = [
+  // { url: "https://discord.gg/battlechain", component: DiscordIcon },
+  // { url: "https://x.com/battlechain", component: TwitterIcon },
 ];
 </script>
 
@@ -212,9 +217,14 @@ const socials = [
     @apply flex items-center no-underline;
   }
 
-  .logo-text {
-    @apply text-xl font-bold tracking-tight;
-    color: var(--text-primary);
+  .logo-image {
+    height: 28px;
+    width: 183px; /* Maintains 1370:210 aspect ratio */
+    color: #004dff;
+
+    [data-theme="dark"] & {
+      color: #ffffff;
+    }
   }
 }
 
@@ -346,9 +356,14 @@ const socials = [
 }
 
 .mobile-logo {
-  .logo-text {
-    @apply text-xl font-bold tracking-tight;
-    color: var(--text-primary);
+  .logo-icon {
+    height: 32px;
+    width: 32px;
+    color: #004dff;
+
+    [data-theme="dark"] & {
+      color: #ffffff;
+    }
   }
 }
 

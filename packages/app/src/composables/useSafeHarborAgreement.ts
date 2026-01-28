@@ -79,7 +79,7 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
     } catch (e) {
       // Any error means we couldn't fetch - don't set isFetched
       // The endpoint returns { agreement: null, hasCoverage: false } when no agreement exists,
-      // so a 404 means the battlechain API routes aren't available
+      // so a 404 means the BattleChain API routes aren't available
       error.value = e instanceof Error ? e.message : "Failed to fetch agreement";
       agreement.value = null;
     } finally {

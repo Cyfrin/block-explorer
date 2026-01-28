@@ -7,17 +7,18 @@
         <template #network>
           {{ currentNetwork.l2NetworkName }}
         </template>
+        <!-- TODO: Update to BattleChain social URLs when available -->
         <template #twitter>
-          <a href="https://x.com/ZKsyncDevs" target="_blank">{{ t("maintenance.twitterLink") }}</a>
+          <a href="#" target="_blank">{{ t("maintenance.twitterLink") }}</a>
         </template>
         <template #uptime>
-          <a href="https://uptime.com/statuspage/era" target="_blank">{{ t("maintenance.uptimeLink") }}</a>
+          <a href="#" target="_blank">{{ t("maintenance.uptimeLink") }}</a>
         </template>
       </i18n-t>
-      <Button class="twitter-button" tag="a" href="https://x.com/ZKsyncDevs" target="_blank">
+      <Button class="twitter-button" tag="a" href="#" target="_blank">
         {{ t("maintenance.twitterButton") }}
       </Button>
-      <a class="uptime-link" href="https://uptime.com/statuspage/era" target="_blank">
+      <a class="uptime-link" href="#" target="_blank">
         {{ t("maintenance.uptimeLink") }}
       </a>
     </div>
