@@ -73,7 +73,7 @@
       <template #tab-4-content>
         <ContractEvents :contract="contract" />
       </template>
-      <template v-if="!isBattlechainExcluded" #tab-5-content>
+      <template v-if="showSafeHarborTab" #tab-5-content>
         <div class="safe-harbor-tab-content">
           <ContentLoader v-if="isAgreementLoading" class="agreement-loader" />
           <template v-else-if="isAgreementFetched">
@@ -185,14 +185,22 @@ const {
   fetch: fetchAgreement,
 } = useSafeHarborAgreement(contractAddress);
 
-const { state: contractState, fetch: fetchContractState } = useBattlechainContractState(contractAddress);
+const {
+  state: contractState,
+  hasStateInfo,
+  isNotRegistered,
+  fetch: fetchContractState,
+} = useBattlechainContractState(contractAddress);
 
 const { isExcluded: isBattlechainExcluded } = useIsBattlechainExcluded(contractAddress);
 
-// Show the request under attack prompt when contract is REGISTERED and has an agreement
+// Show the request under attack prompt when contract is NEW_DEPLOYMENT and has an agreement
 const showRequestUnderAttackPrompt = computed(
-  () => contractState.value === ContractState.REGISTERED && hasAgreement.value && agreement.value
+  () => contractState.value === ContractState.NEW_DEPLOYMENT && hasAgreement.value && agreement.value
 );
+
+// Show Safe Harbor tab only when contract is registered in AttackRegistry
+const showSafeHarborTab = computed(() => !isBattlechainExcluded.value && hasStateInfo.value && !isNotRegistered.value);
 
 watch(
   () => props.contract?.address,
@@ -227,8 +235,8 @@ const tabs = computed(() => {
     { title: t("tabs.events"), hash: "#events" },
   ];
 
-  // Only include Safe Harbor tab if contract is not excluded from BattleChain
-  if (!isBattlechainExcluded.value) {
+  // Only include Safe Harbor tab if contract is registered in AttackRegistry
+  if (showSafeHarborTab.value) {
     baseTabs.push({
       title: t("tabs.safeHarbor"),
       hash: "#safe-harbor",

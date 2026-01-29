@@ -58,7 +58,8 @@
           <span v-else class="fetch-error">Unable to load</span>
         </table-body-column>
       </tr>
-      <tr v-if="!isBattlechainExcluded">
+      <!-- Safe Harbor row only shows when contract is registered in AttackRegistry -->
+      <tr v-if="!isBattlechainExcluded && hasStateInfo && !isNotRegistered">
         <table-body-column class="contract-info-field-label">
           {{ t("tabs.safeHarbor") }}
         </table-body-column>
