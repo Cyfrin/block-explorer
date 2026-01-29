@@ -1,18 +1,31 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
+// Contract states aligned with AttackRegistry.sol
 export enum ContractState {
-  NOT_REGISTERED = -1, // Contract not found in AttackRegistry
-  REGISTERED = 0, // Contract registered in AttackRegistry (was NEW_DEPLOYMENT)
-  UNDER_ATTACK = 1,
-  PRODUCTION = 2,
-  ATTACK_REQUESTED = 3, // Owner has requested attack mode but it hasn't been activated yet
+  NOT_REGISTERED = -1, // Frontend-only: Contract not found in AttackRegistry
+  NOT_DEPLOYED = 0, // Contract not deployed via BattleChainDeployer
+  NEW_DEPLOYMENT = 1, // Just deployed, no attack requested yet (display: "Registered")
+  ATTACK_REQUESTED = 2, // Waiting DAO approval (display: "Warming Up")
+  UNDER_ATTACK = 3, // Open for ethical hacking (display: "Attackable")
+  PROMOTION_REQUESTED = 4, // Owner requested promotion, 3-day delay (display: "Promotion Pending")
+  PRODUCTION = 5, // Protected, no longer attackable (display: "Production")
+  CORRUPTED = 6, // Marked corrupted after successful attack (display: "Compromised")
 }
 
 export class ContractStateInfoDto {
   @ApiProperty({
     description: "Current state of the contract",
-    enum: ["NOT_REGISTERED", "REGISTERED", "UNDER_ATTACK", "PRODUCTION", "ATTACK_REQUESTED"],
-    example: "REGISTERED",
+    enum: [
+      "NOT_REGISTERED",
+      "NOT_DEPLOYED",
+      "NEW_DEPLOYMENT",
+      "ATTACK_REQUESTED",
+      "UNDER_ATTACK",
+      "PROMOTION_REQUESTED",
+      "PRODUCTION",
+      "CORRUPTED",
+    ],
+    example: "NEW_DEPLOYMENT",
   })
   state: string;
 
@@ -47,7 +60,25 @@ export class ContractStateInfoDto {
   attackRequestedAt?: number | null;
 
   @ApiPropertyOptional({
-    description: "Details about the attack if the contract was attacked",
+    description: "Unix timestamp in milliseconds when promotion was requested",
+    example: null,
+  })
+  promotionRequestedAt?: number | null;
+
+  @ApiPropertyOptional({
+    description: "Unix timestamp in milliseconds when contract was marked corrupted",
+    example: null,
+  })
+  corruptedAt?: number | null;
+
+  @ApiPropertyOptional({
+    description: "Unix timestamp in milliseconds when auto-promotion will occur (14-day window from registration, or 3-day delay from promotion request)",
+    example: null,
+  })
+  promotionWindowEnds?: number | null;
+
+  @ApiPropertyOptional({
+    description: "Details about the attack if the contract was compromised",
   })
   attackDetails?: {
     attackerAddress?: string;

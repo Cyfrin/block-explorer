@@ -960,10 +960,24 @@
     "tryAgain": "Try again"
   },
   "contractState": {
+    "registered": "Registered",
+    "warmingUp": "Warming Up",
+    "warmingUpSubtitle": "Awaiting DAO approval",
+    "attackable": "Attackable",
+    "attackableSubtitle": "Open for ethical hacking",
+    "promotionPending": "Promotion Pending",
+    "promotionPendingSubtitle": "3-day delay in progress",
+    "production": "Production",
+    "compromised": "Compromised",
+    "compromisedSubtitle": "Contract was successfully attacked",
+    "untilProduction": "until production",
+    "autoPromotionTooltip": "If no attack is registered before {date}, this contract will automatically be promoted to production.",
     "termsUnlock": "Terms unlock",
     "termsLockedTooltip": "The Safe Harbor Agreement terms are locked and cannot be modified during this window. This protects rescuers by ensuring the bounty terms remain stable.",
     "attackRequested": "Attack Requested",
-    "pendingApproval": "Pending approval"
+    "pendingApproval": "Pending approval",
+    "attackerAddress": "Attacker",
+    "attackType": "Attack type"
   },
   "contractInfoTabs": {
     "contract": "Contract",

@@ -1,20 +1,32 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { mock } from "jest-mock-extended";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Repository, SelectQueryBuilder } from "typeorm";
 import { BattlechainService } from "./battlechain.service";
 import { ContractStateChange } from "./contractState.entity";
 import { AgreementCreated } from "./agreement.entity";
+import { AgreementScope } from "./agreementScope.entity";
+import { AgreementCurrentState } from "./agreementCurrentState.entity";
 import { ContractState } from "./battlechain.dto";
 
 describe("BattlechainService", () => {
   let service: BattlechainService;
   let contractStateRepository: Repository<ContractStateChange>;
   let agreementCreatedRepository: Repository<AgreementCreated>;
+  let agreementScopeRepository: Repository<AgreementScope>;
+  let agreementStateRepository: Repository<AgreementCurrentState>;
 
   beforeEach(async () => {
     contractStateRepository = mock<Repository<ContractStateChange>>();
     agreementCreatedRepository = mock<Repository<AgreementCreated>>();
+    agreementScopeRepository = mock<Repository<AgreementScope>>();
+    agreementStateRepository = mock<Repository<AgreementCurrentState>>();
+
+    // Mock createQueryBuilder for agreementStateRepository
+    const mockQueryBuilder = mock<SelectQueryBuilder<AgreementCurrentState>>();
+    mockQueryBuilder.where.mockReturnValue(mockQueryBuilder);
+    mockQueryBuilder.getOne.mockResolvedValue(null);
+    (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -26,6 +38,14 @@ describe("BattlechainService", () => {
         {
           provide: getRepositoryToken(AgreementCreated),
           useValue: agreementCreatedRepository,
+        },
+        {
+          provide: getRepositoryToken(AgreementScope),
+          useValue: agreementScopeRepository,
+        },
+        {
+          provide: getRepositoryToken(AgreementCurrentState),
+          useValue: agreementStateRepository,
         },
       ],
     }).compile();
@@ -58,12 +78,12 @@ describe("BattlechainService", () => {
       });
     });
 
-    it("returns correct state from single REGISTERED state change", async () => {
+    it("returns correct state from single NEW_DEPLOYMENT state change", async () => {
       const timestamp = new Date("2024-01-01T00:00:00Z");
       (contractStateRepository.find as jest.Mock).mockResolvedValue([
         {
           contractAddress: contractAddress.toLowerCase(),
-          newState: ContractState.REGISTERED,
+          newState: ContractState.NEW_DEPLOYMENT,
           blockNumber: 100,
           logIndex: "0",
           blockTimestamp: timestamp,
@@ -72,13 +92,13 @@ describe("BattlechainService", () => {
 
       const result = await service.getContractStateInfo(contractAddress);
 
-      expect(result).toEqual({
-        state: "REGISTERED",
-        wasUnderAttack: false,
-        registeredAt: timestamp.getTime(),
-        underAttackAt: null,
-        productionAt: null,
-      });
+      expect(result.state).toBe("NEW_DEPLOYMENT");
+      expect(result.wasUnderAttack).toBe(false);
+      expect(result.registeredAt).toBe(timestamp.getTime());
+      expect(result.underAttackAt).toBeNull();
+      expect(result.productionAt).toBeNull();
+      // Should have promotion window calculated
+      expect(result.promotionWindowEnds).toBeDefined();
     });
 
     it("correctly processes multiple state changes to PRODUCTION", async () => {
@@ -88,7 +108,7 @@ describe("BattlechainService", () => {
       (contractStateRepository.find as jest.Mock).mockResolvedValue([
         {
           contractAddress: contractAddress.toLowerCase(),
-          newState: ContractState.REGISTERED,
+          newState: ContractState.NEW_DEPLOYMENT,
           blockNumber: 100,
           logIndex: "0",
           blockTimestamp: registeredTime,
@@ -104,13 +124,11 @@ describe("BattlechainService", () => {
 
       const result = await service.getContractStateInfo(contractAddress);
 
-      expect(result).toEqual({
-        state: "PRODUCTION",
-        wasUnderAttack: false,
-        registeredAt: registeredTime.getTime(),
-        underAttackAt: null,
-        productionAt: productionTime.getTime(),
-      });
+      expect(result.state).toBe("PRODUCTION");
+      expect(result.wasUnderAttack).toBe(false);
+      expect(result.registeredAt).toBe(registeredTime.getTime());
+      expect(result.underAttackAt).toBeNull();
+      expect(result.productionAt).toBe(productionTime.getTime());
     });
 
     it("sets wasUnderAttack true when contract went through UNDER_ATTACK state", async () => {
@@ -121,7 +139,7 @@ describe("BattlechainService", () => {
       (contractStateRepository.find as jest.Mock).mockResolvedValue([
         {
           contractAddress: contractAddress.toLowerCase(),
-          newState: ContractState.REGISTERED,
+          newState: ContractState.NEW_DEPLOYMENT,
           blockNumber: 100,
           logIndex: "0",
           blockTimestamp: registeredTime,
@@ -144,20 +162,18 @@ describe("BattlechainService", () => {
 
       const result = await service.getContractStateInfo(contractAddress);
 
-      expect(result).toEqual({
-        state: "PRODUCTION",
-        wasUnderAttack: true,
-        registeredAt: registeredTime.getTime(),
-        underAttackAt: attackTime.getTime(),
-        productionAt: productionTime.getTime(),
-      });
+      expect(result.state).toBe("PRODUCTION");
+      expect(result.wasUnderAttack).toBe(true);
+      expect(result.registeredAt).toBe(registeredTime.getTime());
+      expect(result.underAttackAt).toBe(attackTime.getTime());
+      expect(result.productionAt).toBe(productionTime.getTime());
     });
 
     it("handles null blockTimestamp", async () => {
       (contractStateRepository.find as jest.Mock).mockResolvedValue([
         {
           contractAddress: contractAddress.toLowerCase(),
-          newState: ContractState.REGISTERED,
+          newState: ContractState.NEW_DEPLOYMENT,
           blockNumber: 100,
           logIndex: "0",
           blockTimestamp: null,
@@ -167,11 +183,15 @@ describe("BattlechainService", () => {
       const result = await service.getContractStateInfo(contractAddress);
 
       expect(result).toEqual({
-        state: "REGISTERED",
+        state: "NEW_DEPLOYMENT",
         wasUnderAttack: false,
         registeredAt: null,
         underAttackAt: null,
         productionAt: null,
+        attackRequestedAt: null,
+        promotionRequestedAt: null,
+        corruptedAt: null,
+        promotionWindowEnds: null,
       });
     });
 
@@ -205,24 +225,35 @@ describe("BattlechainService", () => {
     const ownerAddress = "0xowner12345678901234567890123456789012345";
 
     it("returns null when agreement doesn't exist", async () => {
-      (agreementCreatedRepository.findOne as jest.Mock).mockResolvedValue(null);
+      (agreementStateRepository.findOne as jest.Mock).mockResolvedValue(null);
 
       const result = await service.getAgreement(agreementAddress);
 
       expect(result).toBeNull();
-      expect(agreementCreatedRepository.findOne).toHaveBeenCalledWith({
+      expect(agreementStateRepository.findOne).toHaveBeenCalledWith({
         where: { agreementAddress: agreementAddress.toLowerCase() },
       });
     });
 
-    it("returns agreement with empty covered contracts (scope events not yet indexed)", async () => {
+    it("returns agreement with covered contracts from materialized view", async () => {
       const timestamp = new Date("2024-01-01T00:00:00Z");
 
-      (agreementCreatedRepository.findOne as jest.Mock).mockResolvedValue({
+      (agreementStateRepository.findOne as jest.Mock).mockResolvedValue({
         agreementAddress: agreementAddress.toLowerCase(),
         owner: ownerAddress.toLowerCase(),
-        blockNumber: 100,
-        blockTimestamp: timestamp,
+        protocolName: null,
+        agreementUri: null,
+        bountyPercentage: null,
+        bountyCapUsd: null,
+        retainable: null,
+        identityRequirement: null,
+        diligenceRequirements: null,
+        aggregateBountyCapUsd: null,
+        contactDetails: null,
+        commitmentDeadline: null,
+        coveredContracts: ["0xcontract1", "0xcontract2"],
+        createdAtBlock: 100,
+        createdAt: timestamp,
       });
 
       const result = await service.getAgreement(agreementAddress);
@@ -230,18 +261,19 @@ describe("BattlechainService", () => {
       expect(result).toEqual({
         agreementAddress: agreementAddress.toLowerCase(),
         owner: ownerAddress.toLowerCase(),
-        coveredContracts: [],
+        coveredContracts: ["0xcontract1", "0xcontract2"],
         createdAtBlock: 100,
         createdAt: timestamp.getTime(),
       });
     });
 
-    it("handles null blockTimestamp", async () => {
-      (agreementCreatedRepository.findOne as jest.Mock).mockResolvedValue({
+    it("handles null createdAt", async () => {
+      (agreementStateRepository.findOne as jest.Mock).mockResolvedValue({
         agreementAddress: agreementAddress.toLowerCase(),
         owner: ownerAddress.toLowerCase(),
-        blockNumber: 100,
-        blockTimestamp: null,
+        coveredContracts: [],
+        createdAtBlock: 100,
+        createdAt: null,
       });
 
       const result = await service.getAgreement(agreementAddress);
@@ -251,11 +283,11 @@ describe("BattlechainService", () => {
 
     it("normalizes address case", async () => {
       const upperCaseAddress = "0xAGREEMENT123456789012345678901234567890";
-      (agreementCreatedRepository.findOne as jest.Mock).mockResolvedValue(null);
+      (agreementStateRepository.findOne as jest.Mock).mockResolvedValue(null);
 
       await service.getAgreement(upperCaseAddress);
 
-      expect(agreementCreatedRepository.findOne).toHaveBeenCalledWith({
+      expect(agreementStateRepository.findOne).toHaveBeenCalledWith({
         where: { agreementAddress: upperCaseAddress.toLowerCase() },
       });
     });
@@ -264,26 +296,35 @@ describe("BattlechainService", () => {
   describe("getAgreementByContract", () => {
     const contractAddress = "0xcontract12345678901234567890123456789012";
 
-    it("returns null (scope events not yet indexed)", async () => {
+    it("returns null when no agreement covers the contract", async () => {
+      const mockQueryBuilder = mock<SelectQueryBuilder<AgreementCurrentState>>();
+      mockQueryBuilder.where.mockReturnValue(mockQueryBuilder);
+      mockQueryBuilder.getOne.mockResolvedValue(null);
+      (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
+
       const result = await service.getAgreementByContract(contractAddress);
 
       expect(result).toBeNull();
+      expect(agreementStateRepository.createQueryBuilder).toHaveBeenCalledWith("state");
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(":address = ANY(state.covered_contracts)", {
+        address: contractAddress.toLowerCase(),
+      });
     });
   });
 
   describe("getAllAgreements", () => {
     it("returns empty array when no agreements exist", async () => {
-      (agreementCreatedRepository.find as jest.Mock).mockResolvedValue([]);
+      (agreementStateRepository.find as jest.Mock).mockResolvedValue([]);
 
       const result = await service.getAllAgreements();
 
       expect(result).toEqual([]);
-      expect(agreementCreatedRepository.find).toHaveBeenCalledWith({
-        order: { blockNumber: "DESC" },
+      expect(agreementStateRepository.find).toHaveBeenCalledWith({
+        order: { createdAtBlock: "DESC" },
       });
     });
 
-    it("returns all agreements with empty covered contracts", async () => {
+    it("returns all agreements with their covered contracts", async () => {
       const timestamp1 = new Date("2024-01-01T00:00:00Z");
       const timestamp2 = new Date("2024-01-02T00:00:00Z");
       const agreement1 = "0xagreement1234567890123456789012345678901";
@@ -291,18 +332,20 @@ describe("BattlechainService", () => {
       const owner1 = "0xowner12345678901234567890123456789012345";
       const owner2 = "0xowner22345678901234567890123456789012346";
 
-      (agreementCreatedRepository.find as jest.Mock).mockResolvedValue([
+      (agreementStateRepository.find as jest.Mock).mockResolvedValue([
         {
           agreementAddress: agreement1.toLowerCase(),
           owner: owner1.toLowerCase(),
-          blockNumber: 200,
-          blockTimestamp: timestamp2,
+          coveredContracts: ["0xcontract1"],
+          createdAtBlock: 200,
+          createdAt: timestamp2,
         },
         {
           agreementAddress: agreement2.toLowerCase(),
           owner: owner2.toLowerCase(),
-          blockNumber: 100,
-          blockTimestamp: timestamp1,
+          coveredContracts: [],
+          createdAtBlock: 100,
+          createdAt: timestamp1,
         },
       ]);
 
@@ -312,7 +355,7 @@ describe("BattlechainService", () => {
       expect(result[0]).toEqual({
         agreementAddress: agreement1.toLowerCase(),
         owner: owner1.toLowerCase(),
-        coveredContracts: [],
+        coveredContracts: ["0xcontract1"],
         createdAtBlock: 200,
         createdAt: timestamp2.getTime(),
       });

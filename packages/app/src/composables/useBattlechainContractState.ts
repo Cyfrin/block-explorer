@@ -14,6 +14,10 @@ export interface BattlechainContractStateInfo {
   registeredAt: number | null; // Unix timestamp in milliseconds when registered in AttackRegistry
   underAttackAt: number | null;
   productionAt: number | null;
+  attackRequestedAt: number | null; // Unix timestamp in milliseconds when attack mode was requested
+  promotionRequestedAt: number | null; // Unix timestamp in milliseconds when promotion was requested
+  corruptedAt: number | null; // Unix timestamp in milliseconds when contract was marked corrupted
+  promotionWindowEnds: number | null; // Unix timestamp in milliseconds when auto-promotion will occur
   commitmentLockedUntil: number | null; // Unix timestamp in milliseconds until which Safe Harbor terms are locked
   attackDetails?: {
     attackerAddress: Address;
@@ -35,8 +39,19 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
   const registeredAt = computed(() => stateInfo.value?.registeredAt ?? null);
   const underAttackAt = computed(() => stateInfo.value?.underAttackAt ?? null);
   const productionAt = computed(() => stateInfo.value?.productionAt ?? null);
+  const attackRequestedAt = computed(() => stateInfo.value?.attackRequestedAt ?? null);
+  const promotionRequestedAt = computed(() => stateInfo.value?.promotionRequestedAt ?? null);
+  const corruptedAt = computed(() => stateInfo.value?.corruptedAt ?? null);
+  const promotionWindowEnds = computed(() => stateInfo.value?.promotionWindowEnds ?? null);
   const commitmentLockedUntil = computed(() => stateInfo.value?.commitmentLockedUntil ?? null);
   const attackDetails = computed(() => stateInfo.value?.attackDetails ?? null);
+
+  // Convenience flags for checking specific states
+  const isCorrupted = computed(() => stateInfo.value?.state === "CORRUPTED");
+  const isPromotionRequested = computed(() => stateInfo.value?.state === "PROMOTION_REQUESTED");
+  const isUnderAttack = computed(() => stateInfo.value?.state === "UNDER_ATTACK");
+  const isAttackRequested = computed(() => stateInfo.value?.state === "ATTACK_REQUESTED");
+  const isProduction = computed(() => stateInfo.value?.state === "PRODUCTION");
 
   const fetch = async () => {
     isLoading.value = true;
@@ -66,8 +81,17 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
     registeredAt,
     underAttackAt,
     productionAt,
+    attackRequestedAt,
+    promotionRequestedAt,
+    corruptedAt,
+    promotionWindowEnds,
     commitmentLockedUntil,
     attackDetails,
+    isCorrupted,
+    isPromotionRequested,
+    isUnderAttack,
+    isAttackRequested,
+    isProduction,
     fetch,
   };
 };

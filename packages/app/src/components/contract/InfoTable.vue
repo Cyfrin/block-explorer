@@ -48,7 +48,11 @@
               :registered-at="registeredAt"
               :under-attack-at="underAttackAt"
               :production-at="productionAt"
+              :promotion-requested-at="promotionRequestedAt"
+              :corrupted-at="corruptedAt"
+              :promotion-window-ends="promotionWindowEnds"
               :commitment-locked-until="commitmentLockedUntil"
+              :attack-details="attackDetails"
             />
           </template>
           <span v-else class="fetch-error">Unable to load</span>
@@ -137,7 +141,11 @@ const {
   registeredAt,
   underAttackAt,
   productionAt,
+  promotionRequestedAt,
+  corruptedAt,
+  promotionWindowEnds,
   commitmentLockedUntil,
+  attackDetails,
   fetch: fetchContractState,
 } = useBattlechainContractState(contractAddress);
 

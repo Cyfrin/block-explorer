@@ -127,10 +127,14 @@ export interface AgreementFormData {
   agreementURI: string;
 }
 
+// Contract states aligned with AttackRegistry.sol
 export enum ContractState {
-  NOT_REGISTERED = "NOT_REGISTERED",
-  REGISTERED = "REGISTERED",
-  UNDER_ATTACK = "UNDER_ATTACK",
-  PRODUCTION = "PRODUCTION",
-  ATTACK_REQUESTED = "ATTACK_REQUESTED",
+  NOT_REGISTERED = "NOT_REGISTERED", // Frontend-only: Contract not found in AttackRegistry
+  NOT_DEPLOYED = "NOT_DEPLOYED", // Contract not deployed via BattleChainDeployer
+  NEW_DEPLOYMENT = "NEW_DEPLOYMENT", // Just deployed, no attack requested yet (display: "Registered")
+  ATTACK_REQUESTED = "ATTACK_REQUESTED", // Waiting DAO approval (display: "Warming Up")
+  UNDER_ATTACK = "UNDER_ATTACK", // Open for ethical hacking (display: "Attackable")
+  PROMOTION_REQUESTED = "PROMOTION_REQUESTED", // Owner requested promotion, 3-day delay (display: "Promotion Pending")
+  PRODUCTION = "PRODUCTION", // Protected, no longer attackable (display: "Production")
+  CORRUPTED = "CORRUPTED", // Marked corrupted after successful attack (display: "Compromised")
 }

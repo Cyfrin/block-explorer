@@ -1,12 +1,12 @@
 <template>
   <div class="contract-state-timeline">
-    <!-- Registered Step -->
-    <div class="timeline-step" :class="getStepClass(ContractState.REGISTERED)">
+    <!-- Registered Step (NEW_DEPLOYMENT) -->
+    <div class="timeline-step" :class="getStepClass(ContractState.NEW_DEPLOYMENT)">
       <div class="step-indicator-column">
         <div class="step-indicator-wrapper">
-          <span v-if="isCurrent(ContractState.REGISTERED)" class="ping-animation"></span>
+          <span v-if="isCurrent(ContractState.NEW_DEPLOYMENT)" class="ping-animation"></span>
           <div class="step-indicator">
-            <CubeIcon v-if="isCurrentOrCompleted(ContractState.REGISTERED)" class="step-icon" />
+            <CubeIcon v-if="isCurrentOrCompleted(ContractState.NEW_DEPLOYMENT)" class="step-icon" />
             <CubeIconOutline v-else class="step-icon" />
           </div>
         </div>
@@ -15,28 +15,27 @@
         </div>
       </div>
       <div class="step-content">
-        <span class="step-label">Registered</span>
+        <span class="step-label">{{ t("contractState.registered") }}</span>
         <CopyButton v-if="registeredAtISO" :value="formattedRegisteredAt!" class="step-timestamp">
           <TimeField :value="registeredAtISO" :format="TimeFormat.TIME_AGO" />
         </CopyButton>
-        <Tooltip v-if="isCurrent(ContractState.REGISTERED) && hasCountdown" :interactive="true" max-width="350px">
+        <Tooltip v-if="isCurrent(ContractState.NEW_DEPLOYMENT) && hasCountdown" :interactive="true" max-width="350px">
           <span class="step-countdown">
             <CopyButton :value="formattedPromotionTimestamp!">
               <span class="countdown-time">{{ countdownTimeAgo }}</span>
             </CopyButton>
-            <span>until production</span>
+            <span>{{ t("contractState.untilProduction") }}</span>
           </span>
           <template #content>
             <div class="promotion-tooltip">
-              If no attack is registered before {{ formattedPromotionTimestamp }}, this contract will automatically be
-              promoted to production.
+              {{ t("contractState.autoPromotionTooltip", { date: formattedPromotionTimestamp }) }}
             </div>
           </template>
         </Tooltip>
       </div>
     </div>
 
-    <!-- Attack Requested Step (shown when in ATTACK_REQUESTED state) -->
+    <!-- Warming Up Step (ATTACK_REQUESTED) -->
     <div
       v-if="showAttackRequestedStep"
       class="timeline-step attack-requested"
@@ -55,22 +54,18 @@
         </div>
       </div>
       <div class="step-content">
-        <span class="step-label">{{ t("contractState.attackRequested") }}</span>
-        <span class="step-subtitle">{{ t("contractState.pendingApproval") }}</span>
+        <span class="step-label">{{ t("contractState.warmingUp") }}</span>
+        <span class="step-subtitle">{{ t("contractState.warmingUpSubtitle") }}</span>
       </div>
     </div>
 
-    <!-- Under Attack Step (optional) -->
-    <div
-      v-if="showUnderAttackStep"
-      class="timeline-step under-attack"
-      :class="getStepClass(ContractState.UNDER_ATTACK)"
-    >
+    <!-- Attackable Step (UNDER_ATTACK or PROMOTION_REQUESTED - both are still attackable) -->
+    <div v-if="showUnderAttackStep" class="timeline-step under-attack" :class="getAttackableStepClass()">
       <div class="step-indicator-column">
         <div class="step-indicator-wrapper">
-          <span v-if="isCurrent(ContractState.UNDER_ATTACK)" class="ping-animation"></span>
+          <span v-if="isCurrentlyAttackable" class="ping-animation"></span>
           <div class="step-indicator">
-            <ShieldExclamationIcon v-if="isCurrentOrCompleted(ContractState.UNDER_ATTACK)" class="step-icon" />
+            <ShieldExclamationIcon v-if="isCurrentOrCompletedAttackable" class="step-icon" />
             <ShieldExclamationIconOutline v-else class="step-icon" />
           </div>
         </div>
@@ -79,15 +74,23 @@
         </div>
       </div>
       <div class="step-content">
-        <span class="step-label">Under Attack</span>
+        <div class="step-label-row">
+          <span class="step-label">{{ t("contractState.attackable") }}</span>
+          <span v-if="isPromotionPending" class="promotion-pending-badge">
+            {{ t("contractState.promotionPending") }}
+          </span>
+        </div>
+        <span v-if="isCurrentlyAttackable && !isPromotionPending" class="step-subtitle">{{
+          t("contractState.attackableSubtitle")
+        }}</span>
         <CopyButton v-if="underAttackAtISO" :value="formattedUnderAttackAt!" class="step-timestamp">
           <TimeField :value="underAttackAtISO" :format="TimeFormat.TIME_AGO" />
         </CopyButton>
-        <span v-if="isCurrent(ContractState.UNDER_ATTACK) && hasCountdown" class="step-countdown">
+        <span v-if="isCurrentlyAttackable && hasCountdown" class="step-countdown">
           <CopyButton :value="formattedPromotionTimestamp!">
             <span class="countdown-time">{{ countdownTimeAgo }}</span>
           </CopyButton>
-          <span>until production</span>
+          <span>{{ t("contractState.untilProduction") }}</span>
         </span>
         <Tooltip v-if="showCommitmentLock" :interactive="true" max-width="350px">
           <span class="commitment-lock">
@@ -106,8 +109,40 @@
       </div>
     </div>
 
-    <!-- Production Step -->
-    <div class="timeline-step" :class="getStepClass(ContractState.PRODUCTION)">
+    <!-- Compromised Step (CORRUPTED) - Terminal state, shown instead of Production when corrupted -->
+    <div
+      v-if="showCorruptedStep"
+      class="timeline-step corrupted terminal"
+      :class="getStepClass(ContractState.CORRUPTED)"
+    >
+      <div class="step-indicator-column">
+        <div class="step-indicator-wrapper">
+          <div class="step-indicator">
+            <ExclamationCircleIcon class="step-icon" />
+          </div>
+        </div>
+        <!-- No connector - terminal state -->
+      </div>
+      <div class="step-content">
+        <span class="step-label">{{ t("contractState.compromised") }}</span>
+        <span class="step-subtitle">{{ t("contractState.compromisedSubtitle") }}</span>
+        <CopyButton v-if="corruptedAtISO" :value="formattedCorruptedAt!" class="step-timestamp">
+          <TimeField :value="corruptedAtISO" :format="TimeFormat.TIME_AGO" />
+        </CopyButton>
+        <!-- Attack details if available -->
+        <div v-if="attackDetails" class="attack-details">
+          <span v-if="attackDetails.attackerAddress" class="attack-detail">
+            {{ t("contractState.attackerAddress") }}: {{ truncateAddress(attackDetails.attackerAddress) }}
+          </span>
+          <span v-if="attackDetails.attackType" class="attack-detail">
+            {{ t("contractState.attackType") }}: {{ attackDetails.attackType }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Production Step - Only shown if not corrupted -->
+    <div v-if="!showCorruptedStep" class="timeline-step" :class="getStepClass(ContractState.PRODUCTION)">
       <div class="step-indicator-column">
         <div class="step-indicator-wrapper">
           <div class="step-indicator">
@@ -118,7 +153,7 @@
         <!-- No connector after the last step -->
       </div>
       <div class="step-content">
-        <span class="step-label">Production</span>
+        <span class="step-label">{{ t("contractState.production") }}</span>
         <CopyButton v-if="productionAtISO" :value="formattedProductionAt!" class="step-timestamp">
           <TimeField :value="productionAtISO" :format="TimeFormat.TIME_AGO" />
         </CopyButton>
@@ -135,6 +170,7 @@ import {
   BadgeCheckIcon as BadgeCheckIconOutline,
   ClockIcon as ClockIconOutline,
   CubeIcon as CubeIconOutline,
+  ExclamationCircleIcon,
   LockClosedIcon,
   ShieldExclamationIcon as ShieldExclamationIconOutline,
 } from "@heroicons/vue/outline";
@@ -145,9 +181,11 @@ import CopyButton from "@/components/common/CopyButton.vue";
 import Tooltip from "@/components/common/Tooltip.vue";
 import TimeField from "@/components/common/table/fields/TimeField.vue";
 
+import type { Address } from "@/types";
 import type { PropType } from "vue";
 
 import { ContractState, TimeFormat } from "@/types";
+import { PROMOTION_DELAY_MS, PROMOTION_WINDOW_MS } from "@/utils/battlechain.constants";
 import { ISOStringFromUnixTimestamp, localDateFromUnixTimestamp } from "@/utils/helpers";
 
 const { t } = useI18n();
@@ -173,8 +211,28 @@ const props = defineProps({
     type: Number,
     default: null,
   },
+  promotionRequestedAt: {
+    type: Number,
+    default: null,
+  },
+  corruptedAt: {
+    type: Number,
+    default: null,
+  },
+  promotionWindowEnds: {
+    type: Number,
+    default: null,
+  },
   commitmentLockedUntil: {
     type: Number,
+    default: null,
+  },
+  attackDetails: {
+    type: Object as PropType<{
+      attackerAddress?: Address;
+      attackRegisteredAt?: number;
+      attackType?: string;
+    } | null>,
     default: null,
   },
 });
@@ -189,23 +247,41 @@ const toISOString = (timestamp: number | null): string => {
   return ISOStringFromUnixTimestamp(Math.floor(timestamp / 1000));
 };
 
+const truncateAddress = (address: string): string => {
+  if (address.length <= 13) return address;
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+
 const formattedRegisteredAt = computed(() => formatTimestamp(props.registeredAt));
 const formattedUnderAttackAt = computed(() => formatTimestamp(props.underAttackAt));
 const formattedProductionAt = computed(() => formatTimestamp(props.productionAt));
+const formattedCorruptedAt = computed(() => formatTimestamp(props.corruptedAt));
 
 const registeredAtISO = computed(() => toISOString(props.registeredAt));
 const underAttackAtISO = computed(() => toISOString(props.underAttackAt));
 const productionAtISO = computed(() => toISOString(props.productionAt));
+const corruptedAtISO = computed(() => toISOString(props.corruptedAt));
 
+// Use backend-calculated promotion window end, or calculate fallback
 const promotionTimestamp = computed(() => {
-  if (props.state === ContractState.PRODUCTION) return null;
-  if (props.state === ContractState.REGISTERED && props.registeredAt) {
-    // Auto-promotion is 7 days from registration (this would come from backend in real impl)
-    return props.registeredAt + 7 * 24 * 60 * 60 * 1000;
+  // Terminal states have no countdown
+  if (props.state === ContractState.PRODUCTION || props.state === ContractState.CORRUPTED) return null;
+
+  // Prefer backend-calculated value
+  if (props.promotionWindowEnds) return props.promotionWindowEnds;
+
+  // Fallback calculations using constants
+  if (props.state === ContractState.NEW_DEPLOYMENT && props.registeredAt) {
+    return props.registeredAt + PROMOTION_WINDOW_MS;
   }
-  if (props.state === ContractState.UNDER_ATTACK && props.underAttackAt) {
-    // Production promotion is 7 days from under attack (this would come from backend in real impl)
-    return props.underAttackAt + 7 * 24 * 60 * 60 * 1000;
+  if (props.state === ContractState.ATTACK_REQUESTED && props.registeredAt) {
+    return props.registeredAt + PROMOTION_WINDOW_MS;
+  }
+  if (props.state === ContractState.UNDER_ATTACK && props.registeredAt) {
+    return props.registeredAt + PROMOTION_WINDOW_MS;
+  }
+  if (props.state === ContractState.PROMOTION_REQUESTED && props.promotionRequestedAt) {
+    return props.promotionRequestedAt + PROMOTION_DELAY_MS;
   }
   return null;
 });
@@ -261,43 +337,95 @@ const formattedCommitmentLockedUntil = computed(() => formatTimestamp(props.comm
 const commitmentLockTimeAgo = useTimeAgo(commitmentLockedUntilISO, { messages: countdownMessages });
 
 const showCommitmentLock = computed(() => {
-  if (props.state !== ContractState.UNDER_ATTACK) return false;
+  // Show commitment lock in both UNDER_ATTACK and PROMOTION_REQUESTED (both are still attackable)
+  if (props.state !== ContractState.UNDER_ATTACK && props.state !== ContractState.PROMOTION_REQUESTED) return false;
   if (!props.commitmentLockedUntil) return false;
   return props.commitmentLockedUntil > Date.now();
 });
 
+// Visibility conditions for optional steps
+// Show warming up step ONLY when currently in that state - it's ephemeral and disappears once passed
 const showAttackRequestedStep = computed(() => {
   return props.state === ContractState.ATTACK_REQUESTED;
 });
 
+// Show attackable step if currently attackable (including promotion requested), past it, or was ever under attack
 const showUnderAttackStep = computed(() => {
   return (
-    props.state === ContractState.UNDER_ATTACK || props.state === ContractState.ATTACK_REQUESTED || props.wasUnderAttack
+    props.state === ContractState.UNDER_ATTACK ||
+    props.state === ContractState.PROMOTION_REQUESTED ||
+    props.state === ContractState.CORRUPTED ||
+    props.wasUnderAttack
   );
 });
 
-const connectorClassAfterRegistered = computed(() => {
-  // Completed if we're past REGISTERED
-  // Dashed if we're in ATTACK_REQUESTED (indicates reversible state)
-  const isAttackRequested = props.state === ContractState.ATTACK_REQUESTED;
+// PROMOTION_REQUESTED is still attackable, so it's shown as a variant of the Attackable step
+const isCurrentlyAttackable = computed(() => {
+  return props.state === ContractState.UNDER_ATTACK || props.state === ContractState.PROMOTION_REQUESTED;
+});
+
+const isPromotionPending = computed(() => {
+  return props.state === ContractState.PROMOTION_REQUESTED;
+});
+
+const isCurrentOrCompletedAttackable = computed(() => {
+  return (
+    props.state === ContractState.UNDER_ATTACK ||
+    props.state === ContractState.PROMOTION_REQUESTED ||
+    props.state === ContractState.PRODUCTION ||
+    props.state === ContractState.CORRUPTED ||
+    props.wasUnderAttack
+  );
+});
+
+const getAttackableStepClass = () => {
+  const isCurrent = isCurrentlyAttackable.value;
+  const isCompleted = props.state === ContractState.PRODUCTION || props.state === ContractState.CORRUPTED;
+  const isFuture = !isCurrent && !isCompleted && !props.wasUnderAttack;
+
   return {
-    completed:
-      props.state === ContractState.UNDER_ATTACK ||
-      props.state === ContractState.PRODUCTION ||
-      props.state === ContractState.ATTACK_REQUESTED,
+    current: isCurrent,
+    completed: isCompleted || (props.wasUnderAttack && !isCurrent),
+    future: isFuture,
+    "promotion-pending": isPromotionPending.value,
+  };
+};
+
+const showCorruptedStep = computed(() => {
+  return props.state === ContractState.CORRUPTED;
+});
+
+// Connector classes
+const connectorClassAfterRegistered = computed(() => {
+  const isAttackRequested = props.state === ContractState.ATTACK_REQUESTED;
+  const isPastRegistered =
+    props.state === ContractState.UNDER_ATTACK ||
+    props.state === ContractState.PROMOTION_REQUESTED ||
+    props.state === ContractState.PRODUCTION ||
+    props.state === ContractState.CORRUPTED ||
+    props.state === ContractState.ATTACK_REQUESTED;
+  return {
+    completed: isPastRegistered,
     dashed: isAttackRequested,
   };
 });
 
 const connectorClassAfterAttackRequested = computed(() => {
-  // Never completed since we're still in ATTACK_REQUESTED when this shows
-  return {};
+  const isPastAttackRequested =
+    props.state === ContractState.UNDER_ATTACK ||
+    props.state === ContractState.PROMOTION_REQUESTED ||
+    props.state === ContractState.PRODUCTION ||
+    props.state === ContractState.CORRUPTED;
+  return {
+    completed: isPastAttackRequested,
+  };
 });
 
 const connectorClassAfterUnderAttack = computed(() => {
-  // Completed if we're in PRODUCTION
+  // Connector is completed when we've moved past the attackable phase entirely
+  const isPastAttackable = props.state === ContractState.PRODUCTION || props.state === ContractState.CORRUPTED;
   return {
-    completed: props.state === ContractState.PRODUCTION,
+    completed: isPastAttackable,
   };
 });
 
@@ -306,20 +434,46 @@ const isCurrent = (step: ContractState) => props.state === step;
 const isCurrentOrCompleted = (step: ContractState) => isCurrent(step) || isCompleted(step);
 
 const isCompleted = (step: ContractState) => {
-  if (step === ContractState.REGISTERED) {
-    return props.state !== ContractState.REGISTERED;
-  }
-  if (step === ContractState.ATTACK_REQUESTED) {
-    // Attack requested is never "completed" - it transitions to UNDER_ATTACK or back to REGISTERED
+  // PROMOTION_REQUESTED is now shown as part of UNDER_ATTACK step, not separate
+  const stateOrder = [
+    ContractState.NEW_DEPLOYMENT,
+    ContractState.ATTACK_REQUESTED,
+    ContractState.UNDER_ATTACK,
+    ContractState.PRODUCTION,
+  ];
+
+  const currentIndex = stateOrder.indexOf(props.state as ContractState);
+  const stepIndex = stateOrder.indexOf(step);
+
+  // Special handling for CORRUPTED - it branches from the attackable phase
+  if (props.state === ContractState.CORRUPTED) {
+    if (step === ContractState.NEW_DEPLOYMENT) return true;
+    if (step === ContractState.ATTACK_REQUESTED) return true;
+    if (step === ContractState.UNDER_ATTACK) return true;
+    if (step === ContractState.CORRUPTED) return true;
     return false;
   }
-  if (step === ContractState.UNDER_ATTACK) {
-    return props.state === ContractState.PRODUCTION && props.wasUnderAttack;
+
+  // PROMOTION_REQUESTED is still in the attackable phase
+  if (props.state === ContractState.PROMOTION_REQUESTED) {
+    if (step === ContractState.NEW_DEPLOYMENT) return true;
+    if (step === ContractState.ATTACK_REQUESTED) return true;
+    // UNDER_ATTACK is "current" when in PROMOTION_REQUESTED (still attackable)
+    return false;
   }
-  if (step === ContractState.PRODUCTION) {
-    return props.state === ContractState.PRODUCTION;
+
+  // ATTACK_REQUESTED is never truly "completed" in the traditional sense
+  // but we mark it completed if we've moved past it
+  if (step === ContractState.ATTACK_REQUESTED) {
+    return (
+      props.state === ContractState.UNDER_ATTACK ||
+      props.state === ContractState.PROMOTION_REQUESTED ||
+      props.state === ContractState.PRODUCTION
+    );
   }
-  return false;
+
+  if (currentIndex === -1 || stepIndex === -1) return false;
+  return stepIndex < currentIndex;
 };
 
 const isFuture = (step: ContractState) => !isCurrent(step) && !isCompleted(step);
@@ -405,9 +559,19 @@ const getStepClass = (step: ContractState) => {
     @apply flex flex-col pb-4 pt-[0.25rem];
   }
 
+  .step-label-row {
+    @apply flex items-center gap-2;
+  }
+
   .step-label {
     @apply text-sm font-medium;
     color: var(--text-muted);
+  }
+
+  .promotion-pending-badge {
+    @apply rounded px-1.5 py-0.5 text-xs font-medium;
+    background-color: var(--accent-muted);
+    color: var(--accent-text);
   }
 
   .step-subtitle {
@@ -473,6 +637,15 @@ const getStepClass = (step: ContractState) => {
     }
   }
 
+  .attack-details {
+    @apply mt-1 flex flex-col gap-0.5;
+
+    .attack-detail {
+      @apply text-xs;
+      color: var(--error-text);
+    }
+  }
+
   &.future {
     @apply opacity-50;
   }
@@ -510,6 +683,39 @@ const getStepClass = (step: ContractState) => {
     }
     .step-label {
       color: var(--warning-text);
+    }
+  }
+
+  // When promotion is pending, the contract is still attackable but with a different visual treatment
+  &.current.under-attack.promotion-pending {
+    .ping-animation {
+      background-color: var(--accent);
+    }
+    .step-indicator {
+      background-color: var(--accent);
+      color: white;
+    }
+    .step-label {
+      color: var(--accent-text);
+    }
+  }
+
+  &.corrupted,
+  &.current.corrupted {
+    .step-indicator {
+      background-color: var(--error);
+      color: white;
+    }
+    .step-label {
+      color: var(--error-text);
+    }
+  }
+
+  &.terminal {
+    .step-indicator {
+      @apply ring-2 ring-offset-2;
+      --tw-ring-color: var(--error-muted);
+      --tw-ring-offset-color: var(--bg-primary);
     }
   }
 
