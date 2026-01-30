@@ -19,19 +19,6 @@
   },
   {
     "type": "function",
-    "name": "VERSION",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "acceptOwnership",
     "inputs": [],
     "outputs": [],
@@ -39,149 +26,39 @@
   },
   {
     "type": "function",
-    "name": "create",
+    "name": "adoptSafeHarbor",
     "inputs": [
-      {
-        "name": "details",
-        "type": "tuple",
-        "internalType": "struct AgreementDetails",
-        "components": [
-          {
-            "name": "protocolName",
-            "type": "string",
-            "internalType": "string"
-          },
-          {
-            "name": "contactDetails",
-            "type": "tuple[]",
-            "internalType": "struct Contact[]",
-            "components": [
-              {
-                "name": "name",
-                "type": "string",
-                "internalType": "string"
-              },
-              {
-                "name": "contact",
-                "type": "string",
-                "internalType": "string"
-              }
-            ]
-          },
-          {
-            "name": "chains",
-            "type": "tuple[]",
-            "internalType": "struct Chain[]",
-            "components": [
-              {
-                "name": "assetRecoveryAddress",
-                "type": "string",
-                "internalType": "string"
-              },
-              {
-                "name": "accounts",
-                "type": "tuple[]",
-                "internalType": "struct Account[]",
-                "components": [
-                  {
-                    "name": "accountAddress",
-                    "type": "string",
-                    "internalType": "string"
-                  },
-                  {
-                    "name": "childContractScope",
-                    "type": "uint8",
-                    "internalType": "enum ChildContractScope"
-                  }
-                ]
-              },
-              {
-                "name": "caip2ChainId",
-                "type": "string",
-                "internalType": "string"
-              }
-            ]
-          },
-          {
-            "name": "bountyTerms",
-            "type": "tuple",
-            "internalType": "struct BountyTerms",
-            "components": [
-              {
-                "name": "bountyPercentage",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "bountyCapUsd",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "retainable",
-                "type": "bool",
-                "internalType": "bool"
-              },
-              {
-                "name": "identity",
-                "type": "uint8",
-                "internalType": "enum IdentityRequirements"
-              },
-              {
-                "name": "diligenceRequirements",
-                "type": "string",
-                "internalType": "string"
-              },
-              {
-                "name": "aggregateBountyCapUsd",
-                "type": "uint256",
-                "internalType": "uint256"
-              }
-            ]
-          },
-          {
-            "name": "agreementURI",
-            "type": "string",
-            "internalType": "string"
-          }
-        ]
-      },
-      {
-        "name": "owner",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "salt",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
       {
         "name": "agreementAddress",
         "type": "address",
         "internalType": "address"
       }
     ],
+    "outputs": [],
     "stateMutability": "nonpayable"
   },
   {
     "type": "function",
-    "name": "getBattleChainCaip2ChainId",
-    "inputs": [],
+    "name": "getAgreement",
+    "inputs": [
+      {
+        "name": "adopter",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
     "outputs": [
       {
         "name": "",
-        "type": "string",
-        "internalType": "string"
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "getRegistry",
+    "name": "getAgreementFactory",
     "inputs": [],
     "outputs": [
       {
@@ -197,19 +74,19 @@
     "name": "initialize",
     "inputs": [
       {
-        "name": "_initialOwner",
+        "name": "owner",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "_registry",
-        "type": "address",
-        "internalType": "address"
+        "name": "initialValidChains",
+        "type": "string[]",
+        "internalType": "string[]"
       },
       {
-        "name": "_battleChainCaip2ChainId",
-        "type": "string",
-        "internalType": "string"
+        "name": "agreementFactory",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "outputs": [],
@@ -217,12 +94,31 @@
   },
   {
     "type": "function",
-    "name": "isAgreementContract",
+    "name": "isAgreementValid",
     "inputs": [
       {
         "name": "agreementAddress",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "isChainValid",
+    "inputs": [
+      {
+        "name": "_caip2ChainId",
+        "type": "string",
+        "internalType": "string"
       }
     ],
     "outputs": [
@@ -282,6 +178,45 @@
   },
   {
     "type": "function",
+    "name": "setAgreementFactory",
+    "inputs": [
+      {
+        "name": "factory",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setInvalidChains",
+    "inputs": [
+      {
+        "name": "caip2ChainIds",
+        "type": "string[]",
+        "internalType": "string[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setValidChains",
+    "inputs": [
+      {
+        "name": "caip2ChainIds",
+        "type": "string[]",
+        "internalType": "string[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "transferOwnership",
     "inputs": [
       {
@@ -326,25 +261,51 @@
   },
   {
     "type": "event",
-    "name": "AgreementCreated",
+    "name": "AgreementFactorySet",
     "inputs": [
       {
-        "name": "agreementAddress",
+        "name": "factory",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BattleChainSafeHarborAdoption",
+    "inputs": [
+      {
+        "name": "entity",
         "type": "address",
         "indexed": true,
         "internalType": "address"
       },
       {
-        "name": "owner",
+        "name": "newDetails",
         "type": "address",
-        "indexed": true,
+        "indexed": false,
         "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ChainValiditySet",
+    "inputs": [
+      {
+        "name": "caip2ChainId",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
       },
       {
-        "name": "salt",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
+        "name": "valid",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
       }
     ],
     "anonymous": false
@@ -426,7 +387,12 @@
   },
   {
     "type": "error",
-    "name": "AgreementFactory__ZeroAddress",
+    "name": "BattleChainSafeHarborRegistry__NoAgreement",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BattleChainSafeHarborRegistry__ZeroAddress",
     "inputs": []
   },
   {

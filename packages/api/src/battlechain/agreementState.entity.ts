@@ -2,22 +2,26 @@ import { Entity, Column, PrimaryColumn, Index } from "typeorm";
 import { bigIntNumberTransformer } from "../common/transformers/bigIntNumber.transformer";
 
 /**
- * Entity representing a contract state change event from the AttackRegistry contract.
- * This maps to the table created by rindexer: battlechainindexer_attack_registry.contract_state_changed
+ * Entity representing an agreement state change event from the AttackRegistry contract.
+ * This maps to the table created by rindexer: battlechainindexer_attack_registry.agreement_state_changed
  *
  * ContractState enum values:
- * 0 = REGISTERED (was NEW_DEPLOYMENT)
- * 1 = UNDER_ATTACK
- * 2 = PRODUCTION
+ * 0 = NOT_DEPLOYED
+ * 1 = NEW_DEPLOYMENT
+ * 2 = ATTACK_REQUESTED
+ * 3 = UNDER_ATTACK
+ * 4 = PROMOTION_REQUESTED
+ * 5 = PRODUCTION
+ * 6 = CORRUPTED
  */
-@Entity({ name: "contract_state_changed", schema: "battlechainindexer_attack_registry" })
-export class ContractStateChange {
+@Entity({ name: "agreement_state_changed", schema: "battlechainindexer_attack_registry" })
+export class AgreementStateChange {
   @PrimaryColumn({ name: "rindexer_id", type: "int" })
   public readonly rindexerId: number;
 
-  @Column({ name: "target_contract", type: "char", length: 42, nullable: true })
+  @Column({ name: "agreement_address", type: "char", length: 42, nullable: true })
   @Index()
-  public readonly contractAddress: string | null;
+  public readonly agreementAddress: string | null;
 
   @Column({ name: "new_state", type: "smallint", nullable: true })
   public readonly newState: number | null;

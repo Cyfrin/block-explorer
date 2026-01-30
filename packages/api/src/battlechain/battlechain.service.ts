@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { ContractStateChange } from "./contractState.entity";
+import { AgreementStateChange } from "./agreementState.entity";
 import { AgreementCreated } from "./agreement.entity";
 import { AgreementScope } from "./agreementScope.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
@@ -15,8 +15,8 @@ export class BattlechainService {
   private readonly identityMap: IdentityRequirement[] = ["Anonymous", "Pseudonymous", "Named"];
 
   constructor(
-    @InjectRepository(ContractStateChange)
-    private readonly contractStateRepository: Repository<ContractStateChange>,
+    @InjectRepository(AgreementStateChange)
+    private readonly agreementStateChangeRepository: Repository<AgreementStateChange>,
     @InjectRepository(AgreementCreated)
     private readonly agreementCreatedRepository: Repository<AgreementCreated>,
     @InjectRepository(AgreementScope)
@@ -26,19 +26,54 @@ export class BattlechainService {
   ) {}
 
   /**
-   * Get the current state info for a contract by analyzing its state change history.
-   * Returns NOT_REGISTERED state if contract is not found in the AttackRegistry.
+   * Get the current state info for a contract by first finding its agreement,
+   * then analyzing the agreement's state change history.
+   * Returns NOT_REGISTERED state if contract is not covered by any agreement.
    */
   async getContractStateInfo(contractAddress: string): Promise<ContractStateInfoDto> {
-    const normalizedAddress = contractAddress.toLowerCase();
+    const normalizedContractAddress = contractAddress.toLowerCase();
 
-    // Get all state changes for this contract, ordered by block number
-    const stateChanges = await this.contractStateRepository.find({
-      where: { contractAddress: normalizedAddress },
+    // First, find the agreement that covers this contract
+    const agreement = await this.agreementStateRepository
+      .createQueryBuilder("state")
+      .where(":address = ANY(state.covered_contracts)", { address: normalizedContractAddress })
+      .getOne();
+
+    if (!agreement) {
+      return {
+        state: "NOT_REGISTERED",
+        wasUnderAttack: false,
+        registeredAt: null,
+        underAttackAt: null,
+        productionAt: null,
+      };
+    }
+
+    // Now get state info for the agreement
+    return this.getAgreementStateInfoInternal(agreement.agreementAddress);
+  }
+
+  /**
+   * Get the current state info for an agreement by analyzing its state change history.
+   * Returns NOT_REGISTERED state if agreement is not found in the AttackRegistry.
+   */
+  async getAgreementStateInfo(agreementAddress: string): Promise<ContractStateInfoDto> {
+    return this.getAgreementStateInfoInternal(agreementAddress);
+  }
+
+  /**
+   * Internal method to get agreement state info by agreement address.
+   */
+  private async getAgreementStateInfoInternal(agreementAddress: string): Promise<ContractStateInfoDto> {
+    const normalizedAddress = agreementAddress.toLowerCase();
+
+    // Get all state changes for this agreement, ordered by block number
+    const stateChanges = await this.agreementStateChangeRepository.find({
+      where: { agreementAddress: normalizedAddress },
       order: { blockNumber: "ASC", logIndex: "ASC" },
     });
 
-    // If no state changes found, contract is not registered in the AttackRegistry
+    // If no state changes found, agreement is not registered in the AttackRegistry
     if (stateChanges.length === 0) {
       return {
         state: "NOT_REGISTERED",
