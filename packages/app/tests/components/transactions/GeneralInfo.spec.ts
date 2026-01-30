@@ -431,7 +431,7 @@ describe("Transaction info table", () => {
       },
     });
     const transferContainer = wrapper.find(".transfer-container");
-    const networks = transferContainer.findAll(".transactions-data-link-network");
+    const networks = transferContainer.findAll(".badge-text");
     expect(networks[0].text()).toBe("L2");
     expect(networks[1].text()).toBe("L2");
   });

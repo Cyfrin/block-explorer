@@ -38,7 +38,7 @@ export default function useGoToProduction(context = useContext()) {
 
   const isWalletConnected = computed(() => !!walletAddress.value);
 
-  const goToProduction = async (contractAddress: string) => {
+  const goToProduction = async (agreementAddress: string) => {
     const registryAddress = context.currentNetwork.value.attackRegistryAddress;
 
     if (!registryAddress) {
@@ -53,7 +53,7 @@ export default function useGoToProduction(context = useContext()) {
       const signer = await getL2Signer();
       const contract = new Contract(registryAddress, AttackRegistryABI, signer);
 
-      const tx = await contract.goToProduction(contractAddress, {
+      const tx = await contract.goToProduction(agreementAddress, {
         from: await signer.getAddress(),
         type: 0,
       });

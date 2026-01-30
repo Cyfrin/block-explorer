@@ -38,7 +38,7 @@ export default function useRequestUnderAttack(context = useContext()) {
 
   const isWalletConnected = computed(() => !!walletAddress.value);
 
-  const requestUnderAttack = async (contractAddress: string, agreementAddress: string) => {
+  const requestUnderAttack = async (agreementAddress: string, contractAddress: string) => {
     const registryAddress = context.currentNetwork.value.attackRegistryAddress;
 
     if (!registryAddress) {
@@ -53,10 +53,24 @@ export default function useRequestUnderAttack(context = useContext()) {
       const signer = await getL2Signer();
       const contract = new Contract(registryAddress, AttackRegistryABI, signer);
 
-      const tx = await contract.requestUnderAttack(contractAddress, agreementAddress, {
-        from: await signer.getAddress(),
-        type: 0,
-      });
+      // Check if contract was deployed via BattleChainDeployer
+      const authorizedOwner = await contract.getAuthorizedOwner(contractAddress);
+      const isDeployedViaBattleChain = authorizedOwner !== "0x0000000000000000000000000000000000000000";
+
+      let tx;
+      if (isDeployedViaBattleChain) {
+        // Contract was deployed via BattleChainDeployer - use requestUnderAttack
+        tx = await contract.requestUnderAttack(agreementAddress, {
+          from: await signer.getAddress(),
+          type: 0,
+        });
+      } else {
+        // Contract was deployed externally - use requestUnderAttackByNonAuthorized
+        tx = await contract.requestUnderAttackByNonAuthorized(agreementAddress, {
+          from: await signer.getAddress(),
+          type: 0,
+        });
+      }
 
       requestTxHash.value = tx.hash;
     } catch (e) {

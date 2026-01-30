@@ -76,20 +76,29 @@ export default function useAgreementCreation(context = useContext()) {
       // Generate salt from contract address and current timestamp
       const salt = keccak256(solidityPacked(["address", "uint256"], [contractAddress, Date.now()]));
 
-      // Convert bountyCap from USDC string to bigint (USDC has 6 decimals)
-      const bountyCapBigInt = BigInt(Math.floor(parseFloat(formData.bountyCap) * 1e6));
-
-      // Prepare the details struct
+      // Prepare the details struct matching the ABI AgreementDetails struct
       const details = {
         protocolName: formData.protocolName,
-        bountyPercentage: BigInt(formData.bountyPercentage),
-        bountyCap: bountyCapBigInt,
-        bountyCapToken: formData.bountyCapToken,
-        allowAnonymous: formData.allowAnonymous,
-        contactEmail: formData.contactEmail,
-        contactDiscord: formData.contactDiscord,
-        contactTelegram: formData.contactTelegram,
-        assetRecoveryAddress: formData.assetRecoveryAddress,
+        contactDetails: formData.contactDetails.map((c) => ({
+          name: c.name,
+          contact: c.contact,
+        })),
+        chains: formData.chains.map((chain) => ({
+          assetRecoveryAddress: chain.assetRecoveryAddress,
+          accounts: chain.accounts.map((acc) => ({
+            accountAddress: acc.accountAddress,
+            childContractScope: acc.childContractScope,
+          })),
+          caip2ChainId: chain.caip2ChainId,
+        })),
+        bountyTerms: {
+          bountyPercentage: BigInt(formData.bountyTerms.bountyPercentage),
+          bountyCapUsd: BigInt(formData.bountyTerms.bountyCapUsd),
+          retainable: formData.bountyTerms.retainable,
+          identity: formData.bountyTerms.identity,
+          diligenceRequirements: formData.bountyTerms.diligenceRequirements,
+          aggregateBountyCapUsd: BigInt(formData.bountyTerms.aggregateBountyCapUsd || "0"),
+        },
         agreementURI: formData.agreementURI,
       };
 
@@ -103,16 +112,12 @@ export default function useAgreementCreation(context = useContext()) {
       // Wait for transaction to be mined and get the agreement address from events
       const receipt = await tx.wait();
 
-      // The create function returns the agreement address
-      // We need to decode it from the transaction receipt
-      // For now, we'll use a placeholder - in production, parse the event logs
+      // The AgreementCreated event has the agreement address as the first indexed topic
       if (receipt.logs && receipt.logs.length > 0) {
-        // Try to find the created agreement address from logs
-        // This assumes the factory emits an event with the new address
         for (const log of receipt.logs) {
-          // Check if this log is from the factory and contains an address
+          // Check if this log is from the factory
           if (log.address.toLowerCase() === factoryAddress.toLowerCase()) {
-            // The agreement address is typically in the first topic or data
+            // AgreementCreated event: agreementAddress (indexed), owner (indexed), salt (indexed)
             if (log.topics.length > 1) {
               agreementAddress.value = "0x" + log.topics[1].slice(-40);
               break;
@@ -121,11 +126,8 @@ export default function useAgreementCreation(context = useContext()) {
         }
       }
 
-      // Fallback: if we couldn't parse the address from logs, use a computed address
-      // In production, you'd want to properly decode the return value or event
+      // Fallback: if we couldn't parse the address from logs
       if (!agreementAddress.value) {
-        // Use the transaction hash as a temporary indicator of success
-        // The actual address should come from the contract's return value
         createAgreementError.value =
           "Transaction succeeded but could not parse agreement address. Please check the transaction on the explorer.";
       }

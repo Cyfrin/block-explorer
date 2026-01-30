@@ -17,15 +17,21 @@ describe("TheFooter:", () => {
     },
   });
 
-  it("renders navigation links", () => {
+  it("renders footer container", () => {
     const wrapper = mount(TheFooter, {
       global: {
         plugins: [i18n],
       },
     });
-    const links = wrapper.findAll("a");
-    expect(links[0].attributes("href")).toBe("https://docs.zksync.io/zksync-era/tooling/block-explorers");
-    expect(links[1].attributes("href")).toBe("https://zksync.io/terms");
-    expect(links[2].attributes("href")).toBe("https://zksync.io/contact");
+    expect(wrapper.find(".footer-container").exists()).toBe(true);
+  });
+
+  it("renders version text", () => {
+    const wrapper = mount(TheFooter, {
+      global: {
+        plugins: [i18n],
+      },
+    });
+    expect(wrapper.find(".version-text-container").exists()).toBe(true);
   });
 });

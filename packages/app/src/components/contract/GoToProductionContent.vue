@@ -93,6 +93,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  agreementAddress: {
+    type: String,
+    required: true,
+  },
   // Override props for Storybook
   overrideProcessing: {
     type: Boolean,
@@ -130,7 +134,7 @@ const txLink = computed(() => {
 const handleConfirm = async () => {
   // Skip actual request if using overrides (Storybook mode)
   if (props.overrideProcessing !== undefined) return;
-  await goToProduction(props.contractAddress);
+  await goToProduction(props.agreementAddress);
 };
 
 const handleReset = () => {

@@ -4,32 +4,43 @@ import { mount } from "@vue/test-utils";
 
 import TransactionDirectionTableCell from "@/components/transactions/TransactionDirectionTableCell.vue";
 
+import $testId from "@/plugins/testId";
+
 describe("TransactionDirectionTableCell:", () => {
   it("renders 'in' state properly", () => {
     const wrapper = mount(TransactionDirectionTableCell, {
       props: {
         text: "in",
       },
+      global: {
+        plugins: [$testId],
+      },
     });
-    expect(wrapper.find(".incoming").exists()).toBe(true);
-    expect(wrapper.find(".incoming").text()).toBe("in");
+    expect(wrapper.find(".badge-success").exists()).toBe(true);
+    expect(wrapper.find(".badge-text").text()).toBe("in");
   });
   it("renders 'out' state properly", () => {
     const wrapper = mount(TransactionDirectionTableCell, {
       props: {
         text: "out",
       },
+      global: {
+        plugins: [$testId],
+      },
     });
-    expect(wrapper.find(".outcoming").exists()).toBe(true);
-    expect(wrapper.find(".outcoming").text()).toBe("out");
+    expect(wrapper.find(".badge-warning").exists()).toBe(true);
+    expect(wrapper.find(".badge-text").text()).toBe("out");
   });
   it("renders 'self' state properly", () => {
     const wrapper = mount(TransactionDirectionTableCell, {
       props: {
         text: "self",
       },
+      global: {
+        plugins: [$testId],
+      },
     });
-    expect(wrapper.find(".self").exists()).toBe(true);
-    expect(wrapper.find(".self").text()).toBe("self");
+    expect(wrapper.find(".badge-accent").exists()).toBe(true);
+    expect(wrapper.find(".badge-text").text()).toBe("self");
   });
 });

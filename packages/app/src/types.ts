@@ -113,17 +113,42 @@ export interface AgreementDocument {
   additionalTerms?: string;
 }
 
-// Form data for creating a new Safe Harbor Agreement
+// Child contract scope enum - matches contract ChildContractScope
+export enum ChildContractScope {
+  None = 0, // Only the specified contract is covered
+  Direct = 1, // Direct child contracts are also covered
+  All = 2, // All descendant contracts are covered
+}
+
+// Account entry for chain configuration
+export interface ChainAccount {
+  accountAddress: string;
+  childContractScope: ChildContractScope;
+}
+
+// Chain configuration for agreement
+export interface ChainConfig {
+  caip2ChainId: string;
+  assetRecoveryAddress: string;
+  accounts: ChainAccount[];
+}
+
+// Bounty terms for agreement
+export interface BountyTerms {
+  bountyPercentage: number;
+  bountyCapUsd: string;
+  retainable: boolean;
+  identity: 0 | 1 | 2; // 0=Anonymous, 1=Pseudonymous, 2=Named
+  diligenceRequirements: string;
+  aggregateBountyCapUsd: string;
+}
+
+// Form data for creating a new Safe Harbor Agreement - matches ABI AgreementDetails struct
 export interface AgreementFormData {
   protocolName: string;
-  bountyPercentage: number;
-  bountyCap: string; // String for form input, converted to bigint
-  bountyCapToken: Address;
-  allowAnonymous: boolean;
-  contactEmail: string;
-  contactDiscord: string;
-  contactTelegram: string;
-  assetRecoveryAddress: Address;
+  contactDetails: ContactDetail[];
+  chains: ChainConfig[];
+  bountyTerms: BountyTerms;
   agreementURI: string;
 }
 

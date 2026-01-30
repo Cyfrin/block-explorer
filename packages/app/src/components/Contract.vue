@@ -128,6 +128,7 @@
     <GoToProductionModal
       :is-open="showGoToProductionModal"
       :contract-address="contractAddress"
+      :agreement-address="agreement?.agreementAddress ?? ''"
       @close="closeGoToProductionModal"
       @success="handleGoToProductionSuccess"
     />

@@ -49,11 +49,16 @@
             />
           </FormItem>
 
+          <!-- Bounty Terms Section -->
+          <div class="section-divider">
+            <span>{{ t("safeHarbor.createAgreement.bountySection") }}</span>
+          </div>
+
           <div class="form-row">
             <FormItem :label="t('safeHarbor.createAgreement.bountyPercentage')" required>
               <div class="input-with-suffix">
                 <Input
-                  v-model.number="formData.bountyPercentage"
+                  v-model.number="formData.bountyTerms.bountyPercentage"
                   type="number"
                   min="1"
                   max="100"
@@ -63,70 +68,120 @@
                 <span class="suffix">%</span>
               </div>
             </FormItem>
-            <FormItem :label="t('safeHarbor.createAgreement.bountyCap')" required>
+            <FormItem :label="t('safeHarbor.createAgreement.bountyCapUsd')" required>
               <div class="input-with-prefix">
                 <span class="prefix">$</span>
                 <Input
-                  v-model="formData.bountyCap"
+                  v-model="formData.bountyTerms.bountyCapUsd"
                   type="text"
                   :placeholder="t('safeHarbor.createAgreement.bountyCapPlaceholder')"
                   :disabled="isCreatingAgreement"
-                  :error="errors.bountyCap"
+                  :error="errors.bountyCapUsd"
                 />
               </div>
             </FormItem>
           </div>
 
+          <FormItem :label="t('safeHarbor.createAgreement.identityRequirement')" required>
+            <select v-model.number="formData.bountyTerms.identity" class="select-input" :disabled="isCreatingAgreement">
+              <option :value="0">{{ t("safeHarbor.createAgreement.identityAnonymous") }}</option>
+              <option :value="1">{{ t("safeHarbor.createAgreement.identityPseudonymous") }}</option>
+              <option :value="2">{{ t("safeHarbor.createAgreement.identityNamed") }}</option>
+            </select>
+          </FormItem>
+
           <FormItem>
             <label class="checkbox-label">
               <input
-                v-model="formData.allowAnonymous"
+                v-model="formData.bountyTerms.retainable"
                 type="checkbox"
                 class="checkbox"
                 :disabled="isCreatingAgreement"
               />
-              <span>{{ t("safeHarbor.createAgreement.allowAnonymous") }}</span>
+              <span>{{ t("safeHarbor.createAgreement.retainable") }}</span>
             </label>
+            <template #underline>
+              {{ t("safeHarbor.createAgreement.retainableHint") }}
+            </template>
           </FormItem>
 
+          <FormItem
+            v-if="formData.bountyTerms.identity === 2"
+            :label="t('safeHarbor.createAgreement.diligenceRequirements')"
+          >
+            <Input
+              v-model="formData.bountyTerms.diligenceRequirements"
+              :placeholder="t('safeHarbor.createAgreement.diligencePlaceholder')"
+              :disabled="isCreatingAgreement"
+            />
+          </FormItem>
+
+          <FormItem :label="t('safeHarbor.createAgreement.aggregateBountyCapUsd')">
+            <div class="input-with-prefix">
+              <span class="prefix">$</span>
+              <Input
+                v-model="formData.bountyTerms.aggregateBountyCapUsd"
+                type="text"
+                :placeholder="t('safeHarbor.createAgreement.aggregateCapPlaceholder')"
+                :disabled="isCreatingAgreement"
+              />
+            </div>
+            <template #underline>
+              {{ t("safeHarbor.createAgreement.aggregateCapHint") }}
+            </template>
+          </FormItem>
+
+          <!-- Contact Information Section -->
           <div class="section-divider">
             <span>{{ t("safeHarbor.createAgreement.contactSection") }}<span class="required-indicator">*</span></span>
           </div>
 
-          <FormItem :label="t('safeHarbor.createAgreement.email')">
-            <Input
-              v-model="formData.contactEmail"
-              type="email"
-              :placeholder="t('safeHarbor.createAgreement.emailPlaceholder')"
+          <div v-for="(contact, index) in formData.contactDetails" :key="index" class="contact-row">
+            <FormItem :label="index === 0 ? t('safeHarbor.createAgreement.contactType') : ''" class="contact-name">
+              <select v-model="contact.name" class="select-input" :disabled="isCreatingAgreement">
+                <option value="Email">{{ t("safeHarbor.createAgreement.contactEmail") }}</option>
+                <option value="Discord">{{ t("safeHarbor.createAgreement.contactDiscord") }}</option>
+                <option value="Telegram">{{ t("safeHarbor.createAgreement.contactTelegram") }}</option>
+                <option value="Twitter">{{ t("safeHarbor.createAgreement.contactTwitter") }}</option>
+                <option value="Other">{{ t("safeHarbor.createAgreement.contactOther") }}</option>
+              </select>
+            </FormItem>
+            <FormItem
+              :label="index === 0 ? t('safeHarbor.createAgreement.contactValue') : ''"
+              class="contact-value"
+              :error="index === 0 ? errors.contact : ''"
+            >
+              <Input
+                v-model="contact.contact"
+                :placeholder="getContactPlaceholder(contact.name)"
+                :disabled="isCreatingAgreement"
+              />
+            </FormItem>
+            <button
+              v-if="formData.contactDetails.length > 1"
+              type="button"
+              class="remove-contact-button"
+              :class="{ 'with-label': index === 0 }"
+              @click="removeContact(index)"
               :disabled="isCreatingAgreement"
-              :error="errors.contact"
-            />
-          </FormItem>
-
-          <div class="form-row">
-            <FormItem :label="t('safeHarbor.createAgreement.discord')">
-              <Input
-                v-model="formData.contactDiscord"
-                :placeholder="t('safeHarbor.createAgreement.discordPlaceholder')"
-                :disabled="isCreatingAgreement"
-              />
-            </FormItem>
-            <FormItem :label="t('safeHarbor.createAgreement.telegram')">
-              <Input
-                v-model="formData.contactTelegram"
-                :placeholder="t('safeHarbor.createAgreement.telegramPlaceholder')"
-                :disabled="isCreatingAgreement"
-              />
-            </FormItem>
+            >
+              <XIcon class="icon" />
+            </button>
           </div>
 
+          <button type="button" class="add-contact-button" @click="addContact" :disabled="isCreatingAgreement">
+            <PlusIcon class="icon" />
+            {{ t("safeHarbor.createAgreement.addContact") }}
+          </button>
+
+          <!-- Chain Configuration Section -->
           <div class="section-divider">
-            <span>{{ t("safeHarbor.createAgreement.additionalSection") }}</span>
+            <span>{{ t("safeHarbor.createAgreement.chainSection") }}</span>
           </div>
 
           <FormItem :label="t('safeHarbor.createAgreement.recoveryAddress')" required>
             <Input
-              v-model="formData.assetRecoveryAddress"
+              v-model="formData.chains[0].assetRecoveryAddress"
               :placeholder="t('safeHarbor.createAgreement.recoveryAddressPlaceholder')"
               :disabled="isCreatingAgreement"
               :error="errors.assetRecoveryAddress"
@@ -135,6 +190,18 @@
               {{ t("safeHarbor.createAgreement.recoveryAddressHint") }}
             </template>
           </FormItem>
+
+          <FormItem :label="t('safeHarbor.createAgreement.coveredContract')">
+            <Input :model-value="props.contractAddress" disabled />
+            <template #underline>
+              {{ t("safeHarbor.createAgreement.coveredContractHint") }}
+            </template>
+          </FormItem>
+
+          <!-- Additional Settings Section -->
+          <div class="section-divider">
+            <span>{{ t("safeHarbor.createAgreement.additionalSection") }}</span>
+          </div>
 
           <FormItem :label="t('safeHarbor.createAgreement.agreementURI')">
             <Input
@@ -255,7 +322,14 @@
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { CheckCircleIcon, CheckIcon, ExclamationCircleIcon, ExternalLinkIcon, XIcon } from "@heroicons/vue/solid";
+import {
+  CheckCircleIcon,
+  CheckIcon,
+  ExclamationCircleIcon,
+  ExternalLinkIcon,
+  PlusIcon,
+  XIcon,
+} from "@heroicons/vue/solid";
 
 import Input from "@/components/common/Input.vue";
 import FormItem from "@/components/form/FormItem.vue";
@@ -263,7 +337,7 @@ import FormItem from "@/components/form/FormItem.vue";
 import useAgreementCreation from "@/composables/useAgreementCreation";
 import useContext from "@/composables/useContext";
 
-import type { Address, AgreementFormData } from "@/types";
+import type { AgreementFormData, ChildContractScope } from "@/types";
 import type { PropType } from "vue";
 
 import { shortValue } from "@/utils/formatters";
@@ -348,26 +422,39 @@ const adoptTxHash = computed(() => props.overrideAdoptTxHash ?? adoptedTxHash.va
 const didAdopt = ref(false);
 const wasAdopted = computed(() => props.overrideWasAdopted ?? didAdopt.value);
 
-// Default USDC address for bounty cap token
-const USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+// Get CAIP-2 chain ID from network config
+const caip2ChainId = computed(() => `eip155:${context.currentNetwork.value.l2ChainId}`);
 
 const formData = reactive<AgreementFormData>({
   protocolName: "",
-  bountyPercentage: 10,
-  bountyCap: "5000000",
-  bountyCapToken: USDC_ADDRESS as Address,
-  allowAnonymous: true,
-  contactEmail: "",
-  contactDiscord: "",
-  contactTelegram: "",
-  assetRecoveryAddress: "" as Address,
+  contactDetails: [{ name: "Email", contact: "" }],
+  chains: [
+    {
+      caip2ChainId: caip2ChainId.value,
+      assetRecoveryAddress: "",
+      accounts: [
+        {
+          accountAddress: props.contractAddress,
+          childContractScope: 0 as ChildContractScope, // None - only this contract
+        },
+      ],
+    },
+  ],
+  bountyTerms: {
+    bountyPercentage: 10,
+    bountyCapUsd: "5000000",
+    retainable: false,
+    identity: 0, // Anonymous
+    diligenceRequirements: "",
+    aggregateBountyCapUsd: "",
+  },
   agreementURI: "",
 });
 
 const errors = reactive({
   protocolName: "",
   bountyPercentage: "",
-  bountyCap: "",
+  bountyCapUsd: "",
   contact: "",
   assetRecoveryAddress: "",
 });
@@ -376,13 +463,19 @@ const isFormValid = computed(() => {
   // Protocol name required
   if (!formData.protocolName.trim()) return false;
   // Bounty percentage required and valid
-  if (!formData.bountyPercentage || formData.bountyPercentage < 1 || formData.bountyPercentage > 100) return false;
+  if (
+    !formData.bountyTerms.bountyPercentage ||
+    formData.bountyTerms.bountyPercentage < 1 ||
+    formData.bountyTerms.bountyPercentage > 100
+  )
+    return false;
   // Bounty cap required
-  if (!formData.bountyCap || parseFloat(formData.bountyCap) <= 0) return false;
-  // At least one contact method required
-  if (!formData.contactEmail && !formData.contactDiscord && !formData.contactTelegram) return false;
+  if (!formData.bountyTerms.bountyCapUsd || parseFloat(formData.bountyTerms.bountyCapUsd) <= 0) return false;
+  // At least one contact with value required
+  if (!formData.contactDetails.some((c) => c.contact.trim())) return false;
   // Asset recovery address required and valid
-  if (!formData.assetRecoveryAddress || !/^0x[a-fA-F0-9]{40}$/.test(formData.assetRecoveryAddress)) return false;
+  if (!formData.chains[0].assetRecoveryAddress || !/^0x[a-fA-F0-9]{40}$/.test(formData.chains[0].assetRecoveryAddress))
+    return false;
   return true;
 });
 
@@ -392,7 +485,7 @@ const validateForm = (): boolean => {
   // Reset errors
   errors.protocolName = "";
   errors.bountyPercentage = "";
-  errors.bountyCap = "";
+  errors.bountyCapUsd = "";
   errors.contact = "";
   errors.assetRecoveryAddress = "";
 
@@ -401,30 +494,57 @@ const validateForm = (): boolean => {
     isValid = false;
   }
 
-  if (!formData.bountyPercentage || formData.bountyPercentage < 1 || formData.bountyPercentage > 100) {
+  if (
+    !formData.bountyTerms.bountyPercentage ||
+    formData.bountyTerms.bountyPercentage < 1 ||
+    formData.bountyTerms.bountyPercentage > 100
+  ) {
     errors.bountyPercentage = t("safeHarbor.createAgreement.errors.bountyPercentageInvalid");
     isValid = false;
   }
 
-  if (!formData.bountyCap || parseFloat(formData.bountyCap) <= 0) {
-    errors.bountyCap = t("safeHarbor.createAgreement.errors.bountyCapRequired");
+  if (!formData.bountyTerms.bountyCapUsd || parseFloat(formData.bountyTerms.bountyCapUsd) <= 0) {
+    errors.bountyCapUsd = t("safeHarbor.createAgreement.errors.bountyCapRequired");
     isValid = false;
   }
 
-  if (!formData.contactEmail && !formData.contactDiscord && !formData.contactTelegram) {
+  if (!formData.contactDetails.some((c) => c.contact.trim())) {
     errors.contact = t("safeHarbor.createAgreement.errors.contactRequired");
     isValid = false;
   }
 
-  if (!formData.assetRecoveryAddress) {
+  if (!formData.chains[0].assetRecoveryAddress) {
     errors.assetRecoveryAddress = t("safeHarbor.createAgreement.errors.recoveryAddressRequired");
     isValid = false;
-  } else if (!/^0x[a-fA-F0-9]{40}$/.test(formData.assetRecoveryAddress)) {
+  } else if (!/^0x[a-fA-F0-9]{40}$/.test(formData.chains[0].assetRecoveryAddress)) {
     errors.assetRecoveryAddress = t("safeHarbor.createAgreement.errors.invalidAddress");
     isValid = false;
   }
 
   return isValid;
+};
+
+const getContactPlaceholder = (contactType: string): string => {
+  switch (contactType) {
+    case "Email":
+      return t("safeHarbor.createAgreement.emailPlaceholder");
+    case "Discord":
+      return t("safeHarbor.createAgreement.discordPlaceholder");
+    case "Telegram":
+      return t("safeHarbor.createAgreement.telegramPlaceholder");
+    case "Twitter":
+      return t("safeHarbor.createAgreement.twitterPlaceholder");
+    default:
+      return t("safeHarbor.createAgreement.otherPlaceholder");
+  }
+};
+
+const addContact = () => {
+  formData.contactDetails.push({ name: "Email", contact: "" });
+};
+
+const removeContact = (index: number) => {
+  formData.contactDetails.splice(index, 1);
 };
 
 const txLink = (hash: string) => {
@@ -434,6 +554,11 @@ const txLink = (hash: string) => {
 
 const handleCreateAgreement = async () => {
   if (!validateForm()) return;
+
+  // Update the chain config with current values
+  formData.chains[0].caip2ChainId = caip2ChainId.value;
+  formData.chains[0].accounts[0].accountAddress = props.contractAddress;
+
   await createAgreement(formData, props.contractAddress);
 };
 
@@ -633,6 +758,73 @@ defineExpose({ reset: resetAll });
     @apply h-px flex-1;
     content: "";
     background-color: var(--border-subtle);
+  }
+}
+
+.select-input {
+  @apply w-full rounded-md border px-3 py-2 text-sm;
+  background-color: var(--bg-secondary);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+
+  &:focus {
+    border-color: var(--accent);
+    outline: none;
+  }
+
+  &:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+}
+
+.contact-row {
+  @apply flex items-end gap-2;
+
+  .contact-name {
+    @apply w-32 shrink-0;
+  }
+
+  .contact-value {
+    @apply flex-1;
+  }
+}
+
+.remove-contact-button {
+  @apply mb-1 rounded p-1.5 transition-colors;
+  color: var(--text-muted);
+
+  &.with-label {
+    @apply mb-1;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: var(--bg-tertiary);
+    color: var(--error);
+  }
+
+  &:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .icon {
+    @apply h-4 w-4;
+  }
+}
+
+.add-contact-button {
+  @apply flex items-center gap-1 rounded-md px-3 py-1.5 text-sm transition-colors;
+  color: var(--accent);
+
+  &:hover:not(:disabled) {
+    background-color: var(--bg-tertiary);
+  }
+
+  &:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .icon {
+    @apply h-4 w-4;
   }
 }
 

@@ -3,6 +3,7 @@
     <GoToProductionContent
       ref="contentRef"
       :contract-address="contractAddress"
+      :agreement-address="agreementAddress"
       @close="handleClose"
       @success="handleSuccess"
     />
@@ -22,6 +23,10 @@ const props = defineProps({
     default: false,
   },
   contractAddress: {
+    type: String,
+    required: true,
+  },
+  agreementAddress: {
     type: String,
     required: true,
   },

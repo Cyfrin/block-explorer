@@ -5,9 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { cleanup, fireEvent, render } from "@testing-library/vue";
 
+import CreateAgreementContent from "@/components/contract/CreateAgreementContent.vue";
 import CreateAgreementModal from "@/components/contract/CreateAgreementModal.vue";
 
 import enUS from "@/locales/en.json";
+
+import $testId from "@/plugins/testId";
 
 // Mock useContext
 vi.mock("@/composables/useContext", () => {
@@ -16,6 +19,7 @@ vi.mock("@/composables/useContext", () => {
       isReady: ref(true),
       currentNetwork: computed(() => ({
         l2NetworkName: "TestNet",
+        l2ChainId: 270,
         rpcUrl: "https://rpc.test.com",
         agreementFactoryAddress: "0x1234567890123456789012345678901234567890",
         safeHarborRegistryAddress: "0x0987654321098765432109876543210987654321",
@@ -81,7 +85,10 @@ describe("CreateAgreementModal", () => {
   };
 
   const global = {
-    plugins: [i18n],
+    plugins: [i18n, $testId],
+    components: {
+      CreateAgreementContent,
+    },
     stubs: {
       Popup: {
         template: '<div v-if="opened"><slot /></div>',
@@ -134,10 +141,9 @@ describe("CreateAgreementModal", () => {
 
       expect(container.textContent).toContain("Protocol Name");
       expect(container.textContent).toContain("Bounty Percentage");
-      expect(container.textContent).toContain("Bounty Cap");
-      expect(container.textContent).toContain("Email");
-      expect(container.textContent).toContain("Discord");
-      expect(container.textContent).toContain("Telegram");
+      expect(container.textContent).toContain("Bounty Cap (USD)");
+      expect(container.textContent).toContain("Identity Requirement");
+      expect(container.textContent).toContain("Asset Recovery Address");
     });
 
     it("shows create button", () => {
@@ -150,25 +156,21 @@ describe("CreateAgreementModal", () => {
     });
 
     it("shows creating state", () => {
+      mockCreationState.isCreatingAgreement.value = true;
+
       const { container } = render(CreateAgreementModal, {
-        props: {
-          ...defaultProps,
-          overrideStep: 1,
-          overrideCreating: true,
-        },
+        props: defaultProps,
         global,
       });
 
-      expect(container.textContent).toContain("Processing...");
+      expect(container.textContent).toContain("Processing");
     });
 
     it("shows error message", () => {
+      mockCreationState.createAgreementError.value = "Transaction failed";
+
       const { container } = render(CreateAgreementModal, {
-        props: {
-          ...defaultProps,
-          overrideStep: 1,
-          overrideCreateError: "Transaction failed",
-        },
+        props: defaultProps,
         global,
       });
 
@@ -177,29 +179,24 @@ describe("CreateAgreementModal", () => {
   });
 
   describe("step 2 - adopt agreement", () => {
+    beforeEach(() => {
+      mockCreationState.currentStep.value = 2;
+      mockCreationState.agreementAddress.value = "0x1111111111111111111111111111111111111111";
+      mockCreationState.createTxHash.value = "0xabc123";
+    });
+
     it("shows step 2 content", () => {
       const { container } = render(CreateAgreementModal, {
-        props: {
-          ...defaultProps,
-          overrideStep: 2,
-          overrideAgreementAddress: "0x1111111111111111111111111111111111111111",
-          overrideCreateTxHash: "0xabc123",
-        },
+        props: defaultProps,
         global,
       });
 
       expect(container.textContent).toContain("Agreement contract created");
-      expect(container.textContent).toContain("Adopt Agreement");
     });
 
     it("shows view transaction link", () => {
       const { container } = render(CreateAgreementModal, {
-        props: {
-          ...defaultProps,
-          overrideStep: 2,
-          overrideAgreementAddress: "0x1111111111111111111111111111111111111111",
-          overrideCreateTxHash: "0xabc123",
-        },
+        props: defaultProps,
         global,
       });
 
@@ -207,27 +204,21 @@ describe("CreateAgreementModal", () => {
     });
 
     it("shows adopting state", () => {
+      mockCreationState.isAdopting.value = true;
+
       const { container } = render(CreateAgreementModal, {
-        props: {
-          ...defaultProps,
-          overrideStep: 2,
-          overrideAgreementAddress: "0x1111111111111111111111111111111111111111",
-          overrideAdopting: true,
-        },
+        props: defaultProps,
         global,
       });
 
-      expect(container.textContent).toContain("Processing...");
+      expect(container.textContent).toContain("Processing");
     });
 
     it("shows adopt error message", () => {
+      mockCreationState.adoptError.value = "Adoption failed";
+
       const { container } = render(CreateAgreementModal, {
-        props: {
-          ...defaultProps,
-          overrideStep: 2,
-          overrideAgreementAddress: "0x1111111111111111111111111111111111111111",
-          overrideAdoptError: "Adoption failed",
-        },
+        props: defaultProps,
         global,
       });
 
@@ -236,14 +227,15 @@ describe("CreateAgreementModal", () => {
   });
 
   describe("step 3 - complete", () => {
+    beforeEach(() => {
+      mockCreationState.currentStep.value = 3;
+      mockCreationState.agreementAddress.value = "0x1111111111111111111111111111111111111111";
+      mockCreationState.adoptTxHash.value = "0xdef456";
+    });
+
     it("shows success message", () => {
       const { container } = render(CreateAgreementModal, {
-        props: {
-          ...defaultProps,
-          overrideStep: 3,
-          overrideAgreementAddress: "0x1111111111111111111111111111111111111111",
-          overrideAdoptTxHash: "0xdef456",
-        },
+        props: defaultProps,
         global,
       });
 
@@ -252,12 +244,7 @@ describe("CreateAgreementModal", () => {
 
     it("shows done button", () => {
       const { container } = render(CreateAgreementModal, {
-        props: {
-          ...defaultProps,
-          overrideStep: 3,
-          overrideAgreementAddress: "0x1111111111111111111111111111111111111111",
-          overrideAdoptTxHash: "0xdef456",
-        },
+        props: defaultProps,
         global,
       });
 

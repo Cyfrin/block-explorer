@@ -38,7 +38,7 @@ export default function useContractRegistration(context = useContext()) {
 
   const isWalletConnected = computed(() => !!walletAddress.value);
 
-  const registerContract = async (contractAddress: string) => {
+  const registerDeployment = async (contractAddress: string, deployerAddress?: string) => {
     const registryAddress = context.currentNetwork.value.attackRegistryAddress;
 
     if (!registryAddress) {
@@ -51,10 +51,14 @@ export default function useContractRegistration(context = useContext()) {
       registrationError.value = null;
 
       const signer = await getL2Signer();
+      const signerAddress = await signer.getAddress();
       const contract = new Contract(registryAddress, AttackRegistryABI, signer);
 
-      const tx = await contract.registerContract(contractAddress, {
-        from: await signer.getAddress(),
+      // Use provided deployer address or default to the signer's address
+      const deployer = deployerAddress || signerAddress;
+
+      const tx = await contract.registerDeployment(contractAddress, deployer, {
+        from: signerAddress,
         type: 0,
       });
 
@@ -93,7 +97,7 @@ export default function useContractRegistration(context = useContext()) {
     registrationTxHash,
 
     // Registration actions
-    registerContract,
+    registerDeployment,
     reset,
   };
 }

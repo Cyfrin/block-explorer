@@ -108,7 +108,7 @@ describe("ContractStateTimeline", () => {
       expect(container.textContent).toContain("Production");
 
       const steps = container.querySelectorAll(".timeline-step");
-      expect(steps.length).toBe(3); // Registered, Warming Up, Production (Attackable not shown yet)
+      expect(steps.length).toBe(4); // Registered, Warming Up, Attackable (shown to indicate next phase), Production
     });
 
     it("shows dashed connector after warming up step", () => {

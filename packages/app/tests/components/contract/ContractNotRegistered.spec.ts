@@ -27,7 +27,7 @@ vi.mock("@/composables/useContext", () => {
 
 // Mock useContractRegistration
 const mockConnect = vi.fn();
-const mockRegisterContract = vi.fn();
+const mockRegisterDeployment = vi.fn();
 const mockReset = vi.fn();
 
 const mockWalletState = {
@@ -41,7 +41,7 @@ const mockWalletState = {
   registrationTxHash: ref<string | null>(null),
   connect: mockConnect,
   disconnect: vi.fn(),
-  registerContract: mockRegisterContract,
+  registerDeployment: mockRegisterDeployment,
   reset: mockReset,
 };
 
@@ -124,6 +124,15 @@ describe("ContractNotRegistered", () => {
     expect(container.querySelector(".icon")).toBeTruthy();
   });
 
+  it("renders request attackable mode section", () => {
+    const { container } = render(ContractNotRegistered, {
+      props: defaultProps,
+      global: { plugins: [i18n] },
+    });
+
+    expect(container.textContent).toContain("Request Attackable Mode");
+  });
+
   describe("wallet not connected", () => {
     it("shows connect wallet prompt", () => {
       const { container } = render(ContractNotRegistered, {
@@ -131,7 +140,6 @@ describe("ContractNotRegistered", () => {
         global: { plugins: [i18n] },
       });
 
-      expect(container.textContent).toContain("Is this contract yours?");
       expect(container.textContent).toContain("Connect your wallet");
     });
 
@@ -175,148 +183,25 @@ describe("ContractNotRegistered", () => {
       mockWalletState.walletAddress.value = "0x1234567890123456789012345678901234567890";
     });
 
-    it("shows register button when wallet connected", () => {
+    it("shows request attackable mode button when wallet connected", () => {
       const { container } = render(ContractNotRegistered, {
         props: defaultProps,
         global: { plugins: [i18n] },
       });
 
-      expect(container.textContent).toContain("Register Contract");
+      expect(container.textContent).toContain("Request Attackable Mode");
     });
 
-    it("calls registerContract when button clicked", async () => {
-      const { getByText } = render(ContractNotRegistered, {
+    it("emits request-attackable-mode event when button clicked", async () => {
+      const { getByText, emitted } = render(ContractNotRegistered, {
         props: defaultProps,
         global: { plugins: [i18n] },
       });
 
-      const registerButton = getByText("Register Contract");
-      await fireEvent.click(registerButton);
+      const requestButton = getByText("Request Attackable Mode");
+      await fireEvent.click(requestButton);
 
-      expect(mockRegisterContract).toHaveBeenCalledWith(defaultProps.contractAddress);
-    });
-
-    it("shows registering state", () => {
-      mockWalletState.isRegistering.value = true;
-
-      const { container } = render(ContractNotRegistered, {
-        props: defaultProps,
-        global: { plugins: [i18n] },
-      });
-
-      expect(container.textContent).toContain("Registering...");
-    });
-
-    it("shows error message with retry option", () => {
-      mockWalletState.registrationError.value = "Transaction rejected";
-
-      const { container } = render(ContractNotRegistered, {
-        props: defaultProps,
-        global: { plugins: [i18n] },
-      });
-
-      expect(container.textContent).toContain("Transaction rejected");
-      expect(container.textContent).toContain("Try again");
-    });
-
-    it("calls reset when try again clicked", async () => {
-      mockWalletState.registrationError.value = "Transaction rejected";
-
-      const { getByText } = render(ContractNotRegistered, {
-        props: defaultProps,
-        global: { plugins: [i18n] },
-      });
-
-      const tryAgainButton = getByText("Try again");
-      await fireEvent.click(tryAgainButton);
-
-      expect(mockReset).toHaveBeenCalled();
-    });
-  });
-
-  describe("registration success", () => {
-    beforeEach(() => {
-      mockWalletState.walletAddress.value = "0x1234567890123456789012345678901234567890";
-      mockWalletState.registrationTxHash.value = "0xabcdef1234567890";
-    });
-
-    it("shows success message", () => {
-      const { container } = render(ContractNotRegistered, {
-        props: defaultProps,
-        global: { plugins: [i18n] },
-      });
-
-      expect(container.textContent).toContain("Contract registered!");
-    });
-
-    it("shows view transaction link", () => {
-      const { container } = render(ContractNotRegistered, {
-        props: defaultProps,
-        global: { plugins: [i18n] },
-      });
-
-      expect(container.textContent).toContain("View transaction");
-      const txLink = container.querySelector(".tx-link");
-      expect(txLink).toBeTruthy();
-      expect(txLink?.getAttribute("href")).toContain("0xabcdef1234567890");
-    });
-  });
-
-  describe("not owner", () => {
-    beforeEach(() => {
-      mockWalletState.walletAddress.value = "0x1111111111111111111111111111111111111111";
-    });
-
-    it("shows not owner message when wallet is not the contract deployer", () => {
-      const { container } = render(ContractNotRegistered, {
-        props: {
-          ...defaultProps,
-          creatorAddress: "0x2222222222222222222222222222222222222222",
-        },
-        global: { plugins: [i18n] },
-      });
-
-      expect(container.textContent).toContain("not the deployer");
-      expect(container.textContent).not.toContain("Register Contract");
-    });
-
-    it("shows register button when wallet matches creator address", () => {
-      const { container } = render(ContractNotRegistered, {
-        props: {
-          ...defaultProps,
-          creatorAddress: "0x1111111111111111111111111111111111111111",
-        },
-        global: { plugins: [i18n] },
-      });
-
-      expect(container.textContent).toContain("Register Contract");
-      expect(container.textContent).not.toContain("not the deployer");
-    });
-
-    it("handles case-insensitive address comparison", () => {
-      const { container } = render(ContractNotRegistered, {
-        props: {
-          ...defaultProps,
-          creatorAddress: "0x1111111111111111111111111111111111111111".toUpperCase(),
-        },
-        global: { plugins: [i18n] },
-      });
-
-      expect(container.textContent).toContain("Register Contract");
-      expect(container.textContent).not.toContain("not the deployer");
-    });
-
-    it("assumes owner when creatorAddress is null", () => {
-      const { container } = render(ContractNotRegistered, {
-        props: {
-          ...defaultProps,
-          creatorAddress: null,
-        },
-        global: { plugins: [i18n] },
-      });
-
-      expect(container.textContent).toContain("Register Contract");
-      expect(container.textContent).not.toContain("not the deployer");
+      expect(emitted()["request-attackable-mode"]).toBeTruthy();
     });
   });
 });

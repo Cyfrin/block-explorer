@@ -25,6 +25,7 @@ const meta: Meta<typeof GoToProductionContent> = {
 export default meta;
 
 const contractAddress = "0xabcdef1234567890abcdef1234567890abcdef12";
+const agreementAddress = "0x1234567890abcdef1234567890abcdef12345678";
 const txHash = "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
 
 // Default confirmation state
@@ -32,6 +33,7 @@ export const Default: StoryFn = () => ({
   components: { GoToProductionContent },
   template: `<GoToProductionContent
     contract-address="${contractAddress}"
+    agreement-address="${agreementAddress}"
     :override-processing="false"
     :override-error="null"
     :override-tx-hash="null"
@@ -52,6 +54,7 @@ export const Processing: StoryFn = () => ({
   components: { GoToProductionContent },
   template: `<GoToProductionContent
     contract-address="${contractAddress}"
+    agreement-address="${agreementAddress}"
     :override-processing="true"
     :override-error="null"
     :override-tx-hash="null"
@@ -71,6 +74,7 @@ export const Error: StoryFn = () => ({
   components: { GoToProductionContent },
   template: `<GoToProductionContent
     contract-address="${contractAddress}"
+    agreement-address="${agreementAddress}"
     :override-processing="false"
     override-error="User rejected the transaction"
     :override-tx-hash="null"
@@ -90,6 +94,7 @@ export const Success: StoryFn = () => ({
   components: { GoToProductionContent },
   template: `<GoToProductionContent
     contract-address="${contractAddress}"
+    agreement-address="${agreementAddress}"
     :override-processing="false"
     :override-error="null"
     override-tx-hash="${txHash}"

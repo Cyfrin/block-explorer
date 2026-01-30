@@ -152,7 +152,7 @@ describe("Transfers:", () => {
       });
 
       it("renders processed status column", () => {
-        expect(renderResult!.container.querySelector(".badge-text")!.textContent).toEqual("Processed on");
+        expect(renderResult!.container.querySelector(".badge-text")!.textContent).toEqual("Processed");
       });
     });
 
@@ -177,7 +177,7 @@ describe("Transfers:", () => {
       });
 
       it("renders processed status column", () => {
-        expect(renderResult!.container.querySelector(".badge-text")!.textContent).toEqual("Processed on");
+        expect(renderResult!.container.querySelector(".badge-text")!.textContent).toEqual("Processed");
       });
     });
 
@@ -202,12 +202,12 @@ describe("Transfers:", () => {
       });
 
       it("renders processed status column", () => {
-        expect(renderResult!.container.querySelector(".badge-text")!.textContent).toEqual("Processed on");
+        expect(renderResult!.container.querySelector(".badge-text")!.textContent).toEqual("Processed");
       });
     });
 
     it("renders status column", () => {
-      expect(renderResult!.getByTestId(elements.statusBadge).textContent).toEqual("Processed on");
+      expect(renderResult!.getByTestId(elements.statusBadge).textContent).toEqual("Processed");
     });
 
     it("renders transaction hash column", () => {

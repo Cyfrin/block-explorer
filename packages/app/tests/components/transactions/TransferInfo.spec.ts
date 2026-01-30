@@ -10,6 +10,8 @@ import TransferInfo from "@/components/transactions/infoTable/TransferInfo.vue";
 
 import enUS from "@/locales/en.json";
 
+import $testId from "@/plugins/testId";
+
 vi.mock("ohmyfetch", () => {
   return {
     $fetch: vi.fn(() => ({})),
@@ -34,7 +36,7 @@ describe("TransferInfo:", () => {
     },
   });
   const global = {
-    plugins: [i18n],
+    plugins: [i18n, $testId],
     stubs: { RouterLink: RouterLinkStub },
   };
   it("renders component properly", async () => {
@@ -55,7 +57,7 @@ describe("TransferInfo:", () => {
       "0x6c10d9C1744F149D4B17660E14FaA247964749c7"
     );
     expect(wrapper.find(".copy-btn")).toBeTruthy();
-    expect(wrapper.find(".transactions-data-link-network")?.text()).toBe("L2");
+    expect(wrapper.find(".badge-text")?.text()).toBe("L2");
 
     mock.mockRestore();
     wrapper.unmount();
@@ -78,7 +80,7 @@ describe("TransferInfo:", () => {
     );
     expect(wrapper.findAll("a")[0].text()).toEqual("0x6c10d9c1744...49c7");
     expect(wrapper.find(".copy-btn")).toBeTruthy();
-    expect(wrapper.find(".transactions-data-link-network")?.text()).toBe("L1");
+    expect(wrapper.find(".badge-text")?.text()).toBe("L1");
 
     mock.mockRestore();
     wrapper.unmount();
@@ -126,7 +128,7 @@ describe("TransferInfo:", () => {
       expect(wrapper.find("span")?.text()).toBe("From");
       expect(wrapper.findAll("span.address")[0].text()).toEqual("0x6c10d9c1744...49c7");
       expect(wrapper.find(".copy-btn")).toBeTruthy();
-      expect(wrapper.find(".transactions-data-link-network")?.text()).toBe("L1");
+      expect(wrapper.find(".badge-text")?.text()).toBe("L1");
 
       mock.mockRestore();
       wrapper.unmount();
