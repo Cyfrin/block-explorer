@@ -2,7 +2,6 @@
   <Listbox as="div" :model-value="selected" class="network-switch">
     <ListboxButton class="toggle-button">
       <span class="network-item">
-        <img :src="currentNetwork.icon" alt="ZKsync arrows logo" class="network-item-img" />
         <span class="network-item-label">{{ currentNetwork.l2NetworkName }}</span>
       </span>
       <span class="toggle-button-icon-wrapper">
@@ -26,7 +25,6 @@
               :class="{ selected }"
             >
               <span class="network-item">
-                <img :src="network.icon" :alt="`${network.l2NetworkName} logo`" class="network-item-img" />
                 <span class="network-item-label network-list-item-label">{{ network.l2NetworkName }} </span>
               </span>
               <MinusCircleIcon v-if="network.maintenance" class="maintenance-icon" aria-hidden="true" />

@@ -120,7 +120,8 @@ getBlocks(1, new Date());
   @apply py-8;
   background-color: var(--bg-primary);
   border-bottom: 1px solid var(--border-subtle);
-  margin: 0 calc(-50vw + 50%);
+  // Extend full width and compensate for container padding
+  margin: -1.5rem calc(-50vw + 50%) 0;
   padding-left: calc(50vw - 50%);
   padding-right: calc(50vw - 50%);
 }

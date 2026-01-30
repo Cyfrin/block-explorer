@@ -9,28 +9,30 @@
           </router-link>
         </div>
 
-        <!-- Desktop Navigation -->
-        <PopoverGroup as="nav" class="header-nav">
-          <LinksPopover :label="t('header.nav.blockExplorer')" :items="blockExplorerLinks" />
-          <LinksPopover :label="t('header.nav.tools')" :items="toolsLinks" />
-          <a
-            v-for="item in navigation"
-            :key="item.label"
-            :href="item.url"
-            target="_blank"
-            rel="noopener"
-            class="nav-link"
-          >
-            {{ item.label }}
-          </a>
-        </PopoverGroup>
+        <!-- Spacer to push controls to the right -->
+        <div class="header-spacer" />
 
-        <!-- Right side controls -->
+        <!-- Right side controls (nav + network + theme) -->
         <div class="header-controls">
+          <!-- Desktop Navigation -->
+          <PopoverGroup as="nav" class="header-nav">
+            <LinksPopover :label="t('header.nav.blockExplorer')" :items="blockExplorerLinks" />
+            <LinksPopover :label="t('header.nav.tools')" :items="toolsLinks" />
+            <a
+              v-for="item in navigation"
+              :key="item.label"
+              :href="item.url"
+              target="_blank"
+              rel="noopener"
+              class="nav-link"
+            >
+              {{ item.label }}
+            </a>
+          </PopoverGroup>
           <WalletButton v-if="runtimeConfig.appEnvironment === 'prividium'" />
           <NetworkSwitch v-else />
           <ThemeToggle />
-          <div class="header-socials">
+          <div v-if="socials.length" class="header-socials">
             <a
               v-for="(social, index) in socials"
               :key="index"
@@ -211,7 +213,7 @@ const socials: { url: string; component: typeof DiscordIcon | typeof TwitterIcon
 }
 
 .header-logo {
-  @apply flex-shrink-0;
+  @apply shrink-0;
 
   .logo-link {
     @apply flex items-center no-underline;
@@ -226,6 +228,10 @@ const socials: { url: string; component: typeof DiscordIcon | typeof TwitterIcon
       color: #ffffff;
     }
   }
+}
+
+.header-spacer {
+  @apply flex-1;
 }
 
 .header-nav {
