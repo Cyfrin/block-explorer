@@ -46,11 +46,12 @@ export class BattlechainService {
         registeredAt: null,
         underAttackAt: null,
         productionAt: null,
+        commitmentLockedUntil: null,
       };
     }
 
-    // Now get state info for the agreement
-    return this.getAgreementStateInfoInternal(agreement.agreementAddress);
+    // Now get state info for the agreement, passing the agreement to get commitmentDeadline
+    return this.getAgreementStateInfoInternal(agreement.agreementAddress, agreement);
   }
 
   /**
@@ -58,13 +59,20 @@ export class BattlechainService {
    * Returns NOT_REGISTERED state if agreement is not found in the AttackRegistry.
    */
   async getAgreementStateInfo(agreementAddress: string): Promise<ContractStateInfoDto> {
-    return this.getAgreementStateInfoInternal(agreementAddress);
+    const normalizedAddress = agreementAddress.toLowerCase();
+    const agreement = await this.agreementStateRepository.findOne({
+      where: { agreementAddress: normalizedAddress },
+    });
+    return this.getAgreementStateInfoInternal(agreementAddress, agreement ?? undefined);
   }
 
   /**
    * Internal method to get agreement state info by agreement address.
    */
-  private async getAgreementStateInfoInternal(agreementAddress: string): Promise<ContractStateInfoDto> {
+  private async getAgreementStateInfoInternal(
+    agreementAddress: string,
+    agreement?: AgreementCurrentState
+  ): Promise<ContractStateInfoDto> {
     const normalizedAddress = agreementAddress.toLowerCase();
 
     // Get all state changes for this agreement, ordered by block number
@@ -81,6 +89,7 @@ export class BattlechainService {
         registeredAt: null,
         underAttackAt: null,
         productionAt: null,
+        commitmentLockedUntil: null,
       };
     }
 
@@ -158,6 +167,11 @@ export class BattlechainService {
       [ContractState.CORRUPTED]: "CORRUPTED",
     };
 
+    // Get commitmentLockedUntil from the agreement if available
+    const commitmentLockedUntil = agreement?.commitmentDeadline
+      ? Number(agreement.commitmentDeadline) * 1000
+      : null;
+
     return {
       state: stateNames[currentState] || "NOT_REGISTERED",
       wasUnderAttack,
@@ -168,6 +182,7 @@ export class BattlechainService {
       promotionRequestedAt,
       corruptedAt,
       promotionWindowEnds,
+      commitmentLockedUntil,
     };
   }
 

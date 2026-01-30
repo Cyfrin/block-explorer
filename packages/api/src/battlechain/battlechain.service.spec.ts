@@ -75,6 +75,7 @@ describe("BattlechainService", () => {
         registeredAt: null,
         underAttackAt: null,
         productionAt: null,
+        commitmentLockedUntil: null,
       });
     });
 
@@ -273,6 +274,7 @@ describe("BattlechainService", () => {
         registeredAt: null,
         underAttackAt: null,
         productionAt: null,
+        commitmentLockedUntil: null,
       });
       expect(agreementStateChangeRepository.find).toHaveBeenCalledWith({
         where: { agreementAddress: agreementAddress.toLowerCase() },
@@ -303,6 +305,7 @@ describe("BattlechainService", () => {
         promotionRequestedAt: null,
         corruptedAt: null,
         promotionWindowEnds: null,
+        commitmentLockedUntil: null,
       });
     });
 

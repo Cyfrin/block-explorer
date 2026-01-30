@@ -78,6 +78,12 @@ export class ContractStateInfoDto {
   promotionWindowEnds?: number | null;
 
   @ApiPropertyOptional({
+    description: "Unix timestamp in milliseconds until which agreement terms are locked (from the covering agreement)",
+    example: 1735689600000,
+  })
+  commitmentLockedUntil?: number | null;
+
+  @ApiPropertyOptional({
     description: "Details about the attack if the contract was compromised",
   })
   attackDetails?: {
