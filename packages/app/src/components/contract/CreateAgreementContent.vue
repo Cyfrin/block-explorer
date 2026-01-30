@@ -18,12 +18,20 @@
         <span class="step-label">{{ t("safeHarbor.createAgreement.step1Label") }}</span>
       </div>
       <div class="step-connector" :class="{ completed: currentStep > 1 }" />
-      <div class="step" :class="{ active: currentStep === 2, completed: currentStep > 2 }">
+      <div
+        class="step"
+        :class="{
+          active: currentStep === 2,
+          completed: currentStep > 2 && wasAdopted,
+          skipped: currentStep > 2 && !wasAdopted,
+        }"
+      >
         <div class="step-circle">
-          <CheckIcon v-if="currentStep > 2" class="check-icon" />
+          <CheckIcon v-if="currentStep > 2 && wasAdopted" class="check-icon" />
           <span v-else>2</span>
         </div>
         <span class="step-label">{{ t("safeHarbor.createAgreement.step2Label") }}</span>
+        <span class="optional-badge">{{ t("common.optional") }}</span>
       </div>
     </div>
 
@@ -147,7 +155,7 @@
         </form>
       </template>
 
-      <!-- Step 2: Adopt Agreement -->
+      <!-- Step 2: Adopt Agreement (Optional) -->
       <template v-else-if="currentStep === 2">
         <div class="step2-content">
           <div class="success-banner">
@@ -164,9 +172,14 @@
             </div>
           </div>
 
-          <p class="step2-description">
-            {{ t("safeHarbor.createAgreement.adoptDescription") }}
-          </p>
+          <div class="adopt-section">
+            <p class="step2-description">
+              {{ t("safeHarbor.createAgreement.adoptDescription") }}
+            </p>
+            <p class="step2-optional-note">
+              {{ t("safeHarbor.createAgreement.adoptOptionalNote") }}
+            </p>
+          </div>
 
           <!-- Error Message -->
           <div v-if="adoptError" class="error-message">
@@ -182,11 +195,27 @@
           <div class="success-banner large">
             <CheckCircleIcon class="success-icon" />
             <div class="success-text">
-              <p class="success-title">{{ t("safeHarbor.createAgreement.complete") }}</p>
-              <p class="success-subtitle">{{ t("safeHarbor.createAgreement.completeDescription") }}</p>
+              <p class="success-title">
+                {{
+                  wasAdopted
+                    ? t("safeHarbor.createAgreement.complete")
+                    : t("safeHarbor.createAgreement.completeCreatedOnly")
+                }}
+              </p>
+              <p class="success-subtitle">
+                {{
+                  wasAdopted
+                    ? t("safeHarbor.createAgreement.completeDescription")
+                    : t("safeHarbor.createAgreement.completeCreatedOnlyDescription")
+                }}
+              </p>
             </div>
           </div>
           <a v-if="adoptTxHash" :href="txLink(adoptTxHash)" target="_blank" class="tx-link-full">
+            {{ t("safeHarbor.createAgreement.viewAdoptTransaction") }}
+            <ExternalLinkIcon class="external-icon" />
+          </a>
+          <a v-else-if="createTxHash" :href="txLink(createTxHash)" target="_blank" class="tx-link-full">
             {{ t("safeHarbor.createAgreement.viewTransaction") }}
             <ExternalLinkIcon class="external-icon" />
           </a>
@@ -209,22 +238,21 @@
         <span v-if="isCreatingAgreement" class="loading-spinner" />
         {{ isCreatingAgreement ? t("common.processing") : t("safeHarbor.createAgreement.createButton") }}
       </button>
-      <button
-        v-else-if="currentStep === 2"
-        type="button"
-        class="btn-primary"
-        :disabled="isAdopting"
-        @click="handleAdoptAgreement"
-      >
-        <span v-if="isAdopting" class="loading-spinner" />
-        {{ isAdopting ? t("common.processing") : t("safeHarbor.createAgreement.adoptButton") }}
-      </button>
+      <template v-else-if="currentStep === 2">
+        <button type="button" class="btn-tertiary" :disabled="isAdopting" @click="handleSkipAdopt">
+          {{ t("safeHarbor.createAgreement.skipButton") }}
+        </button>
+        <button type="button" class="btn-primary" :disabled="isAdopting" @click="handleAdoptAgreement">
+          <span v-if="isAdopting" class="loading-spinner" />
+          {{ isAdopting ? t("common.processing") : t("safeHarbor.createAgreement.adoptButton") }}
+        </button>
+      </template>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { CheckCircleIcon, CheckIcon, ExclamationCircleIcon, ExternalLinkIcon, XIcon } from "@heroicons/vue/solid";
@@ -281,6 +309,10 @@ const props = defineProps({
     type: String as PropType<string | null>,
     default: undefined,
   },
+  overrideWasAdopted: {
+    type: Boolean,
+    default: undefined,
+  },
 });
 
 const emit = defineEmits<{
@@ -311,6 +343,10 @@ const createTxHash = computed(() => props.overrideCreateTxHash ?? createdTxHash.
 const isAdopting = computed(() => props.overrideAdopting ?? adopting.value);
 const adoptError = computed(() => props.overrideAdoptError ?? adoptErr.value);
 const adoptTxHash = computed(() => props.overrideAdoptTxHash ?? adoptedTxHash.value);
+
+// Track whether user adopted or skipped
+const didAdopt = ref(false);
+const wasAdopted = computed(() => props.overrideWasAdopted ?? didAdopt.value);
 
 // Default USDC address for bounty cap token
 const USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
@@ -404,12 +440,26 @@ const handleCreateAgreement = async () => {
 const handleAdoptAgreement = async () => {
   await adoptSafeHarbor(props.contractAddress);
   if (adoptedTxHash.value) {
+    didAdopt.value = true;
     emit("success");
   }
 };
 
+const handleSkipAdopt = () => {
+  didAdopt.value = false;
+  // Move to step 3 without adopting
+  creationStep.value = 3;
+  emit("success");
+};
+
+// Reset function that also resets local state
+const resetAll = () => {
+  reset();
+  didAdopt.value = false;
+};
+
 // Expose reset for parent component
-defineExpose({ reset });
+defineExpose({ reset: resetAll });
 </script>
 
 <style scoped lang="scss">
@@ -452,9 +502,13 @@ defineExpose({ reset });
   @apply flex items-center gap-2;
 
   .step-circle {
-    @apply flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium;
+    @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-medium;
     background-color: var(--bg-tertiary);
     color: var(--text-muted);
+
+    .check-icon {
+      @apply h-4 w-4;
+    }
   }
 
   .step-label {
@@ -481,9 +535,22 @@ defineExpose({ reset });
     .step-label {
       color: var(--success-text);
     }
-    .check-icon {
-      @apply h-4 w-4;
+  }
+
+  &.skipped {
+    .step-circle {
+      background-color: var(--bg-quaternary);
+      color: var(--text-muted);
     }
+    .step-label {
+      color: var(--text-muted);
+    }
+  }
+
+  .optional-badge {
+    @apply hidden rounded px-1.5 py-0.5 text-xs sm:inline;
+    background-color: var(--bg-tertiary);
+    color: var(--text-muted);
   }
 }
 
@@ -640,9 +707,18 @@ defineExpose({ reset });
   @apply justify-center;
 }
 
+.adopt-section {
+  @apply space-y-2;
+}
+
 .step2-description {
   @apply text-sm;
   color: var(--text-secondary);
+}
+
+.step2-optional-note {
+  @apply text-xs;
+  color: var(--text-muted);
 }
 
 .modal-footer {
@@ -651,6 +727,7 @@ defineExpose({ reset });
 }
 
 .btn-secondary,
+.btn-tertiary,
 .btn-primary {
   @apply flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors;
 
@@ -665,6 +742,16 @@ defineExpose({ reset });
 
   &:hover:not(:disabled) {
     background-color: var(--bg-quaternary);
+  }
+}
+
+.btn-tertiary {
+  background-color: transparent;
+  color: var(--text-muted);
+
+  &:hover:not(:disabled) {
+    color: var(--text-secondary);
+    background-color: var(--bg-tertiary);
   }
 }
 

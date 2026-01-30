@@ -16,7 +16,7 @@ const meta: Meta<typeof CreateAgreementContent> = {
     docs: {
       description: {
         component:
-          "A two-step wizard for creating and adopting a Safe Harbor Agreement. Step 1 creates the agreement contract, Step 2 adopts it in the registry. This is the content component used inside CreateAgreementModal.",
+          "A two-step wizard for creating a Safe Harbor Agreement. Step 1 creates the agreement contract, Step 2 optionally adopts it in the registry. This is the content component used inside CreateAgreementModal.",
       },
     },
   },
@@ -88,11 +88,12 @@ export const Step2Default: StoryFn = () => ({
     override-create-tx-hash="${txHash}"
   />`,
 });
-Step2Default.storyName = "Step 2: Adopt Agreement";
+Step2Default.storyName = "Step 2: Adopt Agreement (Optional)";
 Step2Default.parameters = {
   docs: {
     description: {
-      story: "State after agreement is created, ready to adopt it in the registry.",
+      story:
+        "State after agreement is created. User can choose to adopt the agreement in the registry or skip this step.",
     },
   },
 };
@@ -135,7 +136,7 @@ Step2Error.parameters = {
   },
 };
 
-export const Complete: StoryFn = () => ({
+export const CompleteWithAdopt: StoryFn = () => ({
   components: { CreateAgreementContent },
   template: `<CreateAgreementContent
     contract-address="${contractAddress}"
@@ -143,13 +144,33 @@ export const Complete: StoryFn = () => ({
     override-agreement-address="${agreementAddress}"
     override-create-tx-hash="${txHash}"
     override-adopt-tx-hash="${txHash}"
+    :override-was-adopted="true"
   />`,
 });
-Complete.storyName = "Complete";
-Complete.parameters = {
+CompleteWithAdopt.storyName = "Complete (Adopted)";
+CompleteWithAdopt.parameters = {
   docs: {
     description: {
-      story: "Success state after both transactions complete.",
+      story: "Success state after both creating and adopting the agreement.",
+    },
+  },
+};
+
+export const CompleteSkipped: StoryFn = () => ({
+  components: { CreateAgreementContent },
+  template: `<CreateAgreementContent
+    contract-address="${contractAddress}"
+    :override-step="3"
+    override-agreement-address="${agreementAddress}"
+    override-create-tx-hash="${txHash}"
+    :override-was-adopted="false"
+  />`,
+});
+CompleteSkipped.storyName = "Complete (Skipped Adopt)";
+CompleteSkipped.parameters = {
+  docs: {
+    description: {
+      story: "Success state after creating the agreement but skipping the adopt step. Shows different messaging.",
     },
   },
 };

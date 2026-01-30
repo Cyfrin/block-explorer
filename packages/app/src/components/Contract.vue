@@ -78,12 +78,17 @@
           <ContentLoader v-if="isAgreementLoading" class="agreement-loader" />
           <template v-else-if="isAgreementFetched">
             <template v-if="hasAgreement && agreement">
-              <RequestUnderAttackPrompt
-                v-if="showRequestUnderAttackPrompt"
-                :contract-address="contractAddress"
-                :agreement-address="agreement.agreementAddress"
-                :creator-address="contract?.creatorAddress"
-              />
+              <!-- Request Attackable Mode prompt (shown only in NEW_DEPLOYMENT state) -->
+              <div v-if="showRequestUnderAttackPrompt" class="request-attackable-prompt">
+                <div class="prompt-header">
+                  <ExclamationCircleIcon class="prompt-icon" />
+                  <span class="prompt-title">{{ t("requestAttackableMode.title") }}</span>
+                </div>
+                <p class="prompt-description">{{ t("requestAttackableMode.description") }}</p>
+                <button type="button" class="request-button" @click="openRequestUnderAttackModal">
+                  {{ t("requestAttackableMode.requestButton") }}
+                </button>
+              </div>
               <AgreementDetails
                 :agreement="agreement"
                 :owner="agreement.owner"
@@ -103,12 +108,21 @@
         </div>
       </template>
     </Tabs>
+
+    <!-- Request Under Attack Modal -->
+    <RequestUnderAttackModal
+      :is-open="showRequestUnderAttackModal"
+      :contract-address="contractAddress"
+      @close="closeRequestUnderAttackModal"
+      @success="handleRequestUnderAttackSuccess"
+    />
   </div>
 </template>
 <script lang="ts" setup>
-import { computed, type PropType, watch } from "vue";
+import { computed, type PropType, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
+import { ExclamationCircleIcon } from "@heroicons/vue/outline";
 import { CheckCircleIcon, ShieldCheckIcon } from "@heroicons/vue/solid";
 
 import SearchForm from "@/components/SearchForm.vue";
@@ -123,7 +137,7 @@ import AgreementDetails from "@/components/contract/AgreementDetails.vue";
 import ContractInfoTab from "@/components/contract/ContractInfoTab.vue";
 import ContractInfoTable from "@/components/contract/InfoTable.vue";
 import NoAgreementWarning from "@/components/contract/NoAgreementWarning.vue";
-import RequestUnderAttackPrompt from "@/components/contract/RequestUnderAttackPrompt.vue";
+import RequestUnderAttackModal from "@/components/contract/RequestUnderAttackModal.vue";
 import TransactionEmptyState from "@/components/contract/TransactionEmptyState.vue";
 import ContractEvents from "@/components/event/ContractEvents.vue";
 import TransactionsTable from "@/components/transactions/Table.vue";
@@ -212,6 +226,23 @@ watch(
   },
   { immediate: true }
 );
+
+// Request Under Attack modal state
+const showRequestUnderAttackModal = ref(false);
+
+const openRequestUnderAttackModal = () => {
+  showRequestUnderAttackModal.value = true;
+};
+
+const closeRequestUnderAttackModal = () => {
+  showRequestUnderAttackModal.value = false;
+};
+
+const handleRequestUnderAttackSuccess = () => {
+  showRequestUnderAttackModal.value = false;
+  // Refetch contract state after successful request
+  fetchContractState();
+};
 
 const handleAgreementCreated = () => {
   // Refetch agreement data after successful creation
@@ -325,6 +356,41 @@ const transactionsSearchParams = computed(() => ({
   .fetch-error {
     @apply text-sm;
     color: var(--text-muted);
+  }
+}
+
+.request-attackable-prompt {
+  @apply mb-4 flex flex-col gap-2 rounded-lg border p-4;
+  border-color: var(--warning-border, var(--border-default));
+  background-color: var(--warning-bg, var(--bg-secondary));
+
+  .prompt-header {
+    @apply flex items-center gap-2;
+  }
+
+  .prompt-icon {
+    @apply h-5 w-5 shrink-0;
+    color: var(--warning, #f59e0b);
+  }
+
+  .prompt-title {
+    @apply text-sm font-semibold;
+    color: var(--warning-text, var(--text-primary));
+  }
+
+  .prompt-description {
+    @apply text-sm leading-relaxed;
+    color: var(--text-secondary);
+  }
+
+  .request-button {
+    @apply mt-2 flex w-fit items-center gap-2 rounded-md px-4 py-2 text-sm font-medium;
+    background-color: var(--warning, #f59e0b);
+    color: var(--text-on-warning, white);
+
+    &:hover {
+      background-color: var(--warning-hover, #d97706);
+    }
   }
 }
 </style>
