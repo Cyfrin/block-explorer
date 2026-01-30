@@ -115,9 +115,10 @@ export interface AgreementDocument {
 
 // Child contract scope enum - matches contract ChildContractScope
 export enum ChildContractScope {
-  None = 0, // Only the specified contract is covered
-  Direct = 1, // Direct child contracts are also covered
-  All = 2, // All descendant contracts are covered
+  None = 0, // No child contracts are included
+  ExistingOnly = 1, // Only child contracts created before the agreement are included
+  All = 2, // All child contracts (past and future) are included
+  FutureOnly = 3, // Only child contracts created after the agreement are included
 }
 
 // Account entry for chain configuration

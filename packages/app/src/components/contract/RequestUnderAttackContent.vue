@@ -121,6 +121,7 @@
           <CreateAgreementContent
             ref="createFormRef"
             :contract-address="contractAddress"
+            embedded
             @close="handleCreateClose"
             @success="handleCreateSuccess"
           />
@@ -439,11 +440,12 @@ const handleCreateClose = () => {
   mode.value = "detected";
 };
 
-const handleCreateSuccess = () => {
-  // Agreement was created and adopted, switch to detected view and wait
+const handleCreateSuccess = (payload: { agreementAddress: string; txHash: string | null }) => {
+  // Agreement was created, switch to detected view and wait for it to appear
   waitingForDetectionState.value = true;
-  // Get the tx hash from the create form if available
-  // For now, we'll just switch modes and start polling
+  createdTxHashState.value = payload.txHash;
+  // Pre-select the newly created agreement
+  selectedFromList.value = payload.agreementAddress;
   mode.value = "detected";
   agreementList.startPolling(props.contractAddress);
 };

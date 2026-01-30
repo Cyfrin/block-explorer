@@ -1,7 +1,7 @@
 <template>
-  <div class="create-agreement-modal">
-    <!-- Header -->
-    <div class="modal-header">
+  <div class="create-agreement-modal" :class="{ embedded: embedded }">
+    <!-- Header (hidden when embedded) -->
+    <div v-if="!embedded" class="modal-header">
       <h2 class="modal-title">{{ t("safeHarbor.createAgreement.title") }}</h2>
       <button type="button" class="close-button" @click="$emit('close')">
         <XIcon class="icon" />
@@ -191,10 +191,66 @@
             </template>
           </FormItem>
 
-          <FormItem :label="t('safeHarbor.createAgreement.coveredContract')">
-            <Input :model-value="props.contractAddress" disabled />
+          <FormItem :label="t('safeHarbor.createAgreement.coveredContracts')">
+            <!-- Primary contract (from props, non-removable) -->
+            <div class="contract-row">
+              <div class="contract-address">
+                <Input :model-value="props.contractAddress" disabled />
+              </div>
+              <div class="contract-scope">
+                <select
+                  v-model.number="formData.chains[0].accounts[0].childContractScope"
+                  class="select-input select-sm"
+                  :disabled="isCreatingAgreement"
+                >
+                  <option :value="0">{{ t("safeHarbor.createAgreement.scopeNone") }}</option>
+                  <option :value="1">{{ t("safeHarbor.createAgreement.scopeExisting") }}</option>
+                  <option :value="2">{{ t("safeHarbor.createAgreement.scopeAll") }}</option>
+                  <option :value="3">{{ t("safeHarbor.createAgreement.scopeFuture") }}</option>
+                </select>
+              </div>
+              <!-- Spacer for alignment with removable rows -->
+              <div class="contract-remove-spacer" />
+            </div>
+
+            <!-- Additional contracts -->
+            <div v-for="(account, index) in additionalAccounts" :key="index" class="contract-row">
+              <div class="contract-address">
+                <Input
+                  v-model="account.accountAddress"
+                  :placeholder="t('safeHarbor.createAgreement.contractAddressPlaceholder')"
+                  :disabled="isCreatingAgreement"
+                />
+              </div>
+              <div class="contract-scope">
+                <select
+                  v-model.number="account.childContractScope"
+                  class="select-input select-sm"
+                  :disabled="isCreatingAgreement"
+                >
+                  <option :value="0">{{ t("safeHarbor.createAgreement.scopeNone") }}</option>
+                  <option :value="1">{{ t("safeHarbor.createAgreement.scopeExisting") }}</option>
+                  <option :value="2">{{ t("safeHarbor.createAgreement.scopeAll") }}</option>
+                  <option :value="3">{{ t("safeHarbor.createAgreement.scopeFuture") }}</option>
+                </select>
+              </div>
+              <button
+                type="button"
+                class="remove-contract-button"
+                @click="removeContract(index)"
+                :disabled="isCreatingAgreement"
+              >
+                <XIcon class="icon" />
+              </button>
+            </div>
+
+            <button type="button" class="add-contract-button" @click="addContract" :disabled="isCreatingAgreement">
+              <PlusIcon class="icon" />
+              {{ t("safeHarbor.createAgreement.addContract") }}
+            </button>
+
             <template #underline>
-              {{ t("safeHarbor.createAgreement.coveredContractHint") }}
+              {{ t("safeHarbor.createAgreement.coveredContractsHint") }}
             </template>
           </FormItem>
 
@@ -292,9 +348,17 @@
 
     <!-- Footer -->
     <div class="modal-footer">
-      <button type="button" class="btn-secondary" @click="$emit('close')" :disabled="isCreatingAgreement || isAdopting">
+      <!-- Cancel/Done button (hidden in embedded mode) -->
+      <button
+        v-if="!embedded"
+        type="button"
+        class="btn-secondary"
+        @click="$emit('close')"
+        :disabled="isCreatingAgreement || isAdopting"
+      >
         {{ currentStep === 3 ? t("common.done") : t("common.cancel") }}
       </button>
+      <!-- Step 1: Create button -->
       <button
         v-if="currentStep === 1"
         type="button"
@@ -305,6 +369,7 @@
         <span v-if="isCreatingAgreement" class="loading-spinner" />
         {{ isCreatingAgreement ? t("common.processing") : t("safeHarbor.createAgreement.createButton") }}
       </button>
+      <!-- Step 2: Skip and Adopt buttons -->
       <template v-else-if="currentStep === 2">
         <button type="button" class="btn-tertiary" :disabled="isAdopting" @click="handleSkipAdopt">
           {{ t("safeHarbor.createAgreement.skipButton") }}
@@ -337,9 +402,10 @@ import FormItem from "@/components/form/FormItem.vue";
 import useAgreementCreation from "@/composables/useAgreementCreation";
 import useContext from "@/composables/useContext";
 
-import type { AgreementFormData, ChildContractScope } from "@/types";
+import type { AgreementFormData } from "@/types";
 import type { PropType } from "vue";
 
+import { ChildContractScope } from "@/types";
 import { shortValue } from "@/utils/formatters";
 
 const { t } = useI18n();
@@ -349,6 +415,12 @@ const props = defineProps({
   contractAddress: {
     type: String,
     required: true,
+  },
+  // When embedded in another component (e.g., RequestUnderAttackContent),
+  // hides the header and cancel button
+  embedded: {
+    type: Boolean,
+    default: false,
   },
   // Override props for Storybook
   overrideStep: {
@@ -391,7 +463,7 @@ const props = defineProps({
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (e: "success"): void;
+  (e: "success", payload: { agreementAddress: string; txHash: string | null }): void;
 }>();
 
 const {
@@ -435,7 +507,7 @@ const formData = reactive<AgreementFormData>({
       accounts: [
         {
           accountAddress: props.contractAddress,
-          childContractScope: 0 as ChildContractScope, // None - only this contract
+          childContractScope: ChildContractScope.None, // Only this contract
         },
       ],
     },
@@ -547,6 +619,21 @@ const removeContact = (index: number) => {
   formData.contactDetails.splice(index, 1);
 };
 
+// Additional contracts (excluding the primary one at index 0)
+const additionalAccounts = computed(() => formData.chains[0].accounts.slice(1));
+
+const addContract = () => {
+  formData.chains[0].accounts.push({
+    accountAddress: "",
+    childContractScope: ChildContractScope.None,
+  });
+};
+
+const removeContract = (index: number) => {
+  // index is relative to additionalAccounts, so add 1 for the actual array index
+  formData.chains[0].accounts.splice(index + 1, 1);
+};
+
 const txLink = (hash: string) => {
   const baseUrl = context.currentNetwork.value.rpcUrl.replace(/\/+$/, "");
   return `${baseUrl.replace("rpc", "explorer")}/tx/${hash}`;
@@ -566,15 +653,27 @@ const handleAdoptAgreement = async () => {
   await adoptSafeHarbor(props.contractAddress);
   if (adoptedTxHash.value) {
     didAdopt.value = true;
-    emit("success");
+    emit("success", {
+      agreementAddress: createdAddress.value!,
+      txHash: adoptedTxHash.value,
+    });
+    // In embedded mode, parent handles the completion - don't show step 3
+    if (!props.embedded) {
+      creationStep.value = 3;
+    }
   }
 };
 
 const handleSkipAdopt = () => {
   didAdopt.value = false;
-  // Move to step 3 without adopting
-  creationStep.value = 3;
-  emit("success");
+  emit("success", {
+    agreementAddress: createdAddress.value!,
+    txHash: createdTxHash.value,
+  });
+  // In embedded mode, parent handles the completion - don't show step 3
+  if (!props.embedded) {
+    creationStep.value = 3;
+  }
 };
 
 // Reset function that also resets local state
@@ -592,6 +691,12 @@ defineExpose({ reset: resetAll });
   @apply w-full max-w-lg rounded-lg shadow-xl;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-default);
+
+  &.embedded {
+    @apply max-w-none rounded-none shadow-none;
+    border: none;
+    background-color: transparent;
+  }
 }
 
 .modal-header {
@@ -706,7 +811,7 @@ defineExpose({ reset: resetAll });
 
   .suffix,
   .prefix {
-    @apply absolute text-sm;
+    @apply pointer-events-none absolute z-10 text-sm;
     color: var(--text-muted);
   }
 
@@ -718,6 +823,10 @@ defineExpose({ reset: resetAll });
     @apply left-3;
   }
 
+  :deep(.input-container) {
+    @apply w-full;
+  }
+
   :deep(.input) {
     &:has(+ .suffix) {
       @apply pr-8;
@@ -727,7 +836,7 @@ defineExpose({ reset: resetAll });
 
 .input-with-prefix {
   :deep(.input) {
-    @apply pl-6;
+    @apply pl-7;
   }
 }
 
@@ -762,19 +871,85 @@ defineExpose({ reset: resetAll });
 }
 
 .select-input {
-  @apply w-full rounded-md border px-3 py-2 text-sm;
-  background-color: var(--bg-secondary);
+  @apply w-full appearance-none rounded-md border px-3 py-2 pr-8 text-sm;
+  background-color: var(--bg-primary);
   border-color: var(--border-default);
   color: var(--text-primary);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+
+  &:hover:not(:disabled) {
+    border-color: var(--border-strong);
+  }
 
   &:focus {
     border-color: var(--accent);
     outline: none;
+    box-shadow: 0 0 0 3px var(--accent-muted);
+  }
+
+  &:disabled {
+    @apply cursor-not-allowed;
+    background-color: var(--bg-tertiary);
+    color: var(--text-muted);
+  }
+}
+
+.contract-row {
+  @apply flex flex-wrap items-center gap-2 mb-2;
+
+  .contract-address {
+    @apply w-full sm:flex-1 sm:w-auto;
+  }
+
+  .contract-scope {
+    @apply w-full sm:w-40 shrink-0;
+  }
+
+  .contract-remove-spacer {
+    @apply hidden sm:block w-8 shrink-0;
+  }
+}
+
+.remove-contract-button {
+  @apply rounded p-1.5 transition-colors shrink-0;
+  color: var(--text-muted);
+
+  &:hover:not(:disabled) {
+    background-color: var(--bg-tertiary);
+    color: var(--error);
   }
 
   &:disabled {
     @apply cursor-not-allowed opacity-50;
   }
+
+  .icon {
+    @apply h-4 w-4;
+  }
+}
+
+.add-contract-button {
+  @apply flex items-center gap-1 rounded-md px-3 py-1.5 text-sm transition-colors;
+  color: var(--accent);
+
+  &:hover:not(:disabled) {
+    background-color: var(--bg-tertiary);
+  }
+
+  &:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .icon {
+    @apply h-4 w-4;
+  }
+}
+
+.select-sm {
+  @apply py-1.5 text-sm;
 }
 
 .contact-row {
