@@ -1,7 +1,8 @@
 <template>
   <div class="agreement-summary-badge" :class="badgeClass">
     <div class="badge-icon">
-      <ClockIcon v-if="isPendingApproval && hasAgreement" class="icon" />
+      <ClockIcon v-if="(isPendingApproval || isPromotionPending) && hasAgreement" class="icon" />
+      <ExclamationCircleIcon v-else-if="isCorrupted && hasAgreement" class="icon" />
       <ShieldCheckIcon v-else-if="hasAgreement" class="icon" />
       <ShieldExclamationIcon v-else class="icon" />
     </div>
@@ -9,19 +10,23 @@
       <template v-if="hasAgreement && agreement">
         <div class="badge-title-row">
           <span class="badge-title">{{ agreement.protocolName }}</span>
-          <Badge v-if="isPendingApproval" color="warning" size="sm">{{ t("safeHarbor.pendingApproval.badge") }}</Badge>
+          <Badge v-if="isPendingApproval" color="warning" size="sm">{{ t("safeHarbor.badges.pending") }}</Badge>
+          <Badge v-else-if="isUnderAttack" color="success" size="sm">{{ t("safeHarbor.badges.active") }}</Badge>
+          <Badge v-else-if="isPromotionPending" color="neutral" size="sm">{{
+            t("safeHarbor.badges.promotionPending")
+          }}</Badge>
+          <Badge v-else-if="isProduction" color="neutral" size="sm">{{ t("safeHarbor.badges.production") }}</Badge>
+          <Badge v-else-if="isCorrupted" color="error" size="sm">{{ t("safeHarbor.badges.corrupted") }}</Badge>
         </div>
         <div class="badge-details">
           <span class="detail-item">
             <span class="detail-label">{{ t("safeHarbor.bounty") }}:</span>
             <span class="detail-value">{{ agreement.bountyPercentage }}%</span>
           </span>
-          <span class="detail-separator">|</span>
           <span class="detail-item">
             <span class="detail-label">{{ t("safeHarbor.cap") }}:</span>
             <span class="detail-value">{{ formattedBountyCap }}</span>
           </span>
-          <span v-if="allowsAnonymous" class="detail-separator">|</span>
           <span v-if="allowsAnonymous" class="detail-item anonymous-allowed">
             {{ t("safeHarbor.anonymousAllowed") }}
           </span>
@@ -43,7 +48,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { ClockIcon } from "@heroicons/vue/outline";
-import { ChevronRightIcon, ShieldCheckIcon, ShieldExclamationIcon } from "@heroicons/vue/solid";
+import { ChevronRightIcon, ExclamationCircleIcon, ShieldCheckIcon, ShieldExclamationIcon } from "@heroicons/vue/solid";
 
 import Badge from "@/components/common/Badge.vue";
 
@@ -65,15 +70,23 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
-  isPendingApproval: {
-    type: Boolean,
-    default: false,
+  contractState: {
+    type: String as PropType<string | null>,
+    default: null,
   },
 });
 
+// State detection computed properties
+const isPendingApproval = computed(() => props.contractState === "ATTACK_REQUESTED");
+const isUnderAttack = computed(() => props.contractState === "UNDER_ATTACK");
+const isPromotionPending = computed(() => props.contractState === "PROMOTION_REQUESTED");
+const isProduction = computed(() => props.contractState === "PRODUCTION");
+const isCorrupted = computed(() => props.contractState === "CORRUPTED");
+
 const badgeClass = computed(() => ({
-  "has-agreement": props.hasAgreement && !props.isPendingApproval,
-  "pending-approval": props.hasAgreement && props.isPendingApproval,
+  "has-agreement": props.hasAgreement && !isPendingApproval.value && !isCorrupted.value,
+  "pending-approval": props.hasAgreement && isPendingApproval.value,
+  "state-corrupted": props.hasAgreement && isCorrupted.value,
   "no-agreement": !props.hasAgreement,
 }));
 
@@ -131,6 +144,18 @@ const allowsAnonymous = computed(() => {
     }
   }
 
+  &.state-corrupted {
+    background-color: var(--error-muted);
+
+    .badge-icon .icon {
+      color: var(--error);
+    }
+
+    .badge-title {
+      color: var(--error-text);
+    }
+  }
+
   .badge-icon {
     @apply hidden shrink-0 sm:block;
 
@@ -152,7 +177,7 @@ const allowsAnonymous = computed(() => {
   }
 
   .badge-details {
-    @apply flex flex-wrap items-center gap-1.5 text-xs;
+    @apply flex flex-col gap-0.5 text-xs;
     color: var(--text-muted);
   }
 
@@ -167,11 +192,6 @@ const allowsAnonymous = computed(() => {
   .detail-value {
     @apply font-medium;
     color: var(--text-secondary);
-  }
-
-  .detail-separator {
-    @apply hidden sm:inline;
-    color: var(--text-faint);
   }
 
   .anonymous-allowed {

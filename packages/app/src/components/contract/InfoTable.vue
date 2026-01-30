@@ -95,7 +95,7 @@
             v-else-if="isAgreementFetched"
             :agreement="agreement"
             :has-agreement="hasAgreement"
-            :is-pending-approval="contractState === 'ATTACK_REQUESTED'"
+            :contract-state="contractState"
           />
           <span v-else class="fetch-error">Unable to load</span>
         </table-body-column>

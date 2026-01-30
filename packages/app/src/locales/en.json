@@ -885,10 +885,34 @@
       "extendDeadlineHelp": "Must be later than the current deadline",
       "deadlineMustBeAfterCurrent": "New deadline must be after the current deadline"
     },
-    "pendingApproval": {
-      "title": "Safe Harbor Agreement (Pending Approval)",
-      "description": "This agreement will take effect when the DAO approves attack mode. Until then, this contract is not covered by Safe Harbor protections.",
-      "badge": "Pending"
+    "stateMessages": {
+      "pendingApproval": {
+        "title": "Pending Approval",
+        "description": "This agreement will take effect when the DAO approves attack mode. Until then, this contract is not covered by Safe Harbor protections."
+      },
+      "active": {
+        "title": "Active Protection",
+        "description": "This contract is currently in attack mode. Whitehats are protected under these Safe Harbor terms when conducting authorized security testing."
+      },
+      "promotionPending": {
+        "title": "Promotion Pending",
+        "description": "The owner has requested promotion to production. This contract remains attackable during the 3-day promotion window."
+      },
+      "production": {
+        "title": "Production Mode",
+        "description": "This contract has been promoted to production and is no longer open for attack mode testing. For responsible disclosure or bug bounty inquiries, contact the protocol using the details below."
+      },
+      "corrupted": {
+        "title": "Compromised",
+        "description": "This contract was marked as compromised following a successful attack. The Safe Harbor agreement terms may apply for asset recovery."
+      }
+    },
+    "badges": {
+      "pending": "Pending",
+      "active": "Active",
+      "promotionPending": "Promotion Pending",
+      "production": "Production",
+      "corrupted": "Compromised"
     },
     "createAgreement": {
       "title": "Create Safe Harbor Agreement",

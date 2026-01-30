@@ -1,16 +1,16 @@
 <template>
   <div class="agreement-details">
-    <!-- Pending Approval Banner - shown during ATTACK_REQUESTED state -->
-    <div v-if="isPendingApproval" class="pending-approval-banner">
+    <!-- State Banner - shows contextual info based on contract state -->
+    <div v-if="showStateBanner" class="state-banner" :class="stateBannerClass">
       <div class="banner-header">
-        <ClockIcon class="warning-icon" />
-        <span class="warning-title">{{ t("safeHarbor.pendingApproval.title") }}</span>
+        <component :is="stateBannerIcon" class="banner-icon" />
+        <span class="banner-title">{{ stateBannerTitle }}</span>
       </div>
-      <p class="warning-description">{{ t("safeHarbor.pendingApproval.description") }}</p>
+      <p class="banner-description">{{ stateBannerDescription }}</p>
     </div>
 
     <!-- Header -->
-    <div class="agreement-header" :class="{ 'pending-state': isPendingApproval }">
+    <div class="agreement-header" :class="headerStateClass">
       <div class="header-icon">
         <ShieldCheckIcon class="icon" />
       </div>
@@ -316,6 +316,7 @@ import { useI18n } from "vue-i18n";
 import { ClockIcon } from "@heroicons/vue/outline";
 import {
   CheckIcon,
+  ExclamationCircleIcon,
   ExternalLinkIcon,
   InformationCircleIcon,
   PencilIcon,
@@ -365,8 +366,67 @@ const props = defineProps({
   },
 });
 
-// Check if the contract is pending DAO approval (ATTACK_REQUESTED state)
+// State detection computed properties
 const isPendingApproval = computed(() => props.contractState === "ATTACK_REQUESTED");
+const isUnderAttack = computed(() => props.contractState === "UNDER_ATTACK");
+const isPromotionPending = computed(() => props.contractState === "PROMOTION_REQUESTED");
+const isProduction = computed(() => props.contractState === "PRODUCTION");
+const isCorrupted = computed(() => props.contractState === "CORRUPTED");
+
+// Show state banner for all post-requestUnderAttack states
+const showStateBanner = computed(
+  () =>
+    isPendingApproval.value ||
+    isUnderAttack.value ||
+    isPromotionPending.value ||
+    isProduction.value ||
+    isCorrupted.value
+);
+
+// Banner styling based on state
+const stateBannerClass = computed(() => ({
+  "state-pending": isPendingApproval.value,
+  "state-active": isUnderAttack.value,
+  "state-promotion": isPromotionPending.value,
+  "state-production": isProduction.value,
+  "state-corrupted": isCorrupted.value,
+}));
+
+// Header styling based on state
+const headerStateClass = computed(() => ({
+  "state-pending": isPendingApproval.value,
+  "state-active": isUnderAttack.value,
+  "state-promotion": isPromotionPending.value,
+  "state-production": isProduction.value,
+  "state-corrupted": isCorrupted.value,
+}));
+
+// Banner icon based on state
+const stateBannerIcon = computed(() => {
+  if (isPendingApproval.value || isPromotionPending.value) return ClockIcon;
+  if (isCorrupted.value) return ExclamationCircleIcon;
+  return ShieldCheckIcon;
+});
+
+// Banner title based on state
+const stateBannerTitle = computed(() => {
+  if (isPendingApproval.value) return t("safeHarbor.stateMessages.pendingApproval.title");
+  if (isUnderAttack.value) return t("safeHarbor.stateMessages.active.title");
+  if (isPromotionPending.value) return t("safeHarbor.stateMessages.promotionPending.title");
+  if (isProduction.value) return t("safeHarbor.stateMessages.production.title");
+  if (isCorrupted.value) return t("safeHarbor.stateMessages.corrupted.title");
+  return "";
+});
+
+// Banner description based on state
+const stateBannerDescription = computed(() => {
+  if (isPendingApproval.value) return t("safeHarbor.stateMessages.pendingApproval.description");
+  if (isUnderAttack.value) return t("safeHarbor.stateMessages.active.description");
+  if (isPromotionPending.value) return t("safeHarbor.stateMessages.promotionPending.description");
+  if (isProduction.value) return t("safeHarbor.stateMessages.production.description");
+  if (isCorrupted.value) return t("safeHarbor.stateMessages.corrupted.description");
+  return "";
+});
 
 const emit = defineEmits<{
   (e: "agreementUpdated"): void;
@@ -663,28 +723,94 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
 .agreement-details {
   @apply space-y-4 sm:space-y-6;
 
-  .pending-approval-banner {
+  .state-banner {
     @apply flex flex-col gap-2 rounded-lg border p-4;
-    border-color: var(--warning-border, var(--border-default));
-    background-color: var(--warning-bg, var(--bg-secondary));
 
     .banner-header {
       @apply flex items-center gap-2;
     }
 
-    .warning-icon {
+    .banner-icon {
       @apply h-5 w-5 shrink-0;
-      color: var(--warning, #f59e0b);
     }
 
-    .warning-title {
+    .banner-title {
       @apply text-sm font-semibold;
-      color: var(--warning-text, var(--text-primary));
     }
 
-    .warning-description {
+    .banner-description {
       @apply text-sm leading-relaxed;
       color: var(--text-secondary);
+    }
+
+    // Warning state (pending approval)
+    &.state-pending {
+      border-color: var(--warning-border, var(--border-default));
+      background-color: var(--warning-bg, var(--bg-secondary));
+
+      .banner-icon {
+        color: var(--warning, #f59e0b);
+      }
+
+      .banner-title {
+        color: var(--warning-text, var(--text-primary));
+      }
+    }
+
+    // Success state (active protection)
+    &.state-active {
+      border-color: var(--success-border, var(--border-default));
+      background-color: var(--success-bg, var(--bg-secondary));
+
+      .banner-icon {
+        color: var(--success);
+      }
+
+      .banner-title {
+        color: var(--success-text, var(--text-primary));
+      }
+    }
+
+    // Info state (promotion pending)
+    &.state-promotion {
+      border-color: var(--info-border, var(--border-default));
+      background-color: var(--info-bg, var(--bg-secondary));
+
+      .banner-icon {
+        color: var(--info, #3b82f6);
+      }
+
+      .banner-title {
+        color: var(--info-text, var(--text-primary));
+      }
+    }
+
+    // Neutral state (production)
+    &.state-production {
+      border-color: var(--border-default);
+      background-color: var(--bg-secondary);
+
+      .banner-icon {
+        color: var(--text-muted);
+      }
+
+      .banner-title {
+        color: var(--text-primary);
+      }
+    }
+
+    // Error state (corrupted)
+    &.state-corrupted {
+      border-color: var(--error-border, var(--border-default));
+      background-color: var(--error-bg, var(--bg-secondary));
+
+      .banner-icon {
+        color: var(--error);
+      }
+
+      .banner-title {
+        color: var(--error-text, var(--text-primary));
+      }
     }
   }
 
@@ -692,15 +818,63 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
     @apply flex items-start gap-3 rounded-lg p-3 sm:items-center sm:gap-4 sm:p-4;
     background-color: var(--success-muted);
 
-    &.pending-state {
-      background-color: var(--warning-muted, #fef3c7);
+    &.state-pending {
+      background-color: var(--warning-muted);
 
       .icon {
         color: var(--warning, #f59e0b);
       }
 
       .protocol-name {
-        color: var(--warning-text, #92400e);
+        color: var(--warning-text);
+      }
+    }
+
+    &.state-active {
+      background-color: var(--success-muted);
+
+      .icon {
+        color: var(--success);
+      }
+
+      .protocol-name {
+        color: var(--success-text);
+      }
+    }
+
+    &.state-promotion {
+      background-color: var(--info-muted);
+
+      .icon {
+        color: var(--info, #3b82f6);
+      }
+
+      .protocol-name {
+        color: var(--info-text);
+      }
+    }
+
+    &.state-production {
+      background-color: var(--neutral-muted, var(--bg-secondary));
+
+      .icon {
+        color: var(--text-muted);
+      }
+
+      .protocol-name {
+        color: var(--text-primary);
+      }
+    }
+
+    &.state-corrupted {
+      background-color: var(--error-muted);
+
+      .icon {
+        color: var(--error);
+      }
+
+      .protocol-name {
+        color: var(--error-text);
       }
     }
   }
