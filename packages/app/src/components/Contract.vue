@@ -14,7 +14,13 @@
   <div class="tables-container">
     <div class="contract-tables-container">
       <div>
-        <ContractInfoTable class="contract-info-table" :loading="pending" :contract="contract!" />
+        <ContractInfoTable
+          class="contract-info-table"
+          :loading="pending"
+          :contract="contract!"
+          @request-attackable-mode="openRequestUnderAttackModal"
+          @go-to-production="handleGoToProduction"
+        />
       </div>
       <div>
         <BalanceTable class="balance-table" :loading="pending" :balances="contract?.balances">
@@ -93,6 +99,7 @@
                 :agreement="agreement"
                 :owner="agreement.owner"
                 :wallet-address="walletAddress"
+                :contract-state="contractState"
                 @agreement-updated="handleAgreementUpdated"
                 @connect-wallet="connectWallet"
               />
@@ -116,6 +123,14 @@
       @close="closeRequestUnderAttackModal"
       @success="handleRequestUnderAttackSuccess"
     />
+
+    <!-- Go To Production Modal -->
+    <GoToProductionModal
+      :is-open="showGoToProductionModal"
+      :contract-address="contractAddress"
+      @close="closeGoToProductionModal"
+      @success="handleGoToProductionSuccess"
+    />
   </div>
 </template>
 <script lang="ts" setup>
@@ -135,6 +150,7 @@ import Title from "@/components/common/Title.vue";
 import ContentLoader from "@/components/common/loaders/ContentLoader.vue";
 import AgreementDetails from "@/components/contract/AgreementDetails.vue";
 import ContractInfoTab from "@/components/contract/ContractInfoTab.vue";
+import GoToProductionModal from "@/components/contract/GoToProductionModal.vue";
 import ContractInfoTable from "@/components/contract/InfoTable.vue";
 import NoAgreementWarning from "@/components/contract/NoAgreementWarning.vue";
 import RequestUnderAttackModal from "@/components/contract/RequestUnderAttackModal.vue";
@@ -202,7 +218,7 @@ const {
 const {
   state: contractState,
   hasStateInfo,
-  isNotRegistered,
+  hasRequestedAttack,
   fetch: fetchContractState,
 } = useBattlechainContractState(contractAddress);
 
@@ -213,8 +229,10 @@ const showRequestUnderAttackPrompt = computed(
   () => contractState.value === ContractState.NEW_DEPLOYMENT && hasAgreement.value && agreement.value
 );
 
-// Show Safe Harbor tab only when contract is registered in AttackRegistry
-const showSafeHarborTab = computed(() => !isBattlechainExcluded.value && hasStateInfo.value && !isNotRegistered.value);
+// Show Safe Harbor tab only after contract has called requestUnderAttack
+const showSafeHarborTab = computed(
+  () => !isBattlechainExcluded.value && hasStateInfo.value && hasRequestedAttack.value
+);
 
 watch(
   () => props.contract?.address,
@@ -244,6 +262,23 @@ const handleRequestUnderAttackSuccess = () => {
   fetchContractState();
 };
 
+// Go To Production modal state
+const showGoToProductionModal = ref(false);
+
+const openGoToProductionModal = () => {
+  showGoToProductionModal.value = true;
+};
+
+const closeGoToProductionModal = () => {
+  showGoToProductionModal.value = false;
+};
+
+const handleGoToProductionSuccess = () => {
+  showGoToProductionModal.value = false;
+  // Refetch contract state after successful transition to production
+  fetchContractState();
+};
+
 const handleAgreementCreated = () => {
   // Refetch agreement data after successful creation
   fetchAgreement();
@@ -252,6 +287,10 @@ const handleAgreementCreated = () => {
 const handleAgreementUpdated = () => {
   // Refetch agreement data after successful update
   fetchAgreement();
+};
+
+const handleGoToProduction = () => {
+  openGoToProductionModal();
 };
 
 const tabs = computed(() => {

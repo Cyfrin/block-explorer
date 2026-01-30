@@ -11,26 +11,14 @@
     </p>
     <p class="warning">{{ t("contractRegistration.warning") }}</p>
 
-    <!-- Registration section -->
-    <div class="registration-section">
-      <!-- Success state -->
-      <div v-if="registrationTxHash" class="success-state">
-        <div class="success-message">
-          <CheckCircleIcon class="success-icon" />
-          <span>{{ t("contractRegistration.success") }}</span>
-          <a :href="txLink" target="_blank" class="tx-link">
-            {{ t("contractRegistration.viewTransaction") }}
-          </a>
-        </div>
-        <button type="button" class="refresh-link" @click="refreshPage">
-          {{ t("contractRegistration.refreshPage") }}
-        </button>
-      </div>
+    <!-- Request Attackable Mode section -->
+    <div class="attackable-section">
+      <p class="section-title">{{ t("contractRegistration.requestAttackableSection") }}</p>
+      <p class="section-description">{{ t("contractRegistration.requestAttackableDescription") }}</p>
 
       <!-- Not connected state -->
-      <template v-else-if="!isWalletConnected">
-        <p class="register-prompt">
-          {{ t("contractRegistration.promptPrefix") }}
+      <template v-if="!isWalletConnected">
+        <p class="action-prompt">
           <button
             type="button"
             class="connect-link"
@@ -45,25 +33,11 @@
         </p>
       </template>
 
-      <!-- Connected but not owner state -->
-      <template v-else-if="!isOwner">
-        <p class="not-owner-message">
-          {{ t("contractRegistration.notOwner") }}
-        </p>
-      </template>
-
-      <!-- Connected and is owner state -->
+      <!-- Connected state -->
       <template v-else>
-        <button type="button" class="register-button" :disabled="isRegistering" @click="handleRegister">
-          <span v-if="isRegistering" class="loading-spinner" />
-          {{ isRegistering ? t("contractRegistration.registering") : t("contractRegistration.registerButton") }}
+        <button type="button" class="request-button" @click="handleRequestAttackableMode">
+          {{ t("contractRegistration.requestAttackableButton") }}
         </button>
-        <p v-if="registrationError" class="error-message">
-          {{ registrationError }}
-          <button type="button" class="retry-link" @click="registration.reset">
-            {{ t("contractRegistration.tryAgain") }}
-          </button>
-        </p>
       </template>
     </div>
   </div>
@@ -102,6 +76,10 @@ const props = withDefaults(
     overrideIsOwner: undefined,
   }
 );
+
+const emit = defineEmits<{
+  (e: "request-attackable-mode"): void;
+}>();
 
 const { t } = useI18n();
 const context = useContext();
@@ -154,6 +132,10 @@ const txLink = computed(() => {
 
 const handleRegister = () => {
   registration.registerContract(props.contractAddress);
+};
+
+const handleRequestAttackableMode = () => {
+  emit("request-attackable-mode");
 };
 
 const refreshPage = () => {
@@ -306,6 +288,40 @@ onMounted(async () => {
 
     &:hover {
       color: var(--accent-hover);
+    }
+  }
+
+  .attackable-section {
+    @apply mt-4 border-t pt-4;
+    border-color: var(--border-subtle, var(--border-default));
+  }
+
+  .section-title {
+    @apply mb-1 text-sm font-semibold;
+    color: var(--text-primary);
+  }
+
+  .section-description {
+    @apply mb-3 text-sm;
+    color: var(--text-secondary);
+  }
+
+  .action-prompt {
+    @apply text-sm;
+    color: var(--text-secondary);
+  }
+
+  .request-button {
+    @apply flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium;
+    background-color: var(--accent);
+    color: var(--text-on-accent, white);
+
+    &:hover:not(:disabled) {
+      background-color: var(--accent-hover);
+    }
+
+    &:disabled {
+      @apply cursor-not-allowed opacity-50;
     }
   }
 }

@@ -349,9 +349,11 @@ const showAttackRequestedStep = computed(() => {
   return props.state === ContractState.ATTACK_REQUESTED;
 });
 
-// Show attackable step if currently attackable (including promotion requested), past it, or was ever under attack
+// Show attackable step if currently attackable (including promotion requested), past it, was ever under attack,
+// or in ATTACK_REQUESTED state (to show what warming up leads to)
 const showUnderAttackStep = computed(() => {
   return (
+    props.state === ContractState.ATTACK_REQUESTED ||
     props.state === ContractState.UNDER_ATTACK ||
     props.state === ContractState.PROMOTION_REQUESTED ||
     props.state === ContractState.CORRUPTED ||
@@ -381,7 +383,9 @@ const isCurrentOrCompletedAttackable = computed(() => {
 const getAttackableStepClass = () => {
   const isCurrent = isCurrentlyAttackable.value;
   const isCompleted = props.state === ContractState.PRODUCTION || props.state === ContractState.CORRUPTED;
-  const isFuture = !isCurrent && !isCompleted && !props.wasUnderAttack;
+  // Future if we're in ATTACK_REQUESTED (warming up) or not yet at attackable phase
+  const isFuture =
+    props.state === ContractState.ATTACK_REQUESTED || (!isCurrent && !isCompleted && !props.wasUnderAttack);
 
   return {
     current: isCurrent,

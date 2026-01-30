@@ -52,6 +52,19 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
   const isUnderAttack = computed(() => stateInfo.value?.state === "UNDER_ATTACK");
   const isAttackRequested = computed(() => stateInfo.value?.state === "ATTACK_REQUESTED");
   const isProduction = computed(() => stateInfo.value?.state === "PRODUCTION");
+  const isNewDeployment = computed(() => stateInfo.value?.state === "NEW_DEPLOYMENT");
+
+  // True if contract has called requestUnderAttack (i.e., past NEW_DEPLOYMENT state)
+  const hasRequestedAttack = computed(() => {
+    const state = stateInfo.value?.state;
+    return (
+      state === "ATTACK_REQUESTED" ||
+      state === "UNDER_ATTACK" ||
+      state === "PROMOTION_REQUESTED" ||
+      state === "PRODUCTION" ||
+      state === "CORRUPTED"
+    );
+  });
 
   const fetch = async () => {
     isLoading.value = true;
@@ -92,6 +105,8 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
     isUnderAttack,
     isAttackRequested,
     isProduction,
+    isNewDeployment,
+    hasRequestedAttack,
     fetch,
   };
 };

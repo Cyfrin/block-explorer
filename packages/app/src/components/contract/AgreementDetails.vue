@@ -1,7 +1,16 @@
 <template>
   <div class="agreement-details">
+    <!-- Pending Approval Banner - shown during ATTACK_REQUESTED state -->
+    <div v-if="isPendingApproval" class="pending-approval-banner">
+      <div class="banner-header">
+        <ClockIcon class="warning-icon" />
+        <span class="warning-title">{{ t("safeHarbor.pendingApproval.title") }}</span>
+      </div>
+      <p class="warning-description">{{ t("safeHarbor.pendingApproval.description") }}</p>
+    </div>
+
     <!-- Header -->
-    <div class="agreement-header">
+    <div class="agreement-header" :class="{ 'pending-state': isPendingApproval }">
       <div class="header-icon">
         <ShieldCheckIcon class="icon" />
       </div>
@@ -304,6 +313,7 @@
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
+import { ClockIcon } from "@heroicons/vue/outline";
 import {
   CheckIcon,
   ExternalLinkIcon,
@@ -349,7 +359,14 @@ const props = defineProps({
     type: String as PropType<string | null>,
     default: null,
   },
+  contractState: {
+    type: String as PropType<string | null>,
+    default: null,
+  },
 });
+
+// Check if the contract is pending DAO approval (ATTACK_REQUESTED state)
+const isPendingApproval = computed(() => props.contractState === "ATTACK_REQUESTED");
 
 const emit = defineEmits<{
   (e: "agreementUpdated"): void;
@@ -646,9 +663,46 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
 .agreement-details {
   @apply space-y-4 sm:space-y-6;
 
+  .pending-approval-banner {
+    @apply flex flex-col gap-2 rounded-lg border p-4;
+    border-color: var(--warning-border, var(--border-default));
+    background-color: var(--warning-bg, var(--bg-secondary));
+
+    .banner-header {
+      @apply flex items-center gap-2;
+    }
+
+    .warning-icon {
+      @apply h-5 w-5 shrink-0;
+      color: var(--warning, #f59e0b);
+    }
+
+    .warning-title {
+      @apply text-sm font-semibold;
+      color: var(--warning-text, var(--text-primary));
+    }
+
+    .warning-description {
+      @apply text-sm leading-relaxed;
+      color: var(--text-secondary);
+    }
+  }
+
   .agreement-header {
     @apply flex items-start gap-3 rounded-lg p-3 sm:items-center sm:gap-4 sm:p-4;
     background-color: var(--success-muted);
+
+    &.pending-state {
+      background-color: var(--warning-muted, #fef3c7);
+
+      .icon {
+        color: var(--warning, #f59e0b);
+      }
+
+      .protocol-name {
+        color: var(--warning-text, #92400e);
+      }
+    }
   }
 
   .header-icon {

@@ -36,11 +36,37 @@
         <table-body-column class="contract-info-field-value contract-state-cell">
           <ContentLoader v-if="isContractStateLoading" />
           <template v-else-if="hasStateInfo">
+            <!-- NOT_REGISTERED: Show ContractNotRegistered -->
             <ContractNotRegistered
               v-if="isNotRegistered"
               :contract-address="contractAddress"
               :creator-address="contract?.creatorAddress"
+              @request-attackable-mode="emit('request-attackable-mode')"
             />
+
+            <!-- NEW_DEPLOYMENT: Show Timeline + ContractNewDeployment prompt -->
+            <template v-else-if="isNewDeployment">
+              <ContractStateTimeline
+                :state="contractState"
+                :was-under-attack="wasUnderAttack"
+                :registered-at="registeredAt"
+                :under-attack-at="underAttackAt"
+                :production-at="productionAt"
+                :promotion-requested-at="promotionRequestedAt"
+                :corrupted-at="corruptedAt"
+                :promotion-window-ends="promotionWindowEnds"
+                :commitment-locked-until="commitmentLockedUntil"
+                :attack-details="attackDetails"
+              />
+              <ContractNewDeployment
+                :contract-address="contractAddress"
+                :creator-address="contract?.creatorAddress"
+                @request-attackable-mode="emit('request-attackable-mode')"
+                @go-to-production="emit('go-to-production')"
+              />
+            </template>
+
+            <!-- Other states: Just timeline -->
             <ContractStateTimeline
               v-else
               :state="contractState"
@@ -58,14 +84,19 @@
           <span v-else class="fetch-error">Unable to load</span>
         </table-body-column>
       </tr>
-      <!-- Safe Harbor row only shows when contract is registered in AttackRegistry -->
-      <tr v-if="!isBattlechainExcluded && hasStateInfo && !isNotRegistered">
+      <!-- Safe Harbor row only shows after contract has called requestUnderAttack -->
+      <tr v-if="!isBattlechainExcluded && hasStateInfo && hasRequestedAttack">
         <table-body-column class="contract-info-field-label">
           {{ t("tabs.safeHarbor") }}
         </table-body-column>
         <table-body-column class="contract-info-field-value safe-harbor-cell">
           <ContentLoader v-if="isAgreementLoading" />
-          <AgreementSummaryBadge v-else-if="isAgreementFetched" :agreement="agreement" :has-agreement="hasAgreement" />
+          <AgreementSummaryBadge
+            v-else-if="isAgreementFetched"
+            :agreement="agreement"
+            :has-agreement="hasAgreement"
+            :is-pending-approval="contractState === 'ATTACK_REQUESTED'"
+          />
           <span v-else class="fetch-error">Unable to load</span>
         </table-body-column>
       </tr>
@@ -100,6 +131,7 @@ import Table from "@/components/common/table/Table.vue";
 import TableBodyColumn from "@/components/common/table/TableBodyColumn.vue";
 import CopyContent from "@/components/common/table/fields/CopyContent.vue";
 import AgreementSummaryBadge from "@/components/contract/AgreementSummaryBadge.vue";
+import ContractNewDeployment from "@/components/contract/ContractNewDeployment.vue";
 import ContractNotRegistered from "@/components/contract/ContractNotRegistered.vue";
 import ContractStateTimeline from "@/components/contract/ContractStateTimeline.vue";
 
@@ -123,6 +155,11 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits<{
+  (e: "request-attackable-mode"): void;
+  (e: "go-to-production"): void;
+}>();
+
 const { t } = useI18n();
 
 const contractAddress = computed(() => props.contract?.address || "");
@@ -138,6 +175,8 @@ const {
   hasStateInfo,
   isLoading: isContractStateLoading,
   isNotRegistered,
+  isNewDeployment,
+  hasRequestedAttack,
   wasUnderAttack,
   registeredAt,
   underAttackAt,

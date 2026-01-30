@@ -1,12 +1,16 @@
 <template>
-  <div class="agreement-summary-badge" :class="{ 'has-agreement': hasAgreement, 'no-agreement': !hasAgreement }">
+  <div class="agreement-summary-badge" :class="badgeClass">
     <div class="badge-icon">
-      <ShieldCheckIcon v-if="hasAgreement" class="icon" />
+      <ClockIcon v-if="isPendingApproval && hasAgreement" class="icon" />
+      <ShieldCheckIcon v-else-if="hasAgreement" class="icon" />
       <ShieldExclamationIcon v-else class="icon" />
     </div>
     <div class="badge-content">
       <template v-if="hasAgreement && agreement">
-        <span class="badge-title">{{ agreement.protocolName }}</span>
+        <div class="badge-title-row">
+          <span class="badge-title">{{ agreement.protocolName }}</span>
+          <Badge v-if="isPendingApproval" color="warning" size="sm">{{ t("safeHarbor.pendingApproval.badge") }}</Badge>
+        </div>
         <div class="badge-details">
           <span class="detail-item">
             <span class="detail-label">{{ t("safeHarbor.bounty") }}:</span>
@@ -38,7 +42,10 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
+import { ClockIcon } from "@heroicons/vue/outline";
 import { ChevronRightIcon, ShieldCheckIcon, ShieldExclamationIcon } from "@heroicons/vue/solid";
+
+import Badge from "@/components/common/Badge.vue";
 
 import type { SafeHarborAgreement } from "@/types";
 import type { PropType } from "vue";
@@ -58,7 +65,17 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  isPendingApproval: {
+    type: Boolean,
+    default: false,
+  },
 });
+
+const badgeClass = computed(() => ({
+  "has-agreement": props.hasAgreement && !props.isPendingApproval,
+  "pending-approval": props.hasAgreement && props.isPendingApproval,
+  "no-agreement": !props.hasAgreement,
+}));
 
 const formattedBountyCap = computed(() => {
   if (!props.agreement) return "";
@@ -102,6 +119,18 @@ const allowsAnonymous = computed(() => {
     }
   }
 
+  &.pending-approval {
+    background-color: var(--warning-muted);
+
+    .badge-icon .icon {
+      color: var(--warning);
+    }
+
+    .badge-title {
+      color: var(--warning-text);
+    }
+  }
+
   .badge-icon {
     @apply hidden shrink-0 sm:block;
 
@@ -112,6 +141,10 @@ const allowsAnonymous = computed(() => {
 
   .badge-content {
     @apply flex min-w-0 flex-1 flex-col gap-0.5;
+  }
+
+  .badge-title-row {
+    @apply flex items-center gap-2;
   }
 
   .badge-title {

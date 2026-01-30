@@ -11,14 +11,17 @@
 --   6 = CORRUPTED (marked corrupted after successful attack, display: "Compromised")
 --
 -- Test Contracts:
--- 0x...0001: NOT_REGISTERED (no state events), no agreement - Safe Harbor hidden
--- 0x...0002: NEW_DEPLOYMENT, no agreement - Safe Harbor visible, no agreement
--- 0x...0003: NEW_DEPLOYMENT, has agreement - Safe Harbor visible with agreement
+-- Safe Harbor tab HIDDEN (pre-requestUnderAttack):
+-- 0x...0001: NOT_REGISTERED (no state events), no agreement
+-- 0x...0002: NEW_DEPLOYMENT, no agreement (shows ContractNewDeployment prompt)
+-- 0x...0003: NEW_DEPLOYMENT, has agreement (shows ContractNewDeployment prompt)
+--
+-- Safe Harbor tab VISIBLE (post-requestUnderAttack):
 -- 0x...0004: ATTACK_REQUESTED ("Warming Up"), has agreement
 -- 0x...0005: UNDER_ATTACK ("Attackable"), has agreement
 -- 0x...0006: PROMOTION_REQUESTED ("Promotion Pending"), has agreement
 -- 0x...0007: PRODUCTION (was under attack), has agreement
--- 0x...0008: PRODUCTION (no attack history), has agreement
+-- 0x...0008: PRODUCTION (no attack history - used goToProduction), has agreement
 -- 0x...0009: CORRUPTED ("Compromised"), has agreement
 
 -- ============================================

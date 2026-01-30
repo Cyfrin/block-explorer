@@ -885,6 +885,11 @@
       "extendDeadlineHelp": "Must be later than the current deadline",
       "deadlineMustBeAfterCurrent": "New deadline must be after the current deadline"
     },
+    "pendingApproval": {
+      "title": "Safe Harbor Agreement (Pending Approval)",
+      "description": "This agreement will take effect when the DAO approves attack mode. Until then, this contract is not covered by Safe Harbor protections.",
+      "badge": "Pending"
+    },
     "createAgreement": {
       "title": "Create Safe Harbor Agreement",
       "step1Label": "Create Agreement",
@@ -950,7 +955,32 @@
     "viewTransaction": "View transaction",
     "refreshPage": "Refresh page",
     "tryAgain": "Try again",
-    "notOwner": "Your connected wallet is not the deployer of this contract. Only the contract deployer can register it."
+    "notOwner": "Your connected wallet is not the deployer of this contract. Only the contract deployer can register it.",
+    "requestAttackableSection": "Want to test this contract?",
+    "requestAttackableDescription": "Request Attackable Mode to allow ethical hackers to test this contract. Requires DAO approval since this contract wasn't deployed via BattleChainDeployer.",
+    "requestAttackableButton": "Request Attackable Mode"
+  },
+  "contractNewDeployment": {
+    "title": "Registered",
+    "description": "This contract is registered in the Attack Registry. Request Attackable Mode to allow ethical hackers to test your contract under Safe Harbor protection.",
+    "promptPrefix": "Is this your contract?",
+    "promptSuffix": "to take action.",
+    "connectWallet": "Connect your wallet",
+    "noWallet": "No wallet detected",
+    "notOwner": "Only the contract deployer can request Attackable Mode or go to production.",
+    "requestButton": "Request Attackable Mode",
+    "goToProductionLink": "Skip testing? Go straight to production"
+  },
+  "goToProduction": {
+    "title": "Go to Production",
+    "warningTitle": "Skip Security Testing?",
+    "warningDescription": "Going straight to production means your contract will not go through the Attackable Mode security testing phase. This action cannot be undone.",
+    "contractLabel": "Contract",
+    "confirmationText": "Are you sure you want to move this contract directly to production?",
+    "confirmButton": "Go to Production",
+    "successTitle": "Contract is now in Production!",
+    "successDescription": "Your contract has been moved to production mode and is no longer available for ethical hacking.",
+    "viewTransaction": "View transaction"
   },
   "requestAttackableMode": {
     "title": "Request Attackable Mode",
