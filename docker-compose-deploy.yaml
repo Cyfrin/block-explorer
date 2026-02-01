@@ -1,0 +1,105 @@
+services:
+  worker:
+    build:
+      context: .
+      dockerfile: ./packages/worker/Dockerfile
+    environment:
+      - PORT=3001
+      - LOG_LEVEL=verbose
+      - DATABASE_HOST=postgres
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_NAME=block-explorer
+      - BLOCKCHAIN_RPC_URL=http://zksync:3050
+      - DATA_FETCHER_URL=http://data-fetcher:3040
+    depends_on:
+      zksync:
+        condition: service_healthy
+    restart: unless-stopped
+
+  data-fetcher:
+    build:
+      context: .
+      dockerfile: ./packages/data-fetcher/Dockerfile
+    environment:
+      - PORT=3040
+      - LOG_LEVEL=verbose
+      - BLOCKCHAIN_RPC_URL=http://zksync:3050
+    depends_on:
+      zksync:
+        condition: service_healthy
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: ./packages/api/Dockerfile
+    environment:
+      - PORT=3020
+      - METRICS_PORT=3005
+      - LOG_LEVEL=verbose
+      - DATABASE_HOST=postgres
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_NAME=block-explorer
+    depends_on:
+      - worker
+    restart: unless-stopped
+    healthcheck:
+      interval: '1m30s'
+      timeout: '10s'
+      retries: '3'
+      start_period: '40s'
+      test: [ 'CMD', 'curl', '-f', 'http://localhost:3020' ]
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.middlewares.gzip.compress=true'
+      - 'traefik.http.middlewares.redirect-to-https-${TRAEFIK_ID}-api.redirectscheme.scheme=https'
+      - 'traefik.http.routers.http-${TRAEFIK_ID}-api.entryPoints=http'
+      - 'traefik.http.routers.http-${TRAEFIK_ID}-api.middlewares=redirect-to-https-${TRAEFIK_ID}-api'
+      - 'traefik.http.routers.http-${TRAEFIK_ID}-api.rule=Host(`${PUBLIC_FQDN}`) && PathPrefix(`/`)'
+      - 'traefik.http.routers.http-${TRAEFIK_ID}-api.service=http-${TRAEFIK_ID}-api'
+      - 'traefik.http.routers.https-${TRAEFIK_ID}-api.entryPoints=https'
+      - 'traefik.http.routers.https-${TRAEFIK_ID}-api.middlewares=gzip'
+      - 'traefik.http.routers.https-${TRAEFIK_ID}-api.rule=Host(`${PUBLIC_FQDN}`) && PathPrefix(`/`)'
+      - 'traefik.http.routers.https-${TRAEFIK_ID}-api.service=https-${TRAEFIK_ID}-api'
+      - 'traefik.http.routers.https-${TRAEFIK_ID}-api.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.https-${TRAEFIK_ID}-api.tls=true'
+      - 'traefik.http.services.http-${TRAEFIK_ID}-api.loadbalancer.server.port=3020'
+      - 'traefik.http.services.https-${TRAEFIK_ID}-api.loadbalancer.server.port=3020'
+      - 'traefik.docker.network=${COOLIFY_RESOURCE_UUID}'
+
+  reth:
+    restart: always
+    image: "ghcr.io/paradigmxyz/reth:v0.2.0-beta.2"
+    volumes:
+      - type: bind
+        source: ./reth_chaindata
+        target: /chaindata
+    command: node --dev --datadir /rethdata --http --http.addr 0.0.0.0 --http.port 8545  --dev.block-time 300ms --chain /chaindata/reth_config
+    environment:
+      - RUST_LOG=warn
+
+  battlechain-indexer:
+    build:
+      context: ./packages/battlechain-indexer
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/block-explorer?options=-c%20search_path%3Dbattlechain
+      - BLOCKCHAIN_RPC_URL=http://zksync:3050
+      - CHAIN_ID=270
+      - ATTACK_REGISTRY_ADDRESS=${ATTACK_REGISTRY_ADDRESS:-0x0000000000000000000000000000000000000000}
+      - AGREEMENT_FACTORY_ADDRESS=${AGREEMENT_FACTORY_ADDRESS:-0x0000000000000000000000000000000000000000}
+      - START_BLOCK=${START_BLOCK:-0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      zksync:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  reth:
+  postgres:
+  zksync-config:
+  zksync-data:
