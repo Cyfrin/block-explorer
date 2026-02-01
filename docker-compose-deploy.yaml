@@ -4,17 +4,15 @@ services:
       context: .
       dockerfile: ./packages/worker/Dockerfile
     environment:
-      - PORT=3001
-      - LOG_LEVEL=verbose
-      - DATABASE_HOST=postgres
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
-      - DATABASE_NAME=block-explorer
-      - BLOCKCHAIN_RPC_URL=http://zksync:3050
+      - PORT=${WORKER_PORT:-3001}
+      - LOG_LEVEL=${LOG_LEVEL:-verbose}
+      - DATABASE_HOST=${DATABASE_HOST:-postgres}
+      - DATABASE_USER=${DATABASE_USER:-postgres}
+      - DATABASE_PORT=${DATABASE_PORT:-5432}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
+      - DATABASE_NAME=${DATABASE_NAME:-block-explorer}
+      - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL:-http://zksync:3050}
       - DATA_FETCHER_URL=http://data-fetcher:3040
-    depends_on:
-      zksync:
-        condition: service_healthy
     restart: unless-stopped
 
   data-fetcher:
@@ -22,12 +20,9 @@ services:
       context: .
       dockerfile: ./packages/data-fetcher/Dockerfile
     environment:
-      - PORT=3040
-      - LOG_LEVEL=verbose
-      - BLOCKCHAIN_RPC_URL=http://zksync:3050
-    depends_on:
-      zksync:
-        condition: service_healthy
+      - PORT=${DATA_FETCHER_PORT:-3040}
+      - LOG_LEVEL=${LOG_LEVEL:-verbose}
+      - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL:-http://zksync:3050}
     restart: unless-stopped
 
   api:
@@ -35,13 +30,13 @@ services:
       context: .
       dockerfile: ./packages/api/Dockerfile
     environment:
-      - PORT=3020
-      - METRICS_PORT=3005
-      - LOG_LEVEL=verbose
-      - DATABASE_HOST=postgres
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
-      - DATABASE_NAME=block-explorer
+      - PORT=${API_PORT:-3020}
+      - METRICS_PORT=${METRICS_PORT:-3005}
+      - LOG_LEVEL=${LOG_LEVEL:-verbose}
+      - DATABASE_HOST=${DATABASE_HOST:-postgres}
+      - DATABASE_USER=${DATABASE_USER:-postgres}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
+      - DATABASE_NAME=${DATABASE_NAME:-block-explorer}
     depends_on:
       - worker
     restart: unless-stopped
@@ -57,11 +52,11 @@ services:
       - 'traefik.http.middlewares.redirect-to-https-${TRAEFIK_ID}-api.redirectscheme.scheme=https'
       - 'traefik.http.routers.http-${TRAEFIK_ID}-api.entryPoints=http'
       - 'traefik.http.routers.http-${TRAEFIK_ID}-api.middlewares=redirect-to-https-${TRAEFIK_ID}-api'
-      - 'traefik.http.routers.http-${TRAEFIK_ID}-api.rule=Host(`${PUBLIC_FQDN}`) && PathPrefix(`/`)'
+      - 'traefik.http.routers.http-${TRAEFIK_ID}-api.rule=Host(`${SERVICE_FQDN_API}`) && PathPrefix(`/`)'
       - 'traefik.http.routers.http-${TRAEFIK_ID}-api.service=http-${TRAEFIK_ID}-api'
       - 'traefik.http.routers.https-${TRAEFIK_ID}-api.entryPoints=https'
       - 'traefik.http.routers.https-${TRAEFIK_ID}-api.middlewares=gzip'
-      - 'traefik.http.routers.https-${TRAEFIK_ID}-api.rule=Host(`${PUBLIC_FQDN}`) && PathPrefix(`/`)'
+      - 'traefik.http.routers.https-${TRAEFIK_ID}-api.rule=Host(`${SERVICE_FQDN_API}`) && PathPrefix(`/`)'
       - 'traefik.http.routers.https-${TRAEFIK_ID}-api.service=https-${TRAEFIK_ID}-api'
       - 'traefik.http.routers.https-${TRAEFIK_ID}-api.tls.certresolver=letsencrypt'
       - 'traefik.http.routers.https-${TRAEFIK_ID}-api.tls=true'
@@ -85,16 +80,14 @@ services:
       context: ./packages/battlechain-indexer
       dockerfile: Dockerfile
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/block-explorer?options=-c%20search_path%3Dbattlechain
-      - BLOCKCHAIN_RPC_URL=http://zksync:3050
-      - CHAIN_ID=270
+      - DATABASE_URL=postgres://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD:-postgres}@${DATABASE_HOST:-postgres}:${DATABASE_PORT:-5432}/${DATABASE_NAME:-block-explorer}?options=-c%20search_path%3Dbattlechain
+      - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL}
+      - CHAIN_ID=${CHAIN_ID:-270}
       - ATTACK_REGISTRY_ADDRESS=${ATTACK_REGISTRY_ADDRESS:-0x0000000000000000000000000000000000000000}
       - AGREEMENT_FACTORY_ADDRESS=${AGREEMENT_FACTORY_ADDRESS:-0x0000000000000000000000000000000000000000}
       - START_BLOCK=${START_BLOCK:-0}
     depends_on:
       postgres:
-        condition: service_healthy
-      zksync:
         condition: service_healthy
     restart: unless-stopped
 
