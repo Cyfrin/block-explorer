@@ -886,9 +886,13 @@
       "deadlineMustBeAfterCurrent": "New deadline must be after the current deadline"
     },
     "stateMessages": {
+      "registered": {
+        "title": "Registered",
+        "description": "This contract is protected by the standard SEAL Whitehat Safe Harbor Agreement, which protects whitehats who intervene during active exploits by malicious actors. This contract is NOT a legal target for proactive security testing until the owner requests attack mode."
+      },
       "pendingApproval": {
         "title": "Pending Approval",
-        "description": "This agreement will take effect when the DAO approves attack mode. Until then, this contract is not covered by Safe Harbor protections."
+        "description": "This contract is protected by the standard SEAL Whitehat Safe Harbor Agreement, which protects whitehats who intervene during active exploits by malicious actors. This contract is NOT a legal target for proactive security testing until the DAO approves attack mode."
       },
       "active": {
         "title": "Active Protection",

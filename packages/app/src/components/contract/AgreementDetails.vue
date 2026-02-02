@@ -1,98 +1,81 @@
 <template>
   <div class="agreement-details">
-    <!-- State Banner - shows contextual info based on contract state -->
-    <div v-if="showStateBanner" class="state-banner" :class="stateBannerClass">
-      <div class="banner-header">
-        <component :is="stateBannerIcon" class="banner-icon" />
-        <span class="banner-title">{{ stateBannerTitle }}</span>
-      </div>
-      <p class="banner-description">{{ stateBannerDescription }}</p>
-    </div>
-
-    <!-- Header -->
-    <div class="agreement-header" :class="headerStateClass">
-      <div class="header-icon">
-        <ShieldCheckIcon class="icon" />
-      </div>
-      <div class="header-content">
-        <div class="header-name-row">
-          <template v-if="isEditingProtocolName">
-            <input
-              v-model="editForms.protocolName"
-              type="text"
-              class="protocol-name-input"
-              :placeholder="t('safeHarbor.edit.protocolNamePlaceholder')"
-            />
-            <button @click="saveProtocolName" :disabled="isSaving" class="btn-inline-save">
-              <Spinner v-if="isSaving" size="xs" />
-              <CheckIcon v-else class="icon" />
-            </button>
-            <button @click="cancelEditing" :disabled="isSaving" class="btn-inline-cancel">
-              <XIcon class="icon" />
-            </button>
-          </template>
-          <template v-else>
-            <h2 class="protocol-name" :title="agreement.protocolName || undefined">
-              {{ agreement.protocolName || t("safeHarbor.defaultProtocolName") }}
-            </h2>
-            <button
-              v-if="isOwner"
-              @click="startEditingProtocolName"
-              class="btn-inline-edit"
-              :title="t('safeHarbor.edit.editProtocolName')"
-            >
-              <PencilIcon class="icon" />
-            </button>
-          </template>
+    <!-- Combined Header with State Info -->
+    <div class="agreement-header-card" :class="headerStateClass">
+      <!-- Protocol Name & Address -->
+      <div class="header-main">
+        <div class="header-icon">
+          <component :is="stateBannerIcon" class="icon" />
         </div>
-        <span class="agreement-address">
-          {{ t("safeHarbor.agreementContract") }}:
-          <AddressLink :address="agreement.agreementAddress">
-            {{ shortValue(agreement.agreementAddress) }}
-          </AddressLink>
-        </span>
-        <div v-if="saveError && activeSection === 'protocolName'" class="header-error">{{ saveError }}</div>
+        <div class="header-content">
+          <div class="header-name-row">
+            <template v-if="isEditingProtocolName">
+              <input
+                v-model="editForms.protocolName"
+                type="text"
+                class="protocol-name-input"
+                :placeholder="t('safeHarbor.edit.protocolNamePlaceholder')"
+              />
+              <button @click="saveProtocolName" :disabled="isSaving" class="btn-inline-save">
+                <Spinner v-if="isSaving" size="xs" />
+                <CheckIcon v-else class="icon" />
+              </button>
+              <button @click="cancelEditing" :disabled="isSaving" class="btn-inline-cancel">
+                <XIcon class="icon" />
+              </button>
+            </template>
+            <template v-else>
+              <h2 class="protocol-name" :title="agreement.protocolName || undefined">
+                {{ agreement.protocolName || t("safeHarbor.defaultProtocolName") }}
+              </h2>
+              <Badge v-if="stateBannerTitle" :color="stateBadgeColor">{{ stateBannerTitle }}</Badge>
+              <button
+                v-if="isOwner"
+                @click="startEditingProtocolName"
+                class="btn-inline-edit"
+                :title="t('safeHarbor.edit.editProtocolName')"
+              >
+                <PencilIcon class="icon" />
+              </button>
+            </template>
+          </div>
+          <span class="agreement-address">
+            {{ t("safeHarbor.agreementContract") }}:
+            <AddressLink :address="agreement.agreementAddress">
+              {{ shortValue(agreement.agreementAddress) }}
+            </AddressLink>
+          </span>
+          <div v-if="saveError && activeSection === 'protocolName'" class="header-error">{{ saveError }}</div>
+        </div>
       </div>
-    </div>
 
-    <!-- Commitment Window Status -->
-    <EditableSection
-      class="commitment-section"
-      :title="t('safeHarbor.commitmentWindow')"
-      :is-editing="activeSection === 'commitmentWindow'"
-      :can-edit="isOwner"
-      :is-saving="isSaving"
-      :can-save="canSaveCommitmentWindow"
-      :error="activeSection === 'commitmentWindow' ? saveError : null"
-      @edit="startEditing('commitmentWindow')"
-      @save="saveCommitmentWindow"
-      @cancel="cancelCommitmentWindowEdit"
-    >
-      <CommitmentWindowStatus :deadline="agreement.commitmentDeadline" :is-editing="false" />
-      <template #edit-form>
-        <CommitmentWindowStatus
-          ref="commitmentWindowFormRef"
-          :deadline="agreement.commitmentDeadline"
-          :is-editing="true"
-          @update:deadline="newCommitmentDeadline = $event"
-        />
-      </template>
-    </EditableSection>
+      <!-- State Description -->
+      <p v-if="showStateBanner" class="state-description">{{ stateBannerDescription }}</p>
 
-    <!-- Owner Edit Prompt - shows when not connected -->
-    <div v-if="!walletAddress" class="edit-prompt-banner">
-      <PencilIcon class="icon" />
-      <div class="prompt-content">
-        <span class="prompt-text">
-          {{ t("safeHarbor.edit.ownerPrompt") }}
-          <button type="button" class="connect-link" @click="handleConnectWallet">
-            {{ t("safeHarbor.edit.connectWallet") }}
-          </button>
-          {{ t("safeHarbor.edit.toEditTerms") }}
-        </span>
-        <span class="prompt-subtext">
-          {{ t("safeHarbor.edit.commitmentWindowNote") }}
-        </span>
+      <!-- Commitment Window Status (inline) -->
+      <div class="header-meta">
+        <EditableSection
+          class="commitment-section-inline"
+          :title="t('safeHarbor.commitmentWindow')"
+          :is-editing="activeSection === 'commitmentWindow'"
+          :can-edit="isOwner"
+          :is-saving="isSaving"
+          :can-save="canSaveCommitmentWindow"
+          :error="activeSection === 'commitmentWindow' ? saveError : null"
+          @edit="startEditing('commitmentWindow')"
+          @save="saveCommitmentWindow"
+          @cancel="cancelCommitmentWindowEdit"
+        >
+          <CommitmentWindowStatus :deadline="agreement.commitmentDeadline" :is-editing="false" />
+          <template #edit-form>
+            <CommitmentWindowStatus
+              ref="commitmentWindowFormRef"
+              :deadline="agreement.commitmentDeadline"
+              :is-editing="true"
+              @update:deadline="newCommitmentDeadline = $event"
+            />
+          </template>
+        </EditableSection>
       </div>
     </div>
 
@@ -306,6 +289,23 @@
         </div>
       </div>
     </div>
+
+    <!-- Owner Edit Prompt - shows when not connected (moved to bottom) -->
+    <div v-if="!walletAddress" class="edit-prompt-banner">
+      <PencilIcon class="icon" />
+      <div class="prompt-content">
+        <span class="prompt-text">
+          {{ t("safeHarbor.edit.ownerPrompt") }}
+          <button type="button" class="connect-link" @click="handleConnectWallet">
+            {{ t("safeHarbor.edit.connectWallet") }}
+          </button>
+          {{ t("safeHarbor.edit.toEditTerms") }}
+        </span>
+        <span class="prompt-subtext">
+          {{ t("safeHarbor.edit.commitmentWindowNote") }}
+        </span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -325,6 +325,7 @@ import {
 } from "@heroicons/vue/solid";
 
 import AddressLink from "@/components/AddressLink.vue";
+import Badge from "@/components/common/Badge.vue";
 import CopyButton from "@/components/common/CopyButton.vue";
 import Spinner from "@/components/common/Spinner.vue";
 import TimeField from "@/components/common/table/fields/TimeField.vue";
@@ -367,15 +368,17 @@ const props = defineProps({
 });
 
 // State detection computed properties
+const isRegistered = computed(() => props.contractState === "NEW_DEPLOYMENT");
 const isPendingApproval = computed(() => props.contractState === "ATTACK_REQUESTED");
 const isUnderAttack = computed(() => props.contractState === "UNDER_ATTACK");
 const isPromotionPending = computed(() => props.contractState === "PROMOTION_REQUESTED");
 const isProduction = computed(() => props.contractState === "PRODUCTION");
 const isCorrupted = computed(() => props.contractState === "CORRUPTED");
 
-// Show state banner for all post-requestUnderAttack states
+// Show state banner for all states that have informational context
 const showStateBanner = computed(
   () =>
+    isRegistered.value ||
     isPendingApproval.value ||
     isUnderAttack.value ||
     isPromotionPending.value ||
@@ -385,6 +388,7 @@ const showStateBanner = computed(
 
 // Banner styling based on state
 const stateBannerClass = computed(() => ({
+  "state-registered": isRegistered.value,
   "state-pending": isPendingApproval.value,
   "state-active": isUnderAttack.value,
   "state-promotion": isPromotionPending.value,
@@ -394,6 +398,7 @@ const stateBannerClass = computed(() => ({
 
 // Header styling based on state
 const headerStateClass = computed(() => ({
+  "state-registered": isRegistered.value,
   "state-pending": isPendingApproval.value,
   "state-active": isUnderAttack.value,
   "state-promotion": isPromotionPending.value,
@@ -403,13 +408,14 @@ const headerStateClass = computed(() => ({
 
 // Banner icon based on state
 const stateBannerIcon = computed(() => {
-  if (isPendingApproval.value || isPromotionPending.value) return ClockIcon;
+  if (isRegistered.value || isPendingApproval.value || isPromotionPending.value) return ClockIcon;
   if (isCorrupted.value) return ExclamationCircleIcon;
   return ShieldCheckIcon;
 });
 
 // Banner title based on state
 const stateBannerTitle = computed(() => {
+  if (isRegistered.value) return t("safeHarbor.stateMessages.registered.title");
   if (isPendingApproval.value) return t("safeHarbor.stateMessages.pendingApproval.title");
   if (isUnderAttack.value) return t("safeHarbor.stateMessages.active.title");
   if (isPromotionPending.value) return t("safeHarbor.stateMessages.promotionPending.title");
@@ -420,12 +426,24 @@ const stateBannerTitle = computed(() => {
 
 // Banner description based on state
 const stateBannerDescription = computed(() => {
+  if (isRegistered.value) return t("safeHarbor.stateMessages.registered.description");
   if (isPendingApproval.value) return t("safeHarbor.stateMessages.pendingApproval.description");
   if (isUnderAttack.value) return t("safeHarbor.stateMessages.active.description");
   if (isPromotionPending.value) return t("safeHarbor.stateMessages.promotionPending.description");
   if (isProduction.value) return t("safeHarbor.stateMessages.production.description");
   if (isCorrupted.value) return t("safeHarbor.stateMessages.corrupted.description");
   return "";
+});
+
+// Badge color based on state
+const stateBadgeColor = computed((): "warning" | "success" | "neutral" | "error" => {
+  if (isRegistered.value) return "neutral";
+  if (isPendingApproval.value) return "warning";
+  if (isUnderAttack.value) return "success";
+  if (isPromotionPending.value) return "neutral";
+  if (isProduction.value) return "neutral";
+  if (isCorrupted.value) return "error";
+  return "neutral";
 });
 
 const emit = defineEmits<{
@@ -723,103 +741,77 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
 .agreement-details {
   @apply space-y-4 sm:space-y-6;
 
-  .state-banner {
-    @apply flex flex-col gap-2 rounded-lg border p-4;
+  // Combined Header Card
+  .agreement-header-card {
+    @apply rounded-lg border p-4;
+    border-color: var(--border-default);
+    background-color: var(--bg-secondary);
 
-    .banner-header {
-      @apply flex items-center gap-2;
+    .header-main {
+      @apply flex items-start gap-3 sm:items-center sm:gap-4;
     }
 
-    .banner-icon {
-      @apply h-5 w-5 shrink-0;
+    .header-icon {
+      @apply shrink-0;
+
+      .icon {
+        @apply h-8 w-8 sm:h-10 sm:w-10;
+      }
     }
 
-    .banner-title {
-      @apply text-sm font-semibold;
+    .header-content {
+      @apply flex min-w-0 flex-1 flex-col gap-1;
     }
 
-    .banner-description {
-      @apply text-sm leading-relaxed;
+    .header-name-row {
+      @apply flex flex-wrap items-center gap-2;
+    }
+
+    .protocol-name {
+      @apply mb-0 truncate text-lg font-semibold sm:text-xl;
+      max-width: 200px;
+
+      @media (min-width: 640px) {
+        max-width: 300px;
+      }
+    }
+
+    .state-description {
+      @apply mt-3 border-t pt-3 text-sm leading-relaxed;
+      border-color: var(--border-subtle);
       color: var(--text-secondary);
     }
 
-    // Warning state (pending approval)
-    &.state-pending {
-      border-color: var(--warning-border, var(--border-default));
-      background-color: var(--warning-bg, var(--bg-secondary));
+    .header-meta {
+      @apply mt-3 border-t pt-3;
+      border-color: var(--border-subtle);
+    }
 
-      .banner-icon {
-        color: var(--warning, #f59e0b);
-      }
+    .commitment-section-inline {
+      @apply w-full sm:w-fit;
 
-      .banner-title {
-        color: var(--warning-text, var(--text-primary));
+      :deep(.section-title) {
+        @apply mb-1;
       }
     }
 
-    // Success state (active protection)
-    &.state-active {
-      border-color: var(--success-border, var(--border-default));
-      background-color: var(--success-bg, var(--bg-secondary));
-
-      .banner-icon {
-        color: var(--success);
-      }
-
-      .banner-title {
-        color: var(--success-text, var(--text-primary));
-      }
-    }
-
-    // Info state (promotion pending)
-    &.state-promotion {
+    // State-specific styling
+    &.state-registered {
       border-color: var(--info-border, var(--border-default));
       background-color: var(--info-bg, var(--bg-secondary));
 
-      .banner-icon {
+      .icon {
         color: var(--info, #3b82f6);
       }
 
-      .banner-title {
-        color: var(--info-text, var(--text-primary));
+      .protocol-name {
+        color: var(--info-text);
       }
     }
-
-    // Neutral state (production)
-    &.state-production {
-      border-color: var(--border-default);
-      background-color: var(--bg-secondary);
-
-      .banner-icon {
-        color: var(--text-muted);
-      }
-
-      .banner-title {
-        color: var(--text-primary);
-      }
-    }
-
-    // Error state (corrupted)
-    &.state-corrupted {
-      border-color: var(--error-border, var(--border-default));
-      background-color: var(--error-bg, var(--bg-secondary));
-
-      .banner-icon {
-        color: var(--error);
-      }
-
-      .banner-title {
-        color: var(--error-text, var(--text-primary));
-      }
-    }
-  }
-
-  .agreement-header {
-    @apply flex items-start gap-3 rounded-lg p-3 sm:items-center sm:gap-4 sm:p-4;
-    background-color: var(--success-muted);
 
     &.state-pending {
-      background-color: var(--warning-muted);
+      border-color: var(--warning-border, var(--border-default));
+      background-color: var(--warning-bg, var(--bg-secondary));
 
       .icon {
         color: var(--warning, #f59e0b);
@@ -831,7 +823,8 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
     }
 
     &.state-active {
-      background-color: var(--success-muted);
+      border-color: var(--success-border, var(--border-default));
+      background-color: var(--success-bg, var(--bg-secondary));
 
       .icon {
         color: var(--success);
@@ -843,7 +836,8 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
     }
 
     &.state-promotion {
-      background-color: var(--info-muted);
+      border-color: var(--info-border, var(--border-default));
+      background-color: var(--info-bg, var(--bg-secondary));
 
       .icon {
         color: var(--info, #3b82f6);
@@ -855,7 +849,8 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
     }
 
     &.state-production {
-      background-color: var(--neutral-muted, var(--bg-secondary));
+      border-color: var(--border-default);
+      background-color: var(--bg-secondary);
 
       .icon {
         color: var(--text-muted);
@@ -867,7 +862,8 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
     }
 
     &.state-corrupted {
-      background-color: var(--error-muted);
+      border-color: var(--error-border, var(--border-default));
+      background-color: var(--error-bg, var(--bg-secondary));
 
       .icon {
         color: var(--error);
@@ -879,38 +875,11 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
     }
   }
 
-  .header-icon {
-    @apply flex-shrink-0;
-
-    .icon {
-      @apply h-8 w-8 sm:h-10 sm:w-10;
-      color: var(--success);
-    }
-  }
-
-  .header-content {
-    @apply flex min-w-0 flex-1 flex-col gap-1;
-  }
-
-  .header-name-row {
-    @apply flex items-center gap-2;
-  }
-
-  .protocol-name {
-    @apply mb-0 truncate text-lg font-semibold sm:text-xl;
-    color: var(--success-text);
-    max-width: 250px;
-
-    @media (min-width: 640px) {
-      max-width: 400px;
-    }
-  }
-
   .protocol-name-input {
     @apply flex-1 rounded-md border px-3 py-1 text-lg font-semibold sm:text-xl;
     border-color: var(--border-default);
     background-color: var(--bg-primary);
-    color: var(--success-text);
+    color: var(--text-primary);
     max-width: 300px;
 
     &:focus {
@@ -922,7 +891,7 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
   .btn-inline-edit,
   .btn-inline-save,
   .btn-inline-cancel {
-    @apply flex-shrink-0 rounded p-1 transition-colors;
+    @apply shrink-0 rounded p-1 transition-colors;
   }
 
   .btn-inline-edit {
@@ -989,17 +958,13 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
     }
   }
 
-  .commitment-section {
-    @apply w-full sm:w-fit;
-  }
-
   .edit-prompt-banner {
     @apply flex items-start gap-3 rounded-lg border p-3 sm:items-center sm:p-4;
     border-color: var(--border-default);
     background-color: var(--bg-secondary);
 
     > .icon {
-      @apply h-5 w-5 flex-shrink-0;
+      @apply h-5 w-5 shrink-0;
       color: var(--text-muted);
     }
 
@@ -1033,7 +998,7 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
     color: var(--info-text);
 
     > .icon {
-      @apply h-5 w-5 flex-shrink-0;
+      @apply h-5 w-5 shrink-0;
     }
   }
 
@@ -1111,7 +1076,7 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
   }
 
   .external-icon {
-    @apply h-3.5 w-3.5 flex-shrink-0;
+    @apply h-3.5 w-3.5 shrink-0;
   }
 
   .no-contacts,
