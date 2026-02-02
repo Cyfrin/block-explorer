@@ -800,7 +800,7 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
       border-color: var(--info-border, var(--border-default));
       background-color: var(--info-bg, var(--bg-secondary));
 
-      .icon {
+      .header-icon .icon {
         color: var(--info, #3b82f6);
       }
 
@@ -813,7 +813,7 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
       border-color: var(--warning-border, var(--border-default));
       background-color: var(--warning-bg, var(--bg-secondary));
 
-      .icon {
+      .header-icon .icon {
         color: var(--warning, #f59e0b);
       }
 
@@ -826,7 +826,7 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
       border-color: var(--success-border, var(--border-default));
       background-color: var(--success-bg, var(--bg-secondary));
 
-      .icon {
+      .header-icon .icon {
         color: var(--success);
       }
 
@@ -839,7 +839,7 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
       border-color: var(--info-border, var(--border-default));
       background-color: var(--info-bg, var(--bg-secondary));
 
-      .icon {
+      .header-icon .icon {
         color: var(--info, #3b82f6);
       }
 
@@ -852,7 +852,7 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
       border-color: var(--border-default);
       background-color: var(--bg-secondary);
 
-      .icon {
+      .header-icon .icon {
         color: var(--text-muted);
       }
 
@@ -865,7 +865,7 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
       border-color: var(--error-border, var(--border-default));
       background-color: var(--error-bg, var(--bg-secondary));
 
-      .icon {
+      .header-icon .icon {
         color: var(--error);
       }
 

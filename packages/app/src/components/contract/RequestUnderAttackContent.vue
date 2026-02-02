@@ -691,7 +691,7 @@ defineExpose({ reset });
 }
 
 .create-view {
-  @apply -mx-4 -mb-4 sm:-mx-6;
+  @apply -mx-4 sm:-mx-6;
 }
 
 .review-section {
