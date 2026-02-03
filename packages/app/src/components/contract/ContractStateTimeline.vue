@@ -31,10 +31,10 @@
         </a>
         <Tooltip v-if="isCurrent(ContractState.NEW_DEPLOYMENT) && hasCountdown" :interactive="true" max-width="350px">
           <span class="step-countdown">
+            <span>{{ t("contractState.productionIn") }}</span>
             <CopyButton :value="formattedPromotionTimestamp!">
               <span class="countdown-time">{{ countdownTimeAgo }}</span>
             </CopyButton>
-            <span>{{ t("contractState.untilProduction") }}</span>
           </span>
           <template #content>
             <div class="promotion-tooltip">
@@ -116,6 +116,12 @@
           {{ t("contractState.viewTransaction") }}
           <ExternalLinkIcon class="external-icon" />
         </a>
+        <span v-if="isCurrentlyAttackable && hasCountdown" class="step-countdown">
+          <span>{{ t("contractState.productionIn") }}</span>
+          <CopyButton :value="formattedPromotionTimestamp!">
+            <span class="countdown-time">{{ countdownTimeAgo }}</span>
+          </CopyButton>
+        </span>
         <a
           v-if="isPromotionPending && promotionRequestedTxHash"
           :href="`/tx/${promotionRequestedTxHash}`"
@@ -126,16 +132,10 @@
           {{ t("contractState.viewPromotionTransaction") }}
           <ExternalLinkIcon class="external-icon" />
         </a>
-        <span v-if="isCurrentlyAttackable && hasCountdown" class="step-countdown">
-          <CopyButton :value="formattedPromotionTimestamp!">
-            <span class="countdown-time">{{ countdownTimeAgo }}</span>
-          </CopyButton>
-          <span>{{ t("contractState.untilProduction") }}</span>
-        </span>
         <Tooltip v-if="showCommitmentLock" :interactive="true" max-width="350px">
           <span class="commitment-lock">
             <LockClosedIcon class="lock-icon" />
-            <span>{{ t("contractState.termsUnlock") }}</span>
+            <span>{{ t("contractState.termsUnlockIn") }}</span>
             <CopyButton :value="formattedCommitmentLockedUntil!">
               <span class="lock-time">{{ commitmentLockTimeAgo }}</span>
             </CopyButton>
