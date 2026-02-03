@@ -35,6 +35,9 @@
 
       <!-- Connected state -->
       <template v-else>
+        <p class="dao-approval-notice">
+          {{ t("authorization.requiresDAOApproval") }}
+        </p>
         <button type="button" class="request-button" @click="handleRequestAttackableMode">
           {{ t("contractRegistration.requestAttackableButton") }}
         </button>
@@ -309,6 +312,11 @@ onMounted(async () => {
   .action-prompt {
     @apply text-sm;
     color: var(--text-secondary);
+  }
+
+  .dao-approval-notice {
+    @apply mb-2 text-xs;
+    color: var(--text-muted);
   }
 
   .request-button {

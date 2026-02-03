@@ -12,6 +12,13 @@
     "back": "Back",
     "tryAgain": "Try again"
   },
+  "authorization": {
+    "notAuthorized": "You are not the authorized owner of this contract",
+    "notAuthorizedForAll": "Authorization Required",
+    "unauthorizedContracts": "You are not the authorized owner for all contracts in this agreement:",
+    "requiresDAOApproval": "This contract was not deployed via BattleChainDeployer. Your request will require DAO approval.",
+    "checkingAuthorization": "Checking authorization..."
+  },
   "general": {
     "l2NetworkName": "BattleChain",
     "execution": "Execution",

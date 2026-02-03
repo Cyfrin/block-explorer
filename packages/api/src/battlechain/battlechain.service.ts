@@ -5,6 +5,7 @@ import { AgreementStateChange } from "./agreementState.entity";
 import { AgreementCreated } from "./agreement.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
 import { AgreementAccount } from "./agreementAccount.entity";
+import { AgreementOwnerAuthorized } from "./agreementOwnerAuthorized.entity";
 import { ContractState, ContractStateInfoDto, AgreementDto, IdentityRequirement, CoveredAccountDto } from "./battlechain.dto";
 import { PROMOTION_WINDOW_MS, PROMOTION_DELAY_MS } from "./battlechain.constants";
 
@@ -22,7 +23,9 @@ export class BattlechainService {
     @InjectRepository(AgreementCurrentState)
     private readonly agreementStateRepository: Repository<AgreementCurrentState>,
     @InjectRepository(AgreementAccount)
-    private readonly agreementAccountRepository: Repository<AgreementAccount>
+    private readonly agreementAccountRepository: Repository<AgreementAccount>,
+    @InjectRepository(AgreementOwnerAuthorized)
+    private readonly agreementOwnerAuthorizedRepository: Repository<AgreementOwnerAuthorized>
   ) {}
 
   /**
@@ -308,5 +311,60 @@ export class BattlechainService {
     return states.map((state) =>
       this.mapStateToDto(state, accountsByAgreement.get(state.agreementAddress.toLowerCase()))
     );
+  }
+
+  /**
+   * Get the authorized owner for a contract address.
+   * Returns null if the contract was not deployed via BattleChainDeployer.
+   * Returns the most recent authorized owner if ownership was transferred.
+   */
+  async getAuthorizedOwner(contractAddress: string): Promise<string | null> {
+    const normalizedAddress = contractAddress.toLowerCase();
+
+    // Get the most recent AgreementOwnerAuthorized event for this contract
+    const authorization = await this.agreementOwnerAuthorizedRepository.findOne({
+      where: { contractAddress: normalizedAddress },
+      order: { blockNumber: "DESC", rindexerId: "DESC" },
+    });
+
+    return authorization?.authorizedOwner ?? null;
+  }
+
+  /**
+   * Get authorized owners for multiple contract addresses in batch.
+   * Used for checking authorization across all contracts in an agreement scope.
+   */
+  async getAuthorizedOwners(contractAddresses: string[]): Promise<Record<string, string | null>> {
+    const results: Record<string, string | null> = {};
+
+    // Initialize all addresses with null
+    for (const address of contractAddresses) {
+      results[address.toLowerCase()] = null;
+    }
+
+    if (contractAddresses.length === 0) {
+      return results;
+    }
+
+    // Fetch all authorization records for the given addresses
+    const normalizedAddresses = contractAddresses.map((a) => a.toLowerCase());
+    const authorizations = await this.agreementOwnerAuthorizedRepository
+      .createQueryBuilder("auth")
+      .where("LOWER(auth.contractAddress) IN (:...addresses)", { addresses: normalizedAddresses })
+      .orderBy("auth.blockNumber", "DESC")
+      .addOrderBy("auth.rindexerId", "DESC")
+      .getMany();
+
+    // Group by contract address and take the most recent (first in the sorted list)
+    const seenAddresses = new Set<string>();
+    for (const auth of authorizations) {
+      const normalizedContract = auth.contractAddress.toLowerCase();
+      if (!seenAddresses.has(normalizedContract)) {
+        results[normalizedContract] = auth.authorizedOwner;
+        seenAddresses.add(normalizedContract);
+      }
+    }
+
+    return results;
   }
 }

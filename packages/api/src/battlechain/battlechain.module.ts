@@ -6,9 +6,18 @@ import { AgreementStateChange } from "./agreementState.entity";
 import { AgreementCreated } from "./agreement.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
 import { AgreementAccount } from "./agreementAccount.entity";
+import { AgreementOwnerAuthorized } from "./agreementOwnerAuthorized.entity";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AgreementStateChange, AgreementCreated, AgreementCurrentState, AgreementAccount])],
+  imports: [
+    TypeOrmModule.forFeature([
+      AgreementStateChange,
+      AgreementCreated,
+      AgreementCurrentState,
+      AgreementAccount,
+      AgreementOwnerAuthorized,
+    ]),
+  ],
   controllers: [BattlechainController],
   providers: [BattlechainService],
   exports: [BattlechainService],

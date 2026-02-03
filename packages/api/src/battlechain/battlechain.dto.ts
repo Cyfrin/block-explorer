@@ -274,3 +274,21 @@ export class AgreementByContractDto {
   })
   hasCoverage: boolean;
 }
+
+export class AuthorizedOwnerDto {
+  @ApiPropertyOptional({
+    description: "The authorized owner address. Null if contract was not deployed via BattleChainDeployer.",
+    example: "0x1234567890123456789012345678901234567890",
+  })
+  authorizedOwner: string | null;
+
+  @ApiProperty({
+    description: "Whether the contract was deployed via BattleChainDeployer",
+    example: true,
+  })
+  isDeployedViaBattleChain: boolean;
+}
+
+export class AuthorizedOwnersResponseDto {
+  [contractAddress: string]: AuthorizedOwnerDto;
+}

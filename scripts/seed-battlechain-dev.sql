@@ -465,7 +465,70 @@ SET covered_contracts = ARRAY['0x0000000000000000000000000000000000000009', '0x5
 WHERE agreement_address = '0xaaaa000000000000000000000000000000000009';
 
 -- ============================================
--- 7. Summary output
+-- 7. Create and seed agreement_owner_authorized table (for authorization checks)
+-- ============================================
+-- This table tracks which address is authorized to manage a contract.
+-- Initially set to the deployer, but can be transferred via transferAuthorizedOwner().
+
+CREATE TABLE IF NOT EXISTS battlechainindexer_attack_registry.agreement_owner_authorized (
+  rindexer_id INT PRIMARY KEY,
+  contract_address CHAR(42) NOT NULL,
+  authorized_owner CHAR(42) NOT NULL,
+  tx_hash CHAR(66) NOT NULL,
+  block_number NUMERIC NOT NULL,
+  log_index VARCHAR(78) NOT NULL,
+  block_timestamp TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_agreement_owner_authorized_contract
+  ON battlechainindexer_attack_registry.agreement_owner_authorized(contract_address);
+
+-- Clear existing seed data
+DELETE FROM battlechainindexer_attack_registry.agreement_owner_authorized
+WHERE contract_address IN (
+  '0x0000000000000000000000000000000000000003',
+  '0xaaaa111111111111111111111111111111111111',
+  '0xaaaa222222222222222222222222222222222222',
+  '0xaaaa333333333333333333333333333333333333',
+  '0x0000000000000000000000000000000000000005',
+  '0x1111111111111111111111111111111111111111',
+  '0x2222222222222222222222222222222222222222'
+);
+
+-- Seed authorized owner for contract 0x03 and all contracts in its agreement scope
+-- Agreement 0xaaaa...0003 covers these 4 contracts:
+--   - 0x0000000000000000000000000000000000000003
+--   - 0xaaaa111111111111111111111111111111111111
+--   - 0xaaaa222222222222222222222222222222222222
+--   - 0xaaaa333333333333333333333333333333333333
+-- All using first default Anvil address: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+-- This tests the "fully authorized" scenario - Go to Production button should be ENABLED
+INSERT INTO battlechainindexer_attack_registry.agreement_owner_authorized
+  (rindexer_id, contract_address, authorized_owner, tx_hash, block_number, log_index, block_timestamp)
+VALUES
+  (2001, '0x0000000000000000000000000000000000000003', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('a', 64), 100, '0', NOW() - INTERVAL '6 days'),
+  (2002, '0xaaaa111111111111111111111111111111111111', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('a', 64), 100, '1', NOW() - INTERVAL '6 days'),
+  (2003, '0xaaaa222222222222222222222222222222222222', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('a', 64), 100, '2', NOW() - INTERVAL '6 days'),
+  (2004, '0xaaaa333333333333333333333333333333333333', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('a', 64), 100, '3', NOW() - INTERVAL '6 days');
+
+-- Seed authorized owner for contract 0x05 ONLY (partial authorization)
+-- Agreement 0xaaaa...0005 covers these 3 contracts:
+--   - 0x0000000000000000000000000000000000000005 (authorized to Anvil address)
+--   - 0x1111111111111111111111111111111111111111 (authorized to DIFFERENT address)
+--   - 0x2222222222222222222222222222222222222222 (authorized to DIFFERENT address)
+-- This tests the "partially authorized" scenario - Go to Production button should be DISABLED
+-- with messaging showing which contracts the user is not authorized for
+INSERT INTO battlechainindexer_attack_registry.agreement_owner_authorized
+  (rindexer_id, contract_address, authorized_owner, tx_hash, block_number, log_index, block_timestamp)
+VALUES
+  -- Only 0x05 is authorized to the Anvil test address
+  (2005, '0x0000000000000000000000000000000000000005', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('b', 64), 101, '0', NOW() - INTERVAL '5 days'),
+  -- The other contracts in scope are authorized to a different address
+  (2006, '0x1111111111111111111111111111111111111111', '0x70997970c51812dc3a010c7d01b50e0d17dc79c8', '0x' || repeat('b', 64), 101, '1', NOW() - INTERVAL '5 days'),
+  (2007, '0x2222222222222222222222222222222222222222', '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc', '0x' || repeat('b', 64), 101, '2', NOW() - INTERVAL '5 days');
+
+-- ============================================
+-- 8. Summary output
 -- ============================================
 SELECT 'Seeding complete!' AS status;
 SELECT 'Contracts seeded:' AS info;

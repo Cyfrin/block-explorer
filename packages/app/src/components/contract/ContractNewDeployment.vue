@@ -53,12 +53,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { CheckCircleIcon } from "@heroicons/vue/outline";
 
 import useContext from "@/composables/useContext";
+import useContractAuthorization from "@/composables/useContractAuthorization";
 
 const props = withDefaults(
   defineProps<{
@@ -104,11 +105,18 @@ const isConnectPending = computed(() =>
   props.overrideConnectPending !== undefined ? props.overrideConnectPending : internalConnectPending.value
 );
 
-// Check if connected wallet is the contract owner/deployer
+// Fetch authorization from indexed data
+const { isAuthorized, isLoading: isAuthLoading } = useContractAuthorization(
+  toRef(props, "contractAddress"),
+  internalWalletAddress,
+  context
+);
+
+// Check if connected wallet is the authorized owner
 const isOwner = computed(() => {
   if (props.overrideIsOwner !== undefined) return props.overrideIsOwner;
-  if (!internalWalletAddress.value || !props.creatorAddress) return true; // Assume owner if we can't check
-  return internalWalletAddress.value.toLowerCase() === props.creatorAddress.toLowerCase();
+  if (isAuthLoading.value) return false; // Don't show buttons while loading
+  return isAuthorized.value;
 });
 
 const connectButtonText = computed(() => {
@@ -122,7 +130,9 @@ const connectButtonText = computed(() => {
 });
 
 // Wallet connection handler
-let walletModule: Awaited<ReturnType<typeof import("@/composables/useWallet").default>> | null = null;
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+type WalletModule = Awaited<ReturnType<typeof import("@/composables/useWallet").default>>;
+let walletModule: WalletModule | null = null;
 
 const handleConnect = async () => {
   if (!walletModule) return;

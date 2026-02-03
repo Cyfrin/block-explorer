@@ -23,15 +23,18 @@
         </p>
       </template>
 
-      <!-- Connected but not owner -->
+      <!-- Connected but not owner (only shown for BC-deployed contracts) -->
       <template v-else-if="!effectiveIsOwner">
         <p class="not-owner-message">
           {{ t("safeHarbor.createAgreement.notOwner") }}
         </p>
       </template>
 
-      <!-- Connected and is owner - show create button -->
+      <!-- Connected and is owner (or external contract) - show create button -->
       <template v-else>
+        <p v-if="isExternalContract" class="dao-approval-notice">
+          {{ t("authorization.requiresDAOApproval") }}
+        </p>
         <button type="button" class="create-button" @click="openModal">
           <PlusIcon class="button-icon" />
           {{ t("safeHarbor.createAgreement.createButton") }}
@@ -50,7 +53,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { ShieldExclamationIcon } from "@heroicons/vue/outline";
@@ -59,10 +62,13 @@ import { PlusIcon } from "@heroicons/vue/solid";
 import CreateAgreementModal from "@/components/contract/CreateAgreementModal.vue";
 
 import useAgreementCreation from "@/composables/useAgreementCreation";
+import useContext from "@/composables/useContext";
+import useContractAuthorization from "@/composables/useContractAuthorization";
 
 import type { PropType } from "vue";
 
 const { t } = useI18n();
+const context = useContext();
 
 const props = withDefaults(
   defineProps<{
@@ -89,7 +95,21 @@ const emit = defineEmits<{
 
 const creation = useAgreementCreation();
 
+// Fetch authorization from indexed data
+const {
+  isAuthorized,
+  isDeployedViaBattleChain,
+  isLoading: isAuthLoading,
+} = useContractAuthorization(
+  toRef(props, "contractAddress"),
+  computed(() => creation.walletAddress.value),
+  context
+);
+
 const isModalOpen = ref(false);
+
+// For external contracts (not deployed via BC), anyone can create an agreement
+const isExternalContract = computed(() => !isDeployedViaBattleChain.value);
 
 // Use overrides or real values
 const effectiveWalletConnected = computed(() => {
@@ -107,14 +127,17 @@ const effectiveConnectPending = computed(() => {
   return creation.isConnectPending.value;
 });
 
+// Can create agreement if:
+// 1. External contract (not deployed via BC) - anyone can create
+// 2. BC-deployed contract AND user is authorized owner
 const effectiveIsOwner = computed(() => {
   if (props.overrideIsOwner !== undefined) return props.overrideIsOwner;
-  // If no creatorAddress provided, assume owner
-  if (!props.creatorAddress) return true;
-  // If wallet not connected, we can't determine ownership yet
-  if (!creation.walletAddress.value) return true;
-  // Compare addresses case-insensitively
-  return creation.walletAddress.value.toLowerCase() === props.creatorAddress.toLowerCase();
+  // If still loading authorization, don't show button yet
+  if (isAuthLoading.value) return false;
+  // External contracts: anyone can create an agreement
+  if (isExternalContract.value) return true;
+  // BC-deployed contracts: only authorized owner
+  return isAuthorized.value;
 });
 
 const handleConnect = () => {
@@ -186,6 +209,11 @@ const handleSuccess = () => {
 
   .not-owner-message {
     @apply text-sm;
+    color: var(--text-muted);
+  }
+
+  .dao-approval-notice {
+    @apply mb-2 text-xs;
     color: var(--text-muted);
   }
 

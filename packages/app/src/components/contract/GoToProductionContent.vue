@@ -42,6 +42,20 @@
           </ul>
         </div>
 
+        <!-- Authorization Warning -->
+        <div v-if="!isAuthLoading && !isAuthorizedForAll" class="auth-warning">
+          <ExclamationCircleIcon class="auth-warning-icon" />
+          <div class="auth-warning-text">
+            <p class="auth-warning-title">{{ t("authorization.notAuthorizedForAll") }}</p>
+            <p class="auth-warning-description">{{ t("authorization.unauthorizedContracts") }}</p>
+            <ul class="unauthorized-list">
+              <li v-for="contract in unauthorizedContracts" :key="contract.accountAddress">
+                {{ shortValue(contract.accountAddress) }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
         <!-- Error Message -->
         <div v-if="currentError" class="error-message">
           <ExclamationCircleIcon class="error-icon" />
@@ -74,7 +88,12 @@
         <button type="button" class="btn-secondary" :disabled="currentIsProcessing" @click="$emit('close')">
           {{ t("common.cancel") }}
         </button>
-        <button type="button" class="btn-danger" :disabled="currentIsProcessing" @click="handleConfirm">
+        <button
+          type="button"
+          class="btn-danger"
+          :disabled="currentIsProcessing || isAuthLoading || !isAuthorizedForAll"
+          @click="handleConfirm"
+        >
           <span v-if="currentIsProcessing" class="loading-spinner" />
           {{ currentIsProcessing ? t("common.processing") : t("goToProduction.confirmButton") }}
         </button>
@@ -89,13 +108,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, toRef } from "vue";
+import { computed, onMounted, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { ExclamationIcon } from "@heroicons/vue/outline";
 import { CheckCircleIcon, ExclamationCircleIcon, ExternalLinkIcon, XIcon } from "@heroicons/vue/solid";
 
 import useAgreementDetails from "@/composables/useAgreementDetails";
+import useContext from "@/composables/useContext";
+import { fetchAuthorizedOwners } from "@/composables/useContractAuthorization";
 import useGoToProduction from "@/composables/useGoToProduction";
 
 import type { PropType } from "vue";
@@ -125,6 +146,11 @@ const props = defineProps({
     type: String as PropType<string | null>,
     default: undefined,
   },
+  // Override for authorization state (Storybook)
+  overrideIsAuthorizedForAll: {
+    type: Boolean,
+    default: undefined,
+  },
 });
 
 const emit = defineEmits<{
@@ -133,8 +159,15 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const context = useContext();
 
 const { isProcessing, error, txHash, goToProduction, reset } = useGoToProduction();
+
+// Wallet state
+const walletAddress = ref<string | null>(null);
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+type WalletModule = Awaited<ReturnType<typeof import("@/composables/useWallet").default>>;
+let walletModule: WalletModule | null = null;
 
 // Fetch agreement details to get covered accounts
 const { agreement } = useAgreementDetails(toRef(props, "agreementAddress"));
@@ -144,6 +177,55 @@ const coveredAccounts = computed(() => agreement.value?.coveredAccounts ?? []);
 const coveredAccountsCount = computed(() => coveredAccounts.value.length);
 
 const isCurrentContract = (address: string) => address.toLowerCase() === props.contractAddress.toLowerCase();
+
+// Authorization state for all covered contracts
+interface AuthorizationInfo {
+  authorizedOwner: string | null;
+  isDeployedViaBattleChain: boolean;
+}
+const authorizationMap = ref<Record<string, AuthorizationInfo>>({});
+const isAuthLoading = ref(false);
+
+const fetchAllAuthorizations = async () => {
+  if (!coveredAccounts.value.length || props.overrideIsAuthorizedForAll !== undefined) return;
+
+  isAuthLoading.value = true;
+  try {
+    const addresses = coveredAccounts.value.map((a) => a.accountAddress);
+    const response = await fetchAuthorizedOwners(addresses, context);
+    authorizationMap.value = response;
+  } finally {
+    isAuthLoading.value = false;
+  }
+};
+
+// Check if current wallet is authorized for all contracts in scope
+const isAuthorizedForAll = computed(() => {
+  if (props.overrideIsAuthorizedForAll !== undefined) return props.overrideIsAuthorizedForAll;
+  if (!walletAddress.value || !coveredAccounts.value.length) return false;
+  if (isAuthLoading.value) return false;
+
+  return coveredAccounts.value.every((account) => {
+    const authInfo = authorizationMap.value[account.accountAddress.toLowerCase()];
+    if (!authInfo) return false;
+    const authorizedOwner = authInfo.authorizedOwner;
+    return authorizedOwner && walletAddress.value?.toLowerCase() === authorizedOwner.toLowerCase();
+  });
+});
+
+// Get list of contracts the user is not authorized for
+const unauthorizedContracts = computed(() => {
+  if (!walletAddress.value || props.overrideIsAuthorizedForAll !== undefined) return [];
+
+  return coveredAccounts.value.filter((account) => {
+    const authInfo = authorizationMap.value[account.accountAddress.toLowerCase()];
+    const authorizedOwner = authInfo?.authorizedOwner;
+    return !authorizedOwner || walletAddress.value?.toLowerCase() !== authorizedOwner.toLowerCase();
+  });
+});
+
+// Fetch authorizations when covered accounts change
+watch(coveredAccounts, fetchAllAuthorizations, { immediate: true });
 
 const getChildScopeLabel = (scope: ChildContractScope): string => {
   switch (scope) {
@@ -192,6 +274,37 @@ const resetState = () => {
 
 // Expose reset for parent component
 defineExpose({ reset: resetState });
+
+// Initialize wallet connection on mount
+onMounted(async () => {
+  // Skip wallet initialization if using overrides (Storybook mode)
+  if (props.overrideIsAuthorizedForAll !== undefined) return;
+
+  walletModule = await import("@/composables/useWallet").then((m) => {
+    return m.default({
+      isReady: context.isReady,
+      currentNetwork: computed(() => ({
+        ...context.currentNetwork.value,
+        explorerUrl: context.currentNetwork.value.rpcUrl,
+        chainName: context.currentNetwork.value.l2NetworkName,
+        l1ChainId: null as unknown as number,
+      })),
+      networks: context.networks,
+      getL2Provider: () => context.getL2Provider(),
+    });
+  });
+
+  walletModule.initialize();
+  walletAddress.value = walletModule.address.value;
+
+  // Watch for wallet changes
+  watch(
+    () => walletModule?.address.value,
+    (newAddress) => {
+      walletAddress.value = newAddress ?? null;
+    }
+  );
+});
 </script>
 
 <style scoped lang="scss">
@@ -293,6 +406,41 @@ defineExpose({ reset: resetState });
 
   .child-scope {
     @apply text-xs;
+    color: var(--text-muted);
+  }
+}
+
+.auth-warning {
+  @apply flex gap-3 rounded-lg border p-4;
+  border-color: var(--error-border, var(--border-default));
+  background-color: var(--error-muted);
+}
+
+.auth-warning-icon {
+  @apply h-5 w-5 shrink-0;
+  color: var(--error);
+}
+
+.auth-warning-text {
+  @apply flex flex-col gap-1;
+}
+
+.auth-warning-title {
+  @apply text-sm font-semibold;
+  color: var(--error-text);
+}
+
+.auth-warning-description {
+  @apply text-sm;
+  color: var(--text-secondary);
+}
+
+.unauthorized-list {
+  @apply mt-2 space-y-1 pl-0;
+  list-style: none;
+
+  li {
+    @apply font-mono text-xs;
     color: var(--text-muted);
   }
 }

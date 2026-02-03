@@ -1,8 +1,14 @@
-import { Controller, Get, Param, NotFoundException } from "@nestjs/common";
-import { ApiTags, ApiParam, ApiOkResponse, ApiNotFoundResponse, ApiBadRequestResponse } from "@nestjs/swagger";
+import { Controller, Get, Post, Param, Body, NotFoundException } from "@nestjs/common";
+import { ApiTags, ApiParam, ApiBody, ApiOkResponse, ApiNotFoundResponse, ApiBadRequestResponse } from "@nestjs/swagger";
 // Note: NotFoundException still used for agreement endpoints
 import { BattlechainService } from "./battlechain.service";
-import { ContractStateInfoDto, AgreementDto, AgreementByContractDto } from "./battlechain.dto";
+import {
+  ContractStateInfoDto,
+  AgreementDto,
+  AgreementByContractDto,
+  AuthorizedOwnerDto,
+  AuthorizedOwnersResponseDto,
+} from "./battlechain.dto";
 import { ParseAddressPipe } from "../common/pipes/parseAddress.pipe";
 
 @ApiTags("BattleChain")
@@ -78,5 +84,56 @@ export class BattlechainController {
   })
   async getAllAgreements(): Promise<AgreementDto[]> {
     return await this.battlechainService.getAllAgreements();
+  }
+
+  @Get("authorized-owner/:contractAddress")
+  @ApiParam({
+    name: "contractAddress",
+    type: "string",
+    description: "Contract address to check authorization for",
+    example: "0x1234567890123456789012345678901234567890",
+  })
+  @ApiOkResponse({
+    description:
+      "Returns the authorized owner address. If null, the contract was not deployed via BattleChainDeployer.",
+    type: AuthorizedOwnerDto,
+  })
+  @ApiBadRequestResponse({ description: "Invalid address format" })
+  async getAuthorizedOwner(
+    @Param("contractAddress", new ParseAddressPipe()) contractAddress: string
+  ): Promise<AuthorizedOwnerDto> {
+    const authorizedOwner = await this.battlechainService.getAuthorizedOwner(contractAddress);
+    return {
+      authorizedOwner,
+      isDeployedViaBattleChain: authorizedOwner !== null,
+    };
+  }
+
+  @Post("authorized-owners")
+  @ApiBody({
+    description: "Array of contract addresses to check authorization for",
+    type: [String],
+    examples: {
+      example1: {
+        value: ["0x1234567890123456789012345678901234567890", "0xabcdef1234567890abcdef1234567890abcdef12"],
+      },
+    },
+  })
+  @ApiOkResponse({
+    description: "Returns authorized owners for multiple contracts",
+    type: AuthorizedOwnersResponseDto,
+  })
+  async getAuthorizedOwners(@Body() contractAddresses: string[]): Promise<AuthorizedOwnersResponseDto> {
+    const results = await this.battlechainService.getAuthorizedOwners(contractAddresses);
+    const response: AuthorizedOwnersResponseDto = {};
+
+    for (const [address, owner] of Object.entries(results)) {
+      response[address] = {
+        authorizedOwner: owner,
+        isDeployedViaBattleChain: owner !== null,
+      };
+    }
+
+    return response;
   }
 }
