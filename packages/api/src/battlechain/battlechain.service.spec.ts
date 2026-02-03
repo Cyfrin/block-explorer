@@ -6,6 +6,7 @@ import { BattlechainService } from "./battlechain.service";
 import { AgreementStateChange } from "./agreementState.entity";
 import { AgreementCreated } from "./agreement.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
+import { AgreementAccount } from "./agreementAccount.entity";
 import { ContractState } from "./battlechain.dto";
 
 describe("BattlechainService", () => {
@@ -13,17 +14,22 @@ describe("BattlechainService", () => {
   let agreementStateChangeRepository: Repository<AgreementStateChange>;
   let agreementCreatedRepository: Repository<AgreementCreated>;
   let agreementStateRepository: Repository<AgreementCurrentState>;
+  let agreementAccountRepository: Repository<AgreementAccount>;
 
   beforeEach(async () => {
     agreementStateChangeRepository = mock<Repository<AgreementStateChange>>();
     agreementCreatedRepository = mock<Repository<AgreementCreated>>();
     agreementStateRepository = mock<Repository<AgreementCurrentState>>();
+    agreementAccountRepository = mock<Repository<AgreementAccount>>();
 
     // Mock createQueryBuilder for agreementStateRepository
     const mockQueryBuilder = mock<SelectQueryBuilder<AgreementCurrentState>>();
     mockQueryBuilder.where.mockReturnValue(mockQueryBuilder);
     mockQueryBuilder.getOne.mockResolvedValue(null);
     (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
+
+    // Mock find for agreementAccountRepository (returns empty by default)
+    (agreementAccountRepository.find as jest.Mock).mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -39,6 +45,10 @@ describe("BattlechainService", () => {
         {
           provide: getRepositoryToken(AgreementCurrentState),
           useValue: agreementStateRepository,
+        },
+        {
+          provide: getRepositoryToken(AgreementAccount),
+          useValue: agreementAccountRepository,
         },
       ],
     }).compile();
@@ -359,13 +369,15 @@ describe("BattlechainService", () => {
 
       const result = await service.getAgreement(agreementAddress);
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         agreementAddress: agreementAddress.toLowerCase(),
         owner: ownerAddress.toLowerCase(),
         coveredContracts: ["0xcontract1", "0xcontract2"],
         createdAtBlock: 100,
         createdAt: timestamp.getTime(),
       });
+      // coveredAccounts comes from the accounts repository which returns empty in this test
+      expect(result?.coveredAccounts).toEqual([]);
     });
 
     it("handles null createdAt", async () => {

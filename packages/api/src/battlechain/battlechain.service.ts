@@ -4,7 +4,8 @@ import { Repository } from "typeorm";
 import { AgreementStateChange } from "./agreementState.entity";
 import { AgreementCreated } from "./agreement.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
-import { ContractState, ContractStateInfoDto, AgreementDto, IdentityRequirement } from "./battlechain.dto";
+import { AgreementAccount } from "./agreementAccount.entity";
+import { ContractState, ContractStateInfoDto, AgreementDto, IdentityRequirement, CoveredAccountDto } from "./battlechain.dto";
 import { PROMOTION_WINDOW_MS, PROMOTION_DELAY_MS } from "./battlechain.constants";
 
 @Injectable()
@@ -19,7 +20,9 @@ export class BattlechainService {
     @InjectRepository(AgreementCreated)
     private readonly agreementCreatedRepository: Repository<AgreementCreated>,
     @InjectRepository(AgreementCurrentState)
-    private readonly agreementStateRepository: Repository<AgreementCurrentState>
+    private readonly agreementStateRepository: Repository<AgreementCurrentState>,
+    @InjectRepository(AgreementAccount)
+    private readonly agreementAccountRepository: Repository<AgreementAccount>
   ) {}
 
   /**
@@ -204,7 +207,7 @@ export class BattlechainService {
   /**
    * Map AgreementCurrentState entity to AgreementDto
    */
-  private mapStateToDto(state: AgreementCurrentState): AgreementDto {
+  private mapStateToDto(state: AgreementCurrentState, coveredAccounts?: CoveredAccountDto[]): AgreementDto {
     return {
       agreementAddress: state.agreementAddress,
       owner: state.owner,
@@ -219,9 +222,24 @@ export class BattlechainService {
       contactDetails: state.contactDetails ?? undefined,
       commitmentDeadline: state.commitmentDeadline ? Number(state.commitmentDeadline) * 1000 : undefined,
       coveredContracts: state.coveredContracts ?? [],
+      coveredAccounts,
       createdAtBlock: state.createdAtBlock,
       createdAt: state.createdAt ? state.createdAt.getTime() : null,
     };
+  }
+
+  /**
+   * Get covered accounts with their child contract scopes for an agreement
+   */
+  private async getCoveredAccounts(agreementAddress: string): Promise<CoveredAccountDto[]> {
+    const accounts = await this.agreementAccountRepository.find({
+      where: { agreementAddress: agreementAddress.toLowerCase() },
+    });
+
+    return accounts.map((acc) => ({
+      accountAddress: acc.accountAddress,
+      childContractScope: acc.childContractScope,
+    }));
   }
 
   /**
@@ -239,7 +257,8 @@ export class BattlechainService {
       return null;
     }
 
-    return this.mapStateToDto(state);
+    const coveredAccounts = await this.getCoveredAccounts(normalizedAddress);
+    return this.mapStateToDto(state, coveredAccounts);
   }
 
   /**
@@ -259,7 +278,8 @@ export class BattlechainService {
       return null;
     }
 
-    return this.mapStateToDto(state);
+    const coveredAccounts = await this.getCoveredAccounts(state.agreementAddress);
+    return this.mapStateToDto(state, coveredAccounts);
   }
 
   /**
@@ -271,6 +291,22 @@ export class BattlechainService {
       order: { createdAtBlock: "DESC" },
     });
 
-    return states.map((state) => this.mapStateToDto(state));
+    // Get all accounts in a single query for efficiency
+    const allAccounts = await this.agreementAccountRepository.find();
+    const accountsByAgreement = new Map<string, CoveredAccountDto[]>();
+    for (const account of allAccounts) {
+      const key = account.agreementAddress.toLowerCase();
+      if (!accountsByAgreement.has(key)) {
+        accountsByAgreement.set(key, []);
+      }
+      accountsByAgreement.get(key)!.push({
+        accountAddress: account.accountAddress,
+        childContractScope: account.childContractScope,
+      });
+    }
+
+    return states.map((state) =>
+      this.mapStateToDto(state, accountsByAgreement.get(state.agreementAddress.toLowerCase()))
+    );
   }
 }

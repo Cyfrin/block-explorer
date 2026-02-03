@@ -14,8 +14,8 @@
 import { ref, watch } from "vue";
 
 import Popup from "@/components/common/Popup.vue";
-
-import type GoToProductionContent from "@/components/contract/GoToProductionContent.vue";
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- Component used in template
+import GoToProductionContent from "@/components/contract/GoToProductionContent.vue";
 
 const props = defineProps({
   isOpen: {

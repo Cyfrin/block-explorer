@@ -20,14 +20,27 @@
           </div>
         </div>
 
-        <div class="info-section">
-          <div class="info-row">
-            <span class="info-label">{{ t("goToProduction.contractLabel") }}</span>
-            <span class="info-value">{{ shortValue(contractAddress) }}</span>
-          </div>
-        </div>
+        <!-- Contracts affected section -->
+        <div class="contracts-affected">
+          <h3 class="section-title">
+            {{ t("goToProduction.contractsAffectedTitle", coveredAccountsCount) }}
+          </h3>
+          <p class="section-description">
+            {{ t("goToProduction.contractsAffectedDescription") }}
+          </p>
 
-        <p class="confirmation-text">{{ t("goToProduction.confirmationText") }}</p>
+          <ul class="contracts-list">
+            <li v-for="account in coveredAccounts" :key="account.accountAddress" class="contract-item">
+              <div class="contract-info">
+                <span class="contract-address monospace">{{ shortValue(account.accountAddress) }}</span>
+                <span v-if="isCurrentContract(account.accountAddress)" class="current-badge">
+                  {{ t("goToProduction.currentContract") }}
+                </span>
+              </div>
+              <span class="child-scope">{{ getChildScopeLabel(account.childContractScope) }}</span>
+            </li>
+          </ul>
+        </div>
 
         <!-- Error Message -->
         <div v-if="currentError" class="error-message">
@@ -76,16 +89,18 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { ExclamationIcon } from "@heroicons/vue/outline";
 import { CheckCircleIcon, ExclamationCircleIcon, ExternalLinkIcon, XIcon } from "@heroicons/vue/solid";
 
+import useAgreementDetails from "@/composables/useAgreementDetails";
 import useGoToProduction from "@/composables/useGoToProduction";
 
 import type { PropType } from "vue";
 
+import { ChildContractScope } from "@/types";
 import { shortValue } from "@/utils/formatters";
 
 const props = defineProps({
@@ -120,6 +135,30 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const { isProcessing, error, txHash, goToProduction, reset } = useGoToProduction();
+
+// Fetch agreement details to get covered accounts
+const { agreement } = useAgreementDetails(toRef(props, "agreementAddress"));
+
+// Computed properties for contracts list
+const coveredAccounts = computed(() => agreement.value?.coveredAccounts ?? []);
+const coveredAccountsCount = computed(() => coveredAccounts.value.length);
+
+const isCurrentContract = (address: string) => address.toLowerCase() === props.contractAddress.toLowerCase();
+
+const getChildScopeLabel = (scope: ChildContractScope): string => {
+  switch (scope) {
+    case ChildContractScope.None:
+      return t("goToProduction.childScope.none");
+    case ChildContractScope.ExistingOnly:
+      return t("goToProduction.childScope.existingOnly");
+    case ChildContractScope.All:
+      return t("goToProduction.childScope.all");
+    case ChildContractScope.FutureOnly:
+      return t("goToProduction.childScope.futureOnly");
+    default:
+      return t("goToProduction.childScope.none");
+  }
+};
 
 // Use overrides or real values
 const currentIsProcessing = computed(() => props.overrideProcessing ?? isProcessing.value);
@@ -215,29 +254,47 @@ defineExpose({ reset: resetState });
   color: var(--text-secondary);
 }
 
-.info-section {
-  @apply rounded-lg border p-3;
-  border-color: var(--border-default);
-  background-color: var(--bg-secondary);
+.contracts-affected {
+  .section-title {
+    @apply text-base font-medium;
+    color: var(--text-primary);
+  }
+
+  .section-description {
+    @apply mt-1 text-sm;
+    color: var(--text-muted);
+  }
 }
 
-.info-row {
-  @apply flex items-center justify-between;
-}
+.contracts-list {
+  @apply mt-3 space-y-2 pl-0;
+  list-style: none;
 
-.info-label {
-  @apply text-sm;
-  color: var(--text-muted);
-}
+  .contract-item {
+    @apply flex items-center justify-between gap-2 rounded-lg border p-3;
+    border-color: var(--border-default);
+    background-color: var(--bg-secondary);
+  }
 
-.info-value {
-  @apply font-mono text-sm;
-  color: var(--text-primary);
-}
+  .contract-info {
+    @apply flex items-center gap-2;
+  }
 
-.confirmation-text {
-  @apply text-sm;
-  color: var(--text-secondary);
+  .contract-address {
+    @apply text-sm;
+    color: var(--text-primary);
+  }
+
+  .current-badge {
+    @apply rounded-full px-2 py-0.5 text-xs font-medium;
+    background-color: var(--accent-muted);
+    color: var(--accent-text);
+  }
+
+  .child-scope {
+    @apply text-xs;
+    color: var(--text-muted);
+  }
 }
 
 .error-message {

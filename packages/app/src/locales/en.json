@@ -999,7 +999,7 @@
   },
   "contractRegistration": {
     "notRegistered": "Not Registered",
-    "description": "This contract is not registered in the attack registry. Unregistered contracts may be registered at any time and could request to enter the \"under attack\" state.",
+    "description": "This contract is not registered in the Attack Registry. Unregistered contracts may be registered at any time and could request to enter the \"under attack\" state.",
     "warning": "Consider this when deciding whether to interact with or deposit funds into this contract.",
     "promptPrefix": "Is this contract yours?",
     "promptSuffix": "to register it.",
@@ -1013,13 +1013,13 @@
     "refreshPage": "Refresh page",
     "tryAgain": "Try again",
     "notOwner": "Your connected wallet is not the deployer of this contract. Only the contract deployer can register it.",
-    "requestAttackableSection": "Want to test this contract?",
-    "requestAttackableDescription": "Request Attackable Mode to allow ethical hackers to test this contract. Requires DAO approval since this contract wasn't deployed via BattleChainDeployer.",
+    "requestAttackableSection": "Want to register this contract?",
+    "requestAttackableDescription": "Request Attack Mode - Submit a request for this contract to enter attackable mode. Requires DAO approval since this contract wasn't deployed via BattleChainDeployer. Once approved, ethical hackers can test this contract under Safe Harbor protection.",
     "requestAttackableButton": "Request Attackable Mode"
   },
   "contractNewDeployment": {
     "title": "Registered",
-    "description": "This contract is registered in the Attack Registry. Request Attackable Mode to allow ethical hackers to test your contract under Safe Harbor protection.",
+    "description": "This contract is registered in the Attack Registry. You can request Attackable Mode to allow ethical hackers to test your contract under Safe Harbor protection, or skip testing and go straight to production.",
     "promptPrefix": "Is this your contract?",
     "promptSuffix": "to take action.",
     "connectWallet": "Connect your wallet",
@@ -1032,8 +1032,15 @@
     "title": "Go to Production",
     "warningTitle": "Skip Security Testing?",
     "warningDescription": "Going straight to production means your contract will not go through the Attackable Mode security testing phase. This action cannot be undone.",
-    "contractLabel": "Contract",
-    "confirmationText": "Are you sure you want to move this contract directly to production?",
+    "contractsAffectedTitle": "{count} contract will be promoted | {count} contracts will be promoted",
+    "contractsAffectedDescription": "Going to production will promote the following contracts, skipping the attack testing phase.",
+    "currentContract": "current",
+    "childScope": {
+      "none": "This contract only",
+      "existingOnly": "+ existing child contracts",
+      "all": "+ all child contracts",
+      "futureOnly": "+ future child contracts"
+    },
     "confirmButton": "Go to Production",
     "successTitle": "Contract is now in Production!",
     "successDescription": "Your contract has been moved to production mode and is no longer available for ethical hacking.",
@@ -1079,7 +1086,16 @@
     "connectWalletPrompt": "Connect your wallet to submit the request",
     "connectWallet": "Connect Wallet",
     "connecting": "Connecting...",
-    "noWallet": "No wallet detected"
+    "noWallet": "No wallet detected",
+    "contractsAffectedTitle": "{count} contract will be affected | {count} contracts will be affected",
+    "contractsAffectedDescription": "Requesting attackable mode will upgrade the following contracts to the attack requested state.",
+    "currentContract": "current",
+    "childScope": {
+      "none": "This contract only",
+      "existingOnly": "+ existing child contracts",
+      "all": "+ all child contracts",
+      "futureOnly": "+ future child contracts"
+    }
   },
   "contractState": {
     "registered": "Registered",

@@ -131,20 +131,34 @@
       <!-- Step 2: Review & Submit -->
       <template v-else-if="currentStep === 2">
         <div class="review-section">
-          <div class="summary-card">
-            <h3 class="summary-title">{{ t("requestUnderAttackModal.selectedAgreement") }}</h3>
-            <div class="summary-row">
-              <span class="label">{{ t("requestUnderAttackModal.agreementAddress") }}</span>
-              <span class="value monospace">{{ shortValue(selectedAgreement!) }}</span>
+          <!-- Agreement summary header -->
+          <div class="agreement-summary">
+            <div class="agreement-header">
+              <span class="agreement-label">{{ t("requestUnderAttackModal.selectedAgreement") }}</span>
+              <span class="agreement-address monospace">{{ shortValue(selectedAgreement!) }}</span>
             </div>
           </div>
 
-          <div class="summary-card">
-            <h3 class="summary-title">{{ t("requestUnderAttackModal.contractToRegister") }}</h3>
-            <div class="summary-row">
-              <span class="label">{{ t("requestUnderAttackModal.contractAddress") }}</span>
-              <span class="value monospace">{{ shortValue(contractAddress) }}</span>
-            </div>
+          <!-- Contracts affected section -->
+          <div class="contracts-affected">
+            <h3 class="section-title">
+              {{ t("requestUnderAttackModal.contractsAffectedTitle", coveredAccountsCount) }}
+            </h3>
+            <p class="section-description">
+              {{ t("requestUnderAttackModal.contractsAffectedDescription") }}
+            </p>
+
+            <ul class="contracts-list">
+              <li v-for="account in coveredAccounts" :key="account.accountAddress" class="contract-item">
+                <div class="contract-info">
+                  <span class="contract-address monospace">{{ shortValue(account.accountAddress) }}</span>
+                  <span v-if="isCurrentContract(account.accountAddress)" class="current-badge">
+                    {{ t("requestUnderAttackModal.currentContract") }}
+                  </span>
+                </div>
+                <span class="child-scope">{{ getChildScopeLabel(account.childContractScope) }}</span>
+              </li>
+            </ul>
           </div>
 
           <!-- Not connected state -->
@@ -227,16 +241,18 @@ import { useI18n } from "vue-i18n";
 import { CheckCircleIcon, CheckIcon, ExclamationCircleIcon, ExternalLinkIcon, XIcon } from "@heroicons/vue/solid";
 
 import Input from "@/components/common/Input.vue";
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- Component used in template
+import CreateAgreementContent from "@/components/contract/CreateAgreementContent.vue";
 import FormItem from "@/components/form/FormItem.vue";
 
 import useAgreementList from "@/composables/useAgreementList";
 import useContext from "@/composables/useContext";
 import useRequestUnderAttack from "@/composables/useRequestUnderAttack";
 
-import type CreateAgreementContent from "@/components/contract/CreateAgreementContent.vue";
-import type { DetectedAgreement } from "@/composables/useAgreementList";
+import type { CoveredAccount, DetectedAgreement } from "@/composables/useAgreementList";
 import type { PropType } from "vue";
 
+import { ChildContractScope } from "@/types";
 import { shortValue } from "@/utils/formatters";
 
 const { t } = useI18n();
@@ -355,6 +371,41 @@ const selectedAgreement = computed(() => {
 });
 
 const canProceedToStep2 = computed(() => !!selectedAgreement.value);
+
+// Get the full agreement data for the selected agreement
+const selectedAgreementData = computed(() => {
+  if (!selectedAgreementAddress.value) return null;
+  return agreements.value.find((a) => a.agreementAddress === selectedAgreementAddress.value) ?? null;
+});
+
+// Covered accounts from the selected agreement
+const coveredAccounts = computed<CoveredAccount[]>(() => {
+  return selectedAgreementData.value?.coveredAccounts ?? [];
+});
+
+// Number of covered accounts
+const coveredAccountsCount = computed(() => coveredAccounts.value.length);
+
+// Helper to get child scope label
+const getChildScopeLabel = (scope: ChildContractScope): string => {
+  switch (scope) {
+    case ChildContractScope.None:
+      return t("requestUnderAttackModal.childScope.none");
+    case ChildContractScope.ExistingOnly:
+      return t("requestUnderAttackModal.childScope.existingOnly");
+    case ChildContractScope.All:
+      return t("requestUnderAttackModal.childScope.all");
+    case ChildContractScope.FutureOnly:
+      return t("requestUnderAttackModal.childScope.futureOnly");
+    default:
+      return t("requestUnderAttackModal.childScope.none");
+  }
+};
+
+// Check if an account is the current contract
+const isCurrentContract = (accountAddress: string): boolean => {
+  return accountAddress.toLowerCase() === props.contractAddress.toLowerCase();
+};
 
 const connectButtonText = computed(() => {
   if (isConnectPending.value) {
@@ -691,7 +742,7 @@ defineExpose({ reset });
 }
 
 .create-view {
-  @apply -mx-4 sm:-mx-6;
+  @apply -mx-4 -mb-4 sm:-mx-6;
 }
 
 .review-section {
@@ -724,6 +775,69 @@ defineExpose({ reset });
         @apply font-mono;
       }
     }
+  }
+}
+
+.agreement-summary {
+  @apply rounded-lg border p-3;
+  border-color: var(--border-default);
+  background-color: var(--bg-secondary);
+
+  .agreement-header {
+    @apply flex items-center justify-between gap-2;
+  }
+
+  .agreement-label {
+    @apply text-sm;
+    color: var(--text-muted);
+  }
+
+  .agreement-address {
+    @apply text-sm font-medium;
+    color: var(--text-primary);
+  }
+}
+
+.contracts-affected {
+  .section-title {
+    @apply text-base font-medium;
+    color: var(--text-primary);
+  }
+
+  .section-description {
+    @apply mt-1 text-sm;
+    color: var(--text-muted);
+  }
+}
+
+.contracts-list {
+  @apply mt-3 space-y-2 pl-0;
+  list-style: none;
+
+  .contract-item {
+    @apply flex items-center justify-between gap-2 rounded-lg border p-3;
+    border-color: var(--border-default);
+    background-color: var(--bg-secondary);
+  }
+
+  .contract-info {
+    @apply flex items-center gap-2;
+  }
+
+  .contract-address {
+    @apply text-sm;
+    color: var(--text-primary);
+  }
+
+  .current-badge {
+    @apply rounded-full px-2 py-0.5 text-xs font-medium;
+    background-color: var(--accent-muted);
+    color: var(--accent-text);
+  }
+
+  .child-scope {
+    @apply text-xs;
+    color: var(--text-muted);
   }
 }
 
@@ -859,8 +973,10 @@ defineExpose({ reset });
 }
 
 .loading-spinner {
-  @apply h-4 w-4 animate-spin rounded-full border-2;
-  border-color: rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  @apply h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent;
+}
+
+.btn-primary .loading-spinner {
+  @apply border-white/30 border-t-white;
 }
 </style>

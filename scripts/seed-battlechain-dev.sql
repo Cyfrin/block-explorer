@@ -132,6 +132,23 @@ VALUES
   (1023, '0xaaaa000000000000000000000000000000000009', 6, '0xf6' || repeat('0', 62), 121, '0', NOW() - INTERVAL '5 days');
 
 -- ============================================
+-- 3. Create agreement accounts table (for covered contracts with child scopes)
+-- ============================================
+CREATE TABLE IF NOT EXISTS battlechainindexer_agreement.agreement_accounts (
+  id SERIAL PRIMARY KEY,
+  agreement_address CHAR(42) NOT NULL,
+  caip2_chain_id VARCHAR(100) NOT NULL,
+  account_address VARCHAR(100) NOT NULL,
+  child_contract_scope SMALLINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(agreement_address, caip2_chain_id, account_address)
+);
+
+CREATE INDEX IF NOT EXISTS idx_agreement_accounts_address
+  ON battlechainindexer_agreement.agreement_accounts(agreement_address);
+
+-- ============================================
 -- 4. Insert agreements (for contracts 0x03-0x09)
 -- ============================================
 -- Clear existing seed agreements
@@ -241,7 +258,7 @@ VALUES (
   false, 0, NULL, 10000000,
   '[{"name":"Security Team","contact":"security@testprotocol.com"},{"name":"Discord","contact":"discord.gg/testprotocol"}]'::jsonb,
   EXTRACT(EPOCH FROM NOW() + INTERVAL '30 days'),
-  ARRAY['0x0000000000000000000000000000000000000003'],
+  ARRAY['0x0000000000000000000000000000000000000003', '0xaaaa111111111111111111111111111111111111', '0xaaaa222222222222222222222222222222222222', '0xaaaa333333333333333333333333333333333333'],
   NOW()
 );
 
@@ -366,7 +383,89 @@ VALUES (
 );
 
 -- ============================================
--- 6. Summary output
+-- 6. Seed agreement accounts with child contract scopes
+-- ============================================
+-- Clear existing seed data
+DELETE FROM battlechainindexer_agreement.agreement_accounts
+WHERE agreement_address IN (
+  '0xaaaa000000000000000000000000000000000003',
+  '0xaaaa000000000000000000000000000000000004',
+  '0xaaaa000000000000000000000000000000000005',
+  '0xaaaa000000000000000000000000000000000006',
+  '0xaaaa000000000000000000000000000000000007',
+  '0xaaaa000000000000000000000000000000000008',
+  '0xaaaa000000000000000000000000000000000009'
+);
+
+-- Child contract scope values:
+-- 0 = None (this contract only)
+-- 1 = ExistingOnly (+ existing child contracts)
+-- 2 = All (+ all child contracts)
+-- 3 = FutureOnly (+ future child contracts)
+
+-- Single-contract agreements (should NOT show warning banner)
+INSERT INTO battlechainindexer_agreement.agreement_accounts
+  (agreement_address, caip2_chain_id, account_address, child_contract_scope)
+VALUES
+  -- Agreement 0x04: Single contract with scope ExistingOnly
+  ('0xaaaa000000000000000000000000000000000004', 'eip155:270', '0x0000000000000000000000000000000000000004', 1);
+
+-- Agreement 0x03: Multi-contract with variety of child scopes (SHOULD show warning banner)
+INSERT INTO battlechainindexer_agreement.agreement_accounts
+  (agreement_address, caip2_chain_id, account_address, child_contract_scope)
+VALUES
+  -- Main contract with All child contracts scope
+  ('0xaaaa000000000000000000000000000000000003', 'eip155:270', '0x0000000000000000000000000000000000000003', 2),
+  -- Additional contract with None (this contract only)
+  ('0xaaaa000000000000000000000000000000000003', 'eip155:270', '0xaaaa111111111111111111111111111111111111', 0),
+  -- Additional contract with ExistingOnly
+  ('0xaaaa000000000000000000000000000000000003', 'eip155:270', '0xaaaa222222222222222222222222222222222222', 1),
+  -- Additional contract with FutureOnly
+  ('0xaaaa000000000000000000000000000000000003', 'eip155:270', '0xaaaa333333333333333333333333333333333333', 3);
+
+-- Multi-contract agreements (SHOULD show warning banner)
+INSERT INTO battlechainindexer_agreement.agreement_accounts
+  (agreement_address, caip2_chain_id, account_address, child_contract_scope)
+VALUES
+  -- Agreement 0x05: UNDER_ATTACK - multiple contracts with different scopes
+  ('0xaaaa000000000000000000000000000000000005', 'eip155:270', '0x0000000000000000000000000000000000000005', 0),
+  ('0xaaaa000000000000000000000000000000000005', 'eip155:270', '0x1111111111111111111111111111111111111111', 2),
+  ('0xaaaa000000000000000000000000000000000005', 'eip155:270', '0x2222222222222222222222222222222222222222', 1),
+
+  -- Agreement 0x06: PROMOTION_REQUESTED - multiple contracts
+  ('0xaaaa000000000000000000000000000000000006', 'eip155:270', '0x0000000000000000000000000000000000000006', 0),
+  ('0xaaaa000000000000000000000000000000000006', 'eip155:270', '0x3333333333333333333333333333333333333333', 3),
+
+  -- Agreement 0x07: PRODUCTION (was under attack) - multiple contracts
+  ('0xaaaa000000000000000000000000000000000007', 'eip155:270', '0x0000000000000000000000000000000000000007', 2),
+  ('0xaaaa000000000000000000000000000000000007', 'eip155:270', '0x4444444444444444444444444444444444444444', 2),
+
+  -- Agreement 0x08: PRODUCTION (direct) - single contract
+  ('0xaaaa000000000000000000000000000000000008', 'eip155:270', '0x0000000000000000000000000000000000000008', 0),
+
+  -- Agreement 0x09: CORRUPTED - multiple contracts
+  ('0xaaaa000000000000000000000000000000000009', 'eip155:270', '0x0000000000000000000000000000000000000009', 0),
+  ('0xaaaa000000000000000000000000000000000009', 'eip155:270', '0x5555555555555555555555555555555555555555', 1);
+
+-- Update covered_contracts array in agreement_current_state to match accounts
+UPDATE battlechainindexer_agreement.agreement_current_state
+SET covered_contracts = ARRAY['0x0000000000000000000000000000000000000005', '0x1111111111111111111111111111111111111111', '0x2222222222222222222222222222222222222222']
+WHERE agreement_address = '0xaaaa000000000000000000000000000000000005';
+
+UPDATE battlechainindexer_agreement.agreement_current_state
+SET covered_contracts = ARRAY['0x0000000000000000000000000000000000000006', '0x3333333333333333333333333333333333333333']
+WHERE agreement_address = '0xaaaa000000000000000000000000000000000006';
+
+UPDATE battlechainindexer_agreement.agreement_current_state
+SET covered_contracts = ARRAY['0x0000000000000000000000000000000000000007', '0x4444444444444444444444444444444444444444']
+WHERE agreement_address = '0xaaaa000000000000000000000000000000000007';
+
+UPDATE battlechainindexer_agreement.agreement_current_state
+SET covered_contracts = ARRAY['0x0000000000000000000000000000000000000009', '0x5555555555555555555555555555555555555555']
+WHERE agreement_address = '0xaaaa000000000000000000000000000000000009';
+
+-- ============================================
+-- 7. Summary output
 -- ============================================
 SELECT 'Seeding complete!' AS status;
 SELECT 'Contracts seeded:' AS info;

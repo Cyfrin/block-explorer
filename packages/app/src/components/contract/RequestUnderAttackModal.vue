@@ -13,8 +13,8 @@
 import { ref, watch } from "vue";
 
 import Popup from "@/components/common/Popup.vue";
-
-import type RequestUnderAttackContent from "@/components/contract/RequestUnderAttackContent.vue";
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- Component used in template
+import RequestUnderAttackContent from "@/components/contract/RequestUnderAttackContent.vue";
 
 const props = defineProps({
   isOpen: {

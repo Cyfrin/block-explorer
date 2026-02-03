@@ -4,7 +4,12 @@ import useContext from "./useContext";
 
 import { FetchInstance } from "@/composables/useFetchInstance";
 
-import type { Address } from "@/types";
+import type { Address, ChildContractScope } from "@/types";
+
+export interface CoveredAccount {
+  accountAddress: Address;
+  childContractScope: ChildContractScope;
+}
 
 export interface DetectedAgreement {
   agreementAddress: Address;
@@ -13,6 +18,12 @@ export interface DetectedAgreement {
   bountyPercentage?: number;
   bountyCapUsd?: string;
   coveredContracts: Address[];
+  coveredAccounts?: CoveredAccount[];
+}
+
+interface CoveredAccountDto {
+  accountAddress: string;
+  childContractScope: number;
 }
 
 interface AgreementDto {
@@ -22,6 +33,7 @@ interface AgreementDto {
   bountyPercentage?: number;
   bountyCapUsd?: string;
   coveredContracts?: string[];
+  coveredAccounts?: CoveredAccountDto[];
 }
 
 export default function useAgreementList(context = useContext()) {
@@ -50,6 +62,10 @@ export default function useAgreementList(context = useContext()) {
           bountyPercentage: a.bountyPercentage,
           bountyCapUsd: a.bountyCapUsd,
           coveredContracts: (a.coveredContracts || []) as Address[],
+          coveredAccounts: a.coveredAccounts?.map((acc) => ({
+            accountAddress: acc.accountAddress as Address,
+            childContractScope: acc.childContractScope as ChildContractScope,
+          })),
         }));
     } catch (e) {
       error.value = e instanceof Error ? e.message : "Failed to fetch agreements";

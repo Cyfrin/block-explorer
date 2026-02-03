@@ -13,8 +13,8 @@
 import { ref, watch } from "vue";
 
 import Popup from "@/components/common/Popup.vue";
-
-import type CreateAgreementContent from "@/components/contract/CreateAgreementContent.vue";
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- Component used in template
+import CreateAgreementContent from "@/components/contract/CreateAgreementContent.vue";
 
 const props = defineProps({
   isOpen: {

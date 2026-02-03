@@ -145,6 +145,21 @@ export class ContactDetailDto {
   contact: string;
 }
 
+export class CoveredAccountDto {
+  @ApiProperty({
+    description: "Contract/account address",
+    example: "0x1234567890123456789012345678901234567890",
+  })
+  accountAddress: string;
+
+  @ApiProperty({
+    description: "Child contract scope (0=None, 1=ExistingOnly, 2=All, 3=FutureOnly)",
+    enum: [0, 1, 2, 3],
+    example: 0,
+  })
+  childContractScope: number;
+}
+
 export class AgreementDto {
   @ApiProperty({
     description: "Address of the agreement contract",
@@ -226,6 +241,12 @@ export class AgreementDto {
     example: ["0x1111111111111111111111111111111111111111"],
   })
   coveredContracts?: string[];
+
+  @ApiPropertyOptional({
+    description: "List of covered accounts with their child contract scopes",
+    type: [CoveredAccountDto],
+  })
+  coveredAccounts?: CoveredAccountDto[];
 
   @ApiProperty({
     description: "Block number when the agreement was created",
