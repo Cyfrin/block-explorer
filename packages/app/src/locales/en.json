@@ -1099,7 +1099,9 @@
     "attackRequested": "Attack Requested",
     "pendingApproval": "Pending approval",
     "attackerAddress": "Attacker",
-    "attackType": "Attack type"
+    "attackType": "Attack type",
+    "viewTransaction": "View transaction",
+    "viewPromotionTransaction": "View promotion request"
   },
   "contractInfoTabs": {
     "contract": "Contract",

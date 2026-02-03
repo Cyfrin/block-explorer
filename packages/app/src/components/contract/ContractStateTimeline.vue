@@ -19,6 +19,16 @@
         <CopyButton v-if="registeredAtISO" :value="formattedRegisteredAt!" class="step-timestamp">
           <TimeField :value="registeredAtISO" :format="TimeFormat.TIME_AGO" />
         </CopyButton>
+        <a
+          v-if="registeredTxHash"
+          :href="`/tx/${registeredTxHash}`"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="step-tx-link"
+        >
+          {{ t("contractState.viewTransaction") }}
+          <ExternalLinkIcon class="external-icon" />
+        </a>
         <Tooltip v-if="isCurrent(ContractState.NEW_DEPLOYMENT) && hasCountdown" :interactive="true" max-width="350px">
           <span class="step-countdown">
             <CopyButton :value="formattedPromotionTimestamp!">
@@ -56,6 +66,16 @@
       <div class="step-content">
         <span class="step-label">{{ t("contractState.warmingUp") }}</span>
         <span class="step-subtitle">{{ t("contractState.warmingUpSubtitle") }}</span>
+        <a
+          v-if="attackRequestedTxHash"
+          :href="`/tx/${attackRequestedTxHash}`"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="step-tx-link"
+        >
+          {{ t("contractState.viewTransaction") }}
+          <ExternalLinkIcon class="external-icon" />
+        </a>
       </div>
     </div>
 
@@ -86,6 +106,26 @@
         <CopyButton v-if="underAttackAtISO" :value="formattedUnderAttackAt!" class="step-timestamp">
           <TimeField :value="underAttackAtISO" :format="TimeFormat.TIME_AGO" />
         </CopyButton>
+        <a
+          v-if="underAttackTxHash"
+          :href="`/tx/${underAttackTxHash}`"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="step-tx-link"
+        >
+          {{ t("contractState.viewTransaction") }}
+          <ExternalLinkIcon class="external-icon" />
+        </a>
+        <a
+          v-if="isPromotionPending && promotionRequestedTxHash"
+          :href="`/tx/${promotionRequestedTxHash}`"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="step-tx-link"
+        >
+          {{ t("contractState.viewPromotionTransaction") }}
+          <ExternalLinkIcon class="external-icon" />
+        </a>
         <span v-if="isCurrentlyAttackable && hasCountdown" class="step-countdown">
           <CopyButton :value="formattedPromotionTimestamp!">
             <span class="countdown-time">{{ countdownTimeAgo }}</span>
@@ -129,6 +169,16 @@
         <CopyButton v-if="corruptedAtISO" :value="formattedCorruptedAt!" class="step-timestamp">
           <TimeField :value="corruptedAtISO" :format="TimeFormat.TIME_AGO" />
         </CopyButton>
+        <a
+          v-if="corruptedTxHash"
+          :href="`/tx/${corruptedTxHash}`"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="step-tx-link"
+        >
+          {{ t("contractState.viewTransaction") }}
+          <ExternalLinkIcon class="external-icon" />
+        </a>
         <!-- Attack details if available -->
         <div v-if="attackDetails" class="attack-details">
           <span v-if="attackDetails.attackerAddress" class="attack-detail">
@@ -157,6 +207,16 @@
         <CopyButton v-if="productionAtISO" :value="formattedProductionAt!" class="step-timestamp">
           <TimeField :value="productionAtISO" :format="TimeFormat.TIME_AGO" />
         </CopyButton>
+        <a
+          v-if="productionTxHash"
+          :href="`/tx/${productionTxHash}`"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="step-tx-link"
+        >
+          {{ t("contractState.viewTransaction") }}
+          <ExternalLinkIcon class="external-icon" />
+        </a>
       </div>
     </div>
   </div>
@@ -171,6 +231,7 @@ import {
   ClockIcon as ClockIconOutline,
   CubeIcon as CubeIconOutline,
   ExclamationCircleIcon,
+  ExternalLinkIcon,
   LockClosedIcon,
   ShieldExclamationIcon as ShieldExclamationIconOutline,
 } from "@heroicons/vue/outline";
@@ -203,20 +264,44 @@ const props = defineProps({
     type: Number,
     default: null,
   },
+  registeredTxHash: {
+    type: String,
+    default: null,
+  },
   underAttackAt: {
     type: Number,
+    default: null,
+  },
+  underAttackTxHash: {
+    type: String,
     default: null,
   },
   productionAt: {
     type: Number,
     default: null,
   },
+  productionTxHash: {
+    type: String,
+    default: null,
+  },
+  attackRequestedTxHash: {
+    type: String,
+    default: null,
+  },
   promotionRequestedAt: {
     type: Number,
     default: null,
   },
+  promotionRequestedTxHash: {
+    type: String,
+    default: null,
+  },
   corruptedAt: {
     type: Number,
+    default: null,
+  },
+  corruptedTxHash: {
+    type: String,
     default: null,
   },
   promotionWindowEnds: {
@@ -581,6 +666,19 @@ const getStepClass = (step: ContractState) => {
   .step-subtitle {
     @apply text-xs;
     color: var(--text-faint);
+  }
+
+  .step-tx-link {
+    @apply inline-flex items-center gap-1 text-xs;
+    color: var(--accent);
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    .external-icon {
+      @apply h-3 w-3;
+    }
   }
 
   :deep(.step-timestamp.copy-button-container) {

@@ -3,7 +3,6 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { AgreementStateChange } from "./agreementState.entity";
 import { AgreementCreated } from "./agreement.entity";
-import { AgreementScope } from "./agreementScope.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
 import { ContractState, ContractStateInfoDto, AgreementDto, IdentityRequirement } from "./battlechain.dto";
 import { PROMOTION_WINDOW_MS, PROMOTION_DELAY_MS } from "./battlechain.constants";
@@ -19,8 +18,6 @@ export class BattlechainService {
     private readonly agreementStateChangeRepository: Repository<AgreementStateChange>,
     @InjectRepository(AgreementCreated)
     private readonly agreementCreatedRepository: Repository<AgreementCreated>,
-    @InjectRepository(AgreementScope)
-    private readonly agreementScopeRepository: Repository<AgreementScope>,
     @InjectRepository(AgreementCurrentState)
     private readonly agreementStateRepository: Repository<AgreementCurrentState>
   ) {}
@@ -97,11 +94,17 @@ export class BattlechainService {
     let currentState = ContractState.NEW_DEPLOYMENT;
     let wasUnderAttack = false;
     let registeredAt: number | null = null;
+    let registeredTxHash: string | null = null;
     let underAttackAt: number | null = null;
+    let underAttackTxHash: string | null = null;
     let productionAt: number | null = null;
+    let productionTxHash: string | null = null;
     let attackRequestedAt: number | null = null;
+    let attackRequestedTxHash: string | null = null;
     let promotionRequestedAt: number | null = null;
+    let promotionRequestedTxHash: string | null = null;
     let corruptedAt: number | null = null;
+    let corruptedTxHash: string | null = null;
 
     for (const change of stateChanges) {
       const timestamp = change.blockTimestamp ? change.blockTimestamp.getTime() : null;
@@ -114,28 +117,34 @@ export class BattlechainService {
           currentState = ContractState.NEW_DEPLOYMENT;
           if (!registeredAt) {
             registeredAt = timestamp;
+            registeredTxHash = change.txHash ?? null;
           }
           break;
         case ContractState.ATTACK_REQUESTED:
           currentState = ContractState.ATTACK_REQUESTED;
           attackRequestedAt = timestamp;
+          attackRequestedTxHash = change.txHash ?? null;
           break;
         case ContractState.UNDER_ATTACK:
           currentState = ContractState.UNDER_ATTACK;
           wasUnderAttack = true;
           underAttackAt = timestamp;
+          underAttackTxHash = change.txHash ?? null;
           break;
         case ContractState.PROMOTION_REQUESTED:
           currentState = ContractState.PROMOTION_REQUESTED;
           promotionRequestedAt = timestamp;
+          promotionRequestedTxHash = change.txHash ?? null;
           break;
         case ContractState.PRODUCTION:
           currentState = ContractState.PRODUCTION;
           productionAt = timestamp;
+          productionTxHash = change.txHash ?? null;
           break;
         case ContractState.CORRUPTED:
           currentState = ContractState.CORRUPTED;
           corruptedAt = timestamp;
+          corruptedTxHash = change.txHash ?? null;
           break;
       }
     }
@@ -176,11 +185,17 @@ export class BattlechainService {
       state: stateNames[currentState] || "NOT_REGISTERED",
       wasUnderAttack,
       registeredAt,
+      registeredTxHash,
       underAttackAt,
+      underAttackTxHash,
       productionAt,
+      productionTxHash,
       attackRequestedAt,
+      attackRequestedTxHash,
       promotionRequestedAt,
+      promotionRequestedTxHash,
       corruptedAt,
+      corruptedTxHash,
       promotionWindowEnds,
       commitmentLockedUntil,
     };

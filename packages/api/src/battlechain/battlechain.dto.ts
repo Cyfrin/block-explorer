@@ -60,16 +60,52 @@ export class ContractStateInfoDto {
   attackRequestedAt?: number | null;
 
   @ApiPropertyOptional({
+    description: "Transaction hash of the attack request",
+    example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  })
+  attackRequestedTxHash?: string | null;
+
+  @ApiPropertyOptional({
+    description: "Transaction hash when the agreement was registered (NEW_DEPLOYMENT)",
+    example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  })
+  registeredTxHash?: string | null;
+
+  @ApiPropertyOptional({
+    description: "Transaction hash when the contract went under attack",
+    example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  })
+  underAttackTxHash?: string | null;
+
+  @ApiPropertyOptional({
     description: "Unix timestamp in milliseconds when promotion was requested",
     example: null,
   })
   promotionRequestedAt?: number | null;
 
   @ApiPropertyOptional({
+    description: "Transaction hash when promotion was requested",
+    example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  })
+  promotionRequestedTxHash?: string | null;
+
+  @ApiPropertyOptional({
     description: "Unix timestamp in milliseconds when contract was marked corrupted",
     example: null,
   })
   corruptedAt?: number | null;
+
+  @ApiPropertyOptional({
+    description: "Transaction hash when the contract was marked corrupted",
+    example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  })
+  corruptedTxHash?: string | null;
+
+  @ApiPropertyOptional({
+    description: "Transaction hash when the contract reached production",
+    example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  })
+  productionTxHash?: string | null;
 
   @ApiPropertyOptional({
     description: "Unix timestamp in milliseconds when auto-promotion will occur (14-day window from registration, or 3-day delay from promotion request)",

@@ -12,11 +12,17 @@ export interface BattlechainContractStateInfo {
   state: ContractState;
   wasUnderAttack: boolean;
   registeredAt: number | null; // Unix timestamp in milliseconds when registered in AttackRegistry
+  registeredTxHash: string | null; // Transaction hash of the registration
   underAttackAt: number | null;
+  underAttackTxHash: string | null; // Transaction hash when contract went under attack
   productionAt: number | null;
+  productionTxHash: string | null; // Transaction hash when contract reached production
   attackRequestedAt: number | null; // Unix timestamp in milliseconds when attack mode was requested
+  attackRequestedTxHash: string | null; // Transaction hash of the attack request
   promotionRequestedAt: number | null; // Unix timestamp in milliseconds when promotion was requested
+  promotionRequestedTxHash: string | null; // Transaction hash of the promotion request
   corruptedAt: number | null; // Unix timestamp in milliseconds when contract was marked corrupted
+  corruptedTxHash: string | null; // Transaction hash when contract was marked corrupted
   promotionWindowEnds: number | null; // Unix timestamp in milliseconds when auto-promotion will occur
   commitmentLockedUntil: number | null; // Unix timestamp in milliseconds until which Safe Harbor terms are locked
   attackDetails?: {
@@ -37,11 +43,17 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
   const isNotRegistered = computed(() => stateInfo.value?.state === "NOT_REGISTERED");
   const wasUnderAttack = computed(() => stateInfo.value?.wasUnderAttack ?? false);
   const registeredAt = computed(() => stateInfo.value?.registeredAt ?? null);
+  const registeredTxHash = computed(() => stateInfo.value?.registeredTxHash ?? null);
   const underAttackAt = computed(() => stateInfo.value?.underAttackAt ?? null);
+  const underAttackTxHash = computed(() => stateInfo.value?.underAttackTxHash ?? null);
   const productionAt = computed(() => stateInfo.value?.productionAt ?? null);
+  const productionTxHash = computed(() => stateInfo.value?.productionTxHash ?? null);
   const attackRequestedAt = computed(() => stateInfo.value?.attackRequestedAt ?? null);
+  const attackRequestedTxHash = computed(() => stateInfo.value?.attackRequestedTxHash ?? null);
   const promotionRequestedAt = computed(() => stateInfo.value?.promotionRequestedAt ?? null);
+  const promotionRequestedTxHash = computed(() => stateInfo.value?.promotionRequestedTxHash ?? null);
   const corruptedAt = computed(() => stateInfo.value?.corruptedAt ?? null);
+  const corruptedTxHash = computed(() => stateInfo.value?.corruptedTxHash ?? null);
   const promotionWindowEnds = computed(() => stateInfo.value?.promotionWindowEnds ?? null);
   const commitmentLockedUntil = computed(() => stateInfo.value?.commitmentLockedUntil ?? null);
   const attackDetails = computed(() => stateInfo.value?.attackDetails ?? null);
@@ -92,11 +104,17 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
     isNotRegistered,
     wasUnderAttack,
     registeredAt,
+    registeredTxHash,
     underAttackAt,
+    underAttackTxHash,
     productionAt,
+    productionTxHash,
     attackRequestedAt,
+    attackRequestedTxHash,
     promotionRequestedAt,
+    promotionRequestedTxHash,
     corruptedAt,
+    corruptedTxHash,
     promotionWindowEnds,
     commitmentLockedUntil,
     attackDetails,

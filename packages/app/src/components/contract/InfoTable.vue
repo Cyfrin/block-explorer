@@ -50,10 +50,16 @@
                 :state="contractState"
                 :was-under-attack="wasUnderAttack"
                 :registered-at="registeredAt"
+                :registered-tx-hash="registeredTxHash"
                 :under-attack-at="underAttackAt"
+                :under-attack-tx-hash="underAttackTxHash"
                 :production-at="productionAt"
+                :production-tx-hash="productionTxHash"
+                :attack-requested-tx-hash="attackRequestedTxHash"
                 :promotion-requested-at="promotionRequestedAt"
+                :promotion-requested-tx-hash="promotionRequestedTxHash"
                 :corrupted-at="corruptedAt"
+                :corrupted-tx-hash="corruptedTxHash"
                 :promotion-window-ends="promotionWindowEnds"
                 :commitment-locked-until="commitmentLockedUntil"
                 :attack-details="attackDetails"
@@ -72,10 +78,16 @@
               :state="contractState"
               :was-under-attack="wasUnderAttack"
               :registered-at="registeredAt"
+              :registered-tx-hash="registeredTxHash"
               :under-attack-at="underAttackAt"
+              :under-attack-tx-hash="underAttackTxHash"
               :production-at="productionAt"
+              :production-tx-hash="productionTxHash"
+              :attack-requested-tx-hash="attackRequestedTxHash"
               :promotion-requested-at="promotionRequestedAt"
+              :promotion-requested-tx-hash="promotionRequestedTxHash"
               :corrupted-at="corruptedAt"
+              :corrupted-tx-hash="corruptedTxHash"
               :promotion-window-ends="promotionWindowEnds"
               :commitment-locked-until="commitmentLockedUntil"
               :attack-details="attackDetails"
@@ -179,10 +191,16 @@ const {
   hasRequestedAttack,
   wasUnderAttack,
   registeredAt,
+  registeredTxHash,
   underAttackAt,
+  underAttackTxHash,
   productionAt,
+  productionTxHash,
+  attackRequestedTxHash,
   promotionRequestedAt,
+  promotionRequestedTxHash,
   corruptedAt,
+  corruptedTxHash,
   promotionWindowEnds,
   commitmentLockedUntil,
   attackDetails,

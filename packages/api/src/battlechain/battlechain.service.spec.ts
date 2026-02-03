@@ -5,7 +5,6 @@ import { Repository, SelectQueryBuilder } from "typeorm";
 import { BattlechainService } from "./battlechain.service";
 import { AgreementStateChange } from "./agreementState.entity";
 import { AgreementCreated } from "./agreement.entity";
-import { AgreementScope } from "./agreementScope.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
 import { ContractState } from "./battlechain.dto";
 
@@ -13,13 +12,11 @@ describe("BattlechainService", () => {
   let service: BattlechainService;
   let agreementStateChangeRepository: Repository<AgreementStateChange>;
   let agreementCreatedRepository: Repository<AgreementCreated>;
-  let agreementScopeRepository: Repository<AgreementScope>;
   let agreementStateRepository: Repository<AgreementCurrentState>;
 
   beforeEach(async () => {
     agreementStateChangeRepository = mock<Repository<AgreementStateChange>>();
     agreementCreatedRepository = mock<Repository<AgreementCreated>>();
-    agreementScopeRepository = mock<Repository<AgreementScope>>();
     agreementStateRepository = mock<Repository<AgreementCurrentState>>();
 
     // Mock createQueryBuilder for agreementStateRepository
@@ -38,10 +35,6 @@ describe("BattlechainService", () => {
         {
           provide: getRepositoryToken(AgreementCreated),
           useValue: agreementCreatedRepository,
-        },
-        {
-          provide: getRepositoryToken(AgreementScope),
-          useValue: agreementScopeRepository,
         },
         {
           provide: getRepositoryToken(AgreementCurrentState),
@@ -299,11 +292,17 @@ describe("BattlechainService", () => {
         state: "NEW_DEPLOYMENT",
         wasUnderAttack: false,
         registeredAt: null,
+        registeredTxHash: null,
         underAttackAt: null,
+        underAttackTxHash: null,
         productionAt: null,
+        productionTxHash: null,
         attackRequestedAt: null,
+        attackRequestedTxHash: null,
         promotionRequestedAt: null,
+        promotionRequestedTxHash: null,
         corruptedAt: null,
+        corruptedTxHash: null,
         promotionWindowEnds: null,
         commitmentLockedUntil: null,
       });

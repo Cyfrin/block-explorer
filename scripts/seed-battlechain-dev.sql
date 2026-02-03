@@ -40,99 +40,99 @@ INSERT INTO addresses (address, bytecode) VALUES
 ON CONFLICT (address) DO UPDATE SET bytecode = EXCLUDED.bytecode;
 
 -- ============================================
--- 2. Insert state change events
+-- 2. Insert agreement state changes (for agreement addresses)
 -- ============================================
--- Note: target_contract uses the indexed form from the event
--- State values from AttackRegistry.sol:
---   1 = NEW_DEPLOYMENT ("Registered")
---   2 = ATTACK_REQUESTED ("Warming Up")
---   3 = UNDER_ATTACK ("Attackable")
---   4 = PROMOTION_REQUESTED ("Promotion Pending")
---   5 = PRODUCTION
---   6 = CORRUPTED ("Compromised")
+-- Note: This table tracks state changes indexed by AGREEMENT address (not contract address)
+-- The API queries this table to get state info for agreements
 
--- Clear existing seed data (optional - comment out to preserve existing data)
-DELETE FROM battlechainindexer_attack_registry.contract_state_changed
-WHERE target_contract IN (
-  '0x0000000000000000000000000000000000000001',
-  '0x0000000000000000000000000000000000000002',
-  '0x0000000000000000000000000000000000000003',
-  '0x0000000000000000000000000000000000000004',
-  '0x0000000000000000000000000000000000000005',
-  '0x0000000000000000000000000000000000000006',
-  '0x0000000000000000000000000000000000000007',
-  '0x0000000000000000000000000000000000000008',
-  '0x0000000000000000000000000000000000000009'
+-- Create the table if it doesn't exist (normally created by rindexer)
+CREATE TABLE IF NOT EXISTS battlechainindexer_attack_registry.agreement_state_changed (
+  rindexer_id INT PRIMARY KEY,
+  agreement_address CHAR(42),
+  new_state SMALLINT,
+  tx_hash CHAR(66) NOT NULL,
+  block_number NUMERIC NOT NULL,
+  log_index VARCHAR(78) NOT NULL,
+  block_timestamp TIMESTAMPTZ
 );
 
--- 0x01: No state changes (NOT_REGISTERED) - nothing to insert
--- Safe Harbor tab should be HIDDEN for this contract
+CREATE INDEX IF NOT EXISTS idx_agreement_state_changed_address
+  ON battlechainindexer_attack_registry.agreement_state_changed(agreement_address);
 
--- 0x02: NEW_DEPLOYMENT only (no agreement)
--- Safe Harbor tab visible, but no agreement exists
-INSERT INTO battlechainindexer_attack_registry.contract_state_changed
-  (target_contract, new_state, tx_hash, block_number, log_index, block_timestamp, contract_address, block_hash, network, tx_index)
-VALUES
-  ('0x0000000000000000000000000000000000000002', 1, '0x' || repeat('a', 64), 100, '0', NOW() - INTERVAL '7 days', '0x' || repeat('0', 40), '0x' || repeat('b', 64), 'local', 0);
+-- Clear existing seed data
+DELETE FROM battlechainindexer_attack_registry.agreement_state_changed
+WHERE agreement_address IN (
+  '0xaaaa000000000000000000000000000000000003',
+  '0xaaaa000000000000000000000000000000000004',
+  '0xaaaa000000000000000000000000000000000005',
+  '0xaaaa000000000000000000000000000000000006',
+  '0xaaaa000000000000000000000000000000000007',
+  '0xaaaa000000000000000000000000000000000008',
+  '0xaaaa000000000000000000000000000000000009'
+);
 
--- 0x03: NEW_DEPLOYMENT with agreement
-INSERT INTO battlechainindexer_attack_registry.contract_state_changed
-  (target_contract, new_state, tx_hash, block_number, log_index, block_timestamp, contract_address, block_hash, network, tx_index)
-VALUES
-  ('0x0000000000000000000000000000000000000003', 1, '0x' || repeat('c', 64), 101, '0', NOW() - INTERVAL '6 days', '0x' || repeat('0', 40), '0x' || repeat('d', 64), 'local', 0);
+-- Reset the sequence for rindexer_id to avoid conflicts
+-- (We'll use explicit IDs starting from 1000 to avoid conflicts with real indexed data)
 
--- 0x04: NEW_DEPLOYMENT -> ATTACK_REQUESTED ("Warming Up")
-INSERT INTO battlechainindexer_attack_registry.contract_state_changed
-  (target_contract, new_state, tx_hash, block_number, log_index, block_timestamp, contract_address, block_hash, network, tx_index)
+-- 0xaaaa...0003: NEW_DEPLOYMENT only
+INSERT INTO battlechainindexer_attack_registry.agreement_state_changed
+  (rindexer_id, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp)
 VALUES
-  ('0x0000000000000000000000000000000000000004', 1, '0x' || repeat('e', 64), 102, '0', NOW() - INTERVAL '5 days', '0x' || repeat('0', 40), '0x' || repeat('f', 64), 'local', 0),
-  ('0x0000000000000000000000000000000000000004', 2, '0x' || repeat('1', 64), 103, '0', NOW() - INTERVAL '4 days', '0x' || repeat('0', 40), '0x' || repeat('2', 64), 'local', 0);
+  (1003, '0xaaaa000000000000000000000000000000000003', 1, '0x' || repeat('c', 64), 101, '0', NOW() - INTERVAL '6 days');
 
--- 0x05: NEW_DEPLOYMENT -> ATTACK_REQUESTED -> UNDER_ATTACK ("Attackable")
-INSERT INTO battlechainindexer_attack_registry.contract_state_changed
-  (target_contract, new_state, tx_hash, block_number, log_index, block_timestamp, contract_address, block_hash, network, tx_index)
+-- 0xaaaa...0004: NEW_DEPLOYMENT -> ATTACK_REQUESTED ("Warming Up")
+-- The tx_hash for ATTACK_REQUESTED (state=2) will be shown as "View transaction" link
+INSERT INTO battlechainindexer_attack_registry.agreement_state_changed
+  (rindexer_id, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp)
 VALUES
-  ('0x0000000000000000000000000000000000000005', 1, '0x' || repeat('3', 64), 104, '0', NOW() - INTERVAL '10 days', '0x' || repeat('0', 40), '0x' || repeat('4', 64), 'local', 0),
-  ('0x0000000000000000000000000000000000000005', 2, '0x' || repeat('5', 64), 105, '0', NOW() - INTERVAL '8 days', '0x' || repeat('0', 40), '0x' || repeat('6', 64), 'local', 0),
-  ('0x0000000000000000000000000000000000000005', 3, '0x5' || repeat('0', 63), 106, '0', NOW() - INTERVAL '3 days', '0x' || repeat('0', 40), '0x6' || repeat('0', 63), 'local', 0);
+  (1004, '0xaaaa000000000000000000000000000000000004', 1, '0x' || repeat('e', 64), 102, '0', NOW() - INTERVAL '5 days'),
+  (1005, '0xaaaa000000000000000000000000000000000004', 2, '0xabcd1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab', 103, '0', NOW() - INTERVAL '4 days');
 
--- 0x06: NEW_DEPLOYMENT -> ATTACK_REQUESTED -> UNDER_ATTACK -> PROMOTION_REQUESTED ("Promotion Pending")
-INSERT INTO battlechainindexer_attack_registry.contract_state_changed
-  (target_contract, new_state, tx_hash, block_number, log_index, block_timestamp, contract_address, block_hash, network, tx_index)
+-- 0xaaaa...0005: NEW_DEPLOYMENT -> ATTACK_REQUESTED -> UNDER_ATTACK ("Attackable")
+INSERT INTO battlechainindexer_attack_registry.agreement_state_changed
+  (rindexer_id, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp)
 VALUES
-  ('0x0000000000000000000000000000000000000006', 1, '0x' || repeat('7', 64), 107, '0', NOW() - INTERVAL '20 days', '0x' || repeat('0', 40), '0x' || repeat('8', 64), 'local', 0),
-  ('0x0000000000000000000000000000000000000006', 2, '0x' || repeat('9', 64), 108, '0', NOW() - INTERVAL '18 days', '0x' || repeat('0', 40), '0x' || repeat('a', 64), 'local', 0),
-  ('0x0000000000000000000000000000000000000006', 3, '0x91' || repeat('0', 62), 109, '0', NOW() - INTERVAL '10 days', '0x' || repeat('0', 40), '0xa1' || repeat('0', 62), 'local', 0),
-  ('0x0000000000000000000000000000000000000006', 4, '0x' || repeat('b', 64), 110, '0', NOW() - INTERVAL '2 days', '0x' || repeat('0', 40), '0x' || repeat('c', 64), 'local', 0);
+  (1006, '0xaaaa000000000000000000000000000000000005', 1, '0x' || repeat('3', 64), 104, '0', NOW() - INTERVAL '10 days'),
+  (1007, '0xaaaa000000000000000000000000000000000005', 2, '0x' || repeat('5', 64), 105, '0', NOW() - INTERVAL '8 days'),
+  (1008, '0xaaaa000000000000000000000000000000000005', 3, '0x5' || repeat('0', 63), 106, '0', NOW() - INTERVAL '3 days');
 
--- 0x07: Full lifecycle -> PRODUCTION (was under attack)
-INSERT INTO battlechainindexer_attack_registry.contract_state_changed
-  (target_contract, new_state, tx_hash, block_number, log_index, block_timestamp, contract_address, block_hash, network, tx_index)
+-- 0xaaaa...0006: NEW_DEPLOYMENT -> ATTACK_REQUESTED -> UNDER_ATTACK -> PROMOTION_REQUESTED ("Promotion Pending")
+INSERT INTO battlechainindexer_attack_registry.agreement_state_changed
+  (rindexer_id, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp)
 VALUES
-  ('0x0000000000000000000000000000000000000007', 1, '0x' || repeat('d', 64), 111, '0', NOW() - INTERVAL '30 days', '0x' || repeat('0', 40), '0x' || repeat('e', 64), 'local', 0),
-  ('0x0000000000000000000000000000000000000007', 2, '0xd1' || repeat('0', 62), 112, '0', NOW() - INTERVAL '28 days', '0x' || repeat('0', 40), '0xe1' || repeat('0', 62), 'local', 0),
-  ('0x0000000000000000000000000000000000000007', 3, '0xd2' || repeat('0', 62), 113, '0', NOW() - INTERVAL '21 days', '0x' || repeat('0', 40), '0xe2' || repeat('0', 62), 'local', 0),
-  ('0x0000000000000000000000000000000000000007', 4, '0xd3' || repeat('0', 62), 114, '0', NOW() - INTERVAL '10 days', '0x' || repeat('0', 40), '0xe3' || repeat('0', 62), 'local', 0),
-  ('0x0000000000000000000000000000000000000007', 5, '0x' || repeat('f', 64), 115, '0', NOW() - INTERVAL '7 days', '0x' || repeat('0', 40), '0x' || repeat('0', 64), 'local', 0);
+  (1009, '0xaaaa000000000000000000000000000000000006', 1, '0x' || repeat('7', 64), 107, '0', NOW() - INTERVAL '20 days'),
+  (1010, '0xaaaa000000000000000000000000000000000006', 2, '0x' || repeat('9', 64), 108, '0', NOW() - INTERVAL '18 days'),
+  (1011, '0xaaaa000000000000000000000000000000000006', 3, '0x91' || repeat('0', 62), 109, '0', NOW() - INTERVAL '10 days'),
+  (1012, '0xaaaa000000000000000000000000000000000006', 4, '0x' || repeat('b', 64), 110, '0', NOW() - INTERVAL '2 days');
 
--- 0x08: Direct to PRODUCTION (no attack history - used goToProduction())
-INSERT INTO battlechainindexer_attack_registry.contract_state_changed
-  (target_contract, new_state, tx_hash, block_number, log_index, block_timestamp, contract_address, block_hash, network, tx_index)
+-- 0xaaaa...0007: Full lifecycle -> PRODUCTION (was under attack)
+INSERT INTO battlechainindexer_attack_registry.agreement_state_changed
+  (rindexer_id, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp)
 VALUES
-  ('0x0000000000000000000000000000000000000008', 1, '0xf1' || repeat('0', 62), 116, '0', NOW() - INTERVAL '14 days', '0x' || repeat('0', 40), '0x01' || repeat('0', 62), 'local', 0),
-  ('0x0000000000000000000000000000000000000008', 5, '0xf2' || repeat('0', 62), 117, '0', NOW() - INTERVAL '7 days', '0x' || repeat('0', 40), '0x02' || repeat('0', 62), 'local', 0);
+  (1013, '0xaaaa000000000000000000000000000000000007', 1, '0x' || repeat('d', 64), 111, '0', NOW() - INTERVAL '30 days'),
+  (1014, '0xaaaa000000000000000000000000000000000007', 2, '0xd1' || repeat('0', 62), 112, '0', NOW() - INTERVAL '28 days'),
+  (1015, '0xaaaa000000000000000000000000000000000007', 3, '0xd2' || repeat('0', 62), 113, '0', NOW() - INTERVAL '21 days'),
+  (1016, '0xaaaa000000000000000000000000000000000007', 4, '0xd3' || repeat('0', 62), 114, '0', NOW() - INTERVAL '10 days'),
+  (1017, '0xaaaa000000000000000000000000000000000007', 5, '0x' || repeat('f', 64), 115, '0', NOW() - INTERVAL '7 days');
 
--- 0x09: CORRUPTED ("Compromised") - contract was successfully attacked
-INSERT INTO battlechainindexer_attack_registry.contract_state_changed
-  (target_contract, new_state, tx_hash, block_number, log_index, block_timestamp, contract_address, block_hash, network, tx_index)
+-- 0xaaaa...0008: Direct to PRODUCTION (no attack history - used goToProduction())
+INSERT INTO battlechainindexer_attack_registry.agreement_state_changed
+  (rindexer_id, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp)
 VALUES
-  ('0x0000000000000000000000000000000000000009', 1, '0xf3' || repeat('0', 62), 118, '0', NOW() - INTERVAL '15 days', '0x' || repeat('0', 40), '0x03' || repeat('0', 62), 'local', 0),
-  ('0x0000000000000000000000000000000000000009', 2, '0xf4' || repeat('0', 62), 119, '0', NOW() - INTERVAL '13 days', '0x' || repeat('0', 40), '0x04' || repeat('0', 62), 'local', 0),
-  ('0x0000000000000000000000000000000000000009', 3, '0xf5' || repeat('0', 62), 120, '0', NOW() - INTERVAL '10 days', '0x' || repeat('0', 40), '0x05' || repeat('0', 62), 'local', 0),
-  ('0x0000000000000000000000000000000000000009', 6, '0xf6' || repeat('0', 62), 121, '0', NOW() - INTERVAL '5 days', '0x' || repeat('0', 40), '0x06' || repeat('0', 62), 'local', 0);
+  (1018, '0xaaaa000000000000000000000000000000000008', 1, '0xf1' || repeat('0', 62), 116, '0', NOW() - INTERVAL '14 days'),
+  (1019, '0xaaaa000000000000000000000000000000000008', 5, '0xf2' || repeat('0', 62), 117, '0', NOW() - INTERVAL '7 days');
+
+-- 0xaaaa...0009: CORRUPTED ("Compromised") - agreement was successfully attacked
+INSERT INTO battlechainindexer_attack_registry.agreement_state_changed
+  (rindexer_id, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp)
+VALUES
+  (1020, '0xaaaa000000000000000000000000000000000009', 1, '0xf3' || repeat('0', 62), 118, '0', NOW() - INTERVAL '15 days'),
+  (1021, '0xaaaa000000000000000000000000000000000009', 2, '0xf4' || repeat('0', 62), 119, '0', NOW() - INTERVAL '13 days'),
+  (1022, '0xaaaa000000000000000000000000000000000009', 3, '0xf5' || repeat('0', 62), 120, '0', NOW() - INTERVAL '10 days'),
+  (1023, '0xaaaa000000000000000000000000000000000009', 6, '0xf6' || repeat('0', 62), 121, '0', NOW() - INTERVAL '5 days');
 
 -- ============================================
--- 3. Insert agreements (for contracts 0x03-0x09)
+-- 4. Insert agreements (for contracts 0x03-0x09)
 -- ============================================
 -- Clear existing seed agreements
 DELETE FROM battlechainindexer_agreement_factory.agreement_created
@@ -158,44 +158,7 @@ VALUES
   ('0xaaaa000000000000000000000000000000000009', '0x1111111111111111111111111111111111111111', '\x06', '0x' || repeat('7', 64), 118, '1', NOW() - INTERVAL '15 days', '0x' || repeat('0', 40), '0x03' || repeat('0', 62), 'local', 1);
 
 -- ============================================
--- 4. Create agreement_scope table and seed data (legacy, kept for compatibility)
--- ============================================
-CREATE TABLE IF NOT EXISTS battlechainindexer_agreement_factory.agreement_scope (
-  id SERIAL PRIMARY KEY,
-  agreement_address CHAR(42) NOT NULL,
-  contract_address CHAR(42) NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_agreement_scope_agreement
-  ON battlechainindexer_agreement_factory.agreement_scope(agreement_address);
-CREATE INDEX IF NOT EXISTS idx_agreement_scope_contract
-  ON battlechainindexer_agreement_factory.agreement_scope(contract_address);
-
--- Clear existing seed scope data
-DELETE FROM battlechainindexer_agreement_factory.agreement_scope
-WHERE contract_address IN (
-  '0x0000000000000000000000000000000000000003',
-  '0x0000000000000000000000000000000000000004',
-  '0x0000000000000000000000000000000000000005',
-  '0x0000000000000000000000000000000000000006',
-  '0x0000000000000000000000000000000000000007',
-  '0x0000000000000000000000000000000000000008',
-  '0x0000000000000000000000000000000000000009'
-);
-
--- Link agreements to contracts
-INSERT INTO battlechainindexer_agreement_factory.agreement_scope (agreement_address, contract_address)
-VALUES
-  ('0xaaaa000000000000000000000000000000000003', '0x0000000000000000000000000000000000000003'),
-  ('0xaaaa000000000000000000000000000000000004', '0x0000000000000000000000000000000000000004'),
-  ('0xaaaa000000000000000000000000000000000005', '0x0000000000000000000000000000000000000005'),
-  ('0xaaaa000000000000000000000000000000000006', '0x0000000000000000000000000000000000000006'),
-  ('0xaaaa000000000000000000000000000000000007', '0x0000000000000000000000000000000000000007'),
-  ('0xaaaa000000000000000000000000000000000008', '0x0000000000000000000000000000000000000008'),
-  ('0xaaaa000000000000000000000000000000000009', '0x0000000000000000000000000000000000000009');
-
--- ============================================
--- 5. Create agreement current state table (materialized view)
+-- 4. Create agreement current state table (materialized view)
 -- ============================================
 CREATE SCHEMA IF NOT EXISTS battlechainindexer_agreement;
 
@@ -246,7 +209,7 @@ CREATE INDEX IF NOT EXISTS idx_agreement_covered_contracts
   USING GIN (covered_contracts);
 
 -- ============================================
--- 6. Seed agreement current state with test data
+-- 5. Seed agreement current state with test data
 -- ============================================
 -- Clear existing seed data
 DELETE FROM battlechainindexer_agreement.agreement_current_state
@@ -403,7 +366,7 @@ VALUES (
 );
 
 -- ============================================
--- 7. Summary output
+-- 6. Summary output
 -- ============================================
 SELECT 'Seeding complete!' AS status;
 SELECT 'Contracts seeded:' AS info;
