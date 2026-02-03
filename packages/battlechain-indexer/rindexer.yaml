@@ -24,6 +24,7 @@ contracts:
       - AgreementStateChanged
       - ContractRegistered
       - AgreementOwnerAuthorized
+      - AttackModeratorTransferred
 
   # Agreement Factory - tracks new agreement deployments
   - name: AgreementFactory

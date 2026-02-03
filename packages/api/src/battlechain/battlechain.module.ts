@@ -7,6 +7,7 @@ import { AgreementCreated } from "./agreement.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
 import { AgreementAccount } from "./agreementAccount.entity";
 import { AgreementOwnerAuthorized } from "./agreementOwnerAuthorized.entity";
+import { AttackModeratorTransferred } from "./attackModeratorTransferred.entity";
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AgreementOwnerAuthorized } from "./agreementOwnerAuthorized.entity";
       AgreementCurrentState,
       AgreementAccount,
       AgreementOwnerAuthorized,
+      AttackModeratorTransferred,
     ]),
   ],
   controllers: [BattlechainController],

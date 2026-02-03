@@ -8,6 +8,7 @@ import {
   AgreementByContractDto,
   AuthorizedOwnerDto,
   AuthorizedOwnersResponseDto,
+  AttackModeratorDto,
 } from "./battlechain.dto";
 import { ParseAddressPipe } from "../common/pipes/parseAddress.pipe";
 
@@ -135,5 +136,29 @@ export class BattlechainController {
     }
 
     return response;
+  }
+
+  @Get("attack-moderator/:agreementAddress")
+  @ApiParam({
+    name: "agreementAddress",
+    type: "string",
+    description: "Agreement address to get the attack moderator for",
+    example: "0x1234567890123456789012345678901234567890",
+  })
+  @ApiOkResponse({
+    description:
+      "Returns the current attack moderator for the agreement. The attack moderator can call promote() and cancelPromotion().",
+    type: AttackModeratorDto,
+  })
+  @ApiBadRequestResponse({ description: "Invalid address format" })
+  @ApiNotFoundResponse({ description: "Agreement not found" })
+  async getAttackModerator(
+    @Param("agreementAddress", new ParseAddressPipe()) agreementAddress: string
+  ): Promise<AttackModeratorDto> {
+    const result = await this.battlechainService.getAttackModerator(agreementAddress);
+    if (!result) {
+      throw new NotFoundException("Agreement not found");
+    }
+    return result;
   }
 }

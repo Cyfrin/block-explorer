@@ -292,3 +292,17 @@ export class AuthorizedOwnerDto {
 export class AuthorizedOwnersResponseDto {
   [contractAddress: string]: AuthorizedOwnerDto;
 }
+
+export class AttackModeratorDto {
+  @ApiProperty({
+    description: "The current attack moderator address for this agreement",
+    example: "0x1234567890123456789012345678901234567890",
+  })
+  attackModerator: string;
+
+  @ApiProperty({
+    description: "Whether the attack moderator was transferred from the original owner",
+    example: false,
+  })
+  wasTransferred: boolean;
+}

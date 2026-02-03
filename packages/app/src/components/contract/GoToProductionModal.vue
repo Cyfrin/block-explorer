@@ -4,6 +4,7 @@
       ref="contentRef"
       :contract-address="contractAddress"
       :agreement-address="agreementAddress"
+      :mode="mode"
       @close="handleClose"
       @success="handleSuccess"
     />
@@ -17,6 +18,8 @@ import Popup from "@/components/common/Popup.vue";
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- Component used in template
 import GoToProductionContent from "@/components/contract/GoToProductionContent.vue";
 
+import type { PropType } from "vue";
+
 const props = defineProps({
   isOpen: {
     type: Boolean,
@@ -29,6 +32,11 @@ const props = defineProps({
   agreementAddress: {
     type: String,
     required: true,
+  },
+  // Mode: 'skip' for skipping attackable phase, 'promote' for requesting promotion after attackable
+  mode: {
+    type: String as PropType<"skip" | "promote">,
+    default: "skip",
   },
 });
 

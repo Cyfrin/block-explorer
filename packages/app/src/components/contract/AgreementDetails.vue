@@ -52,6 +52,26 @@
       <!-- State Description -->
       <p v-if="showStateBanner" class="state-description">{{ stateBannerDescription }}</p>
 
+      <!-- Request Promotion Button - only for UNDER_ATTACK state, attack moderators -->
+      <button
+        v-if="isUnderAttack && !isPromotionPending && isAttackModerator"
+        type="button"
+        class="request-promotion-button"
+        @click="$emit('request-promotion')"
+      >
+        {{ t("safeHarbor.requestPromotionButton") }}
+      </button>
+
+      <!-- Cancel Promotion Button - only for PROMOTION_REQUESTED state, attack moderators -->
+      <button
+        v-if="isPromotionPending && isAttackModerator"
+        type="button"
+        class="cancel-promotion-button"
+        @click="$emit('cancel-promotion')"
+      >
+        {{ t("safeHarbor.cancelPromotionButton") }}
+      </button>
+
       <!-- Commitment Window Status (inline) -->
       <div class="header-meta">
         <EditableSection
@@ -334,6 +354,7 @@ import CoveredContractsForm from "@/components/contract/CoveredContractsForm.vue
 import EditableSection from "@/components/contract/EditableSection.vue";
 
 import useAgreementEditing, { type EditSection } from "@/composables/useAgreementEditing";
+import useAttackModerator from "@/composables/useAttackModerator";
 
 import type { BountyTermsFormData } from "@/components/contract/BountyTermsForm.vue";
 import type { CoveredContractsChange } from "@/components/contract/CoveredContractsForm.vue";
@@ -447,13 +468,23 @@ const stateBadgeColor = computed((): "warning" | "success" | "neutral" | "error"
 const emit = defineEmits<{
   (e: "agreementUpdated"): void;
   (e: "connectWallet"): void;
+  (e: "request-promotion"): void;
+  (e: "cancel-promotion"): void;
 }>();
 
-// Ownership check
+// Ownership check (for editing agreement terms)
 const isOwner = computed(() => {
   if (!props.owner || !props.walletAddress) return false;
   return props.owner.toLowerCase() === props.walletAddress.toLowerCase();
 });
+
+// Attack moderator check (for promote/cancel promotion actions)
+const agreementAddressRef = computed(() => props.agreement.agreementAddress);
+const walletAddressRef = computed(() => props.walletAddress);
+const { isAttackModerator, isLoading: isAttackModeratorLoading } = useAttackModerator(
+  agreementAddressRef,
+  walletAddressRef
+);
 
 // Check if terms are currently locked (in commitment window)
 const isTermsLocked = computed(() => {
@@ -488,7 +519,6 @@ const canSaveBountyTerms = computed(() => {
 const commitmentWindowFormRef = ref<{ hasErrors: boolean } | null>(null);
 
 // Edit state management
-const agreementAddressRef = computed(() => props.agreement.agreementAddress);
 const {
   activeSection,
   isSaving,
@@ -786,6 +816,28 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
       @apply mt-3 border-t pt-3 text-sm leading-relaxed;
       border-color: var(--border-subtle);
       color: var(--text-secondary);
+    }
+
+    .request-promotion-button {
+      @apply mt-3 rounded-md px-4 py-2 text-sm font-medium;
+      background-color: var(--accent);
+      color: white;
+
+      &:hover {
+        background-color: var(--accent-hover);
+      }
+    }
+
+    .cancel-promotion-button {
+      @apply mt-3 rounded-md border px-4 py-2 text-sm font-medium;
+      border-color: var(--border-default);
+      background-color: transparent;
+      color: var(--text-secondary);
+
+      &:hover {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
     }
 
     .header-meta {

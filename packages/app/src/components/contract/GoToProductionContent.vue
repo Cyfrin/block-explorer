@@ -2,7 +2,7 @@
   <div class="go-to-production-content">
     <!-- Header -->
     <div class="modal-header">
-      <h2 class="modal-title">{{ t("goToProduction.title") }}</h2>
+      <h2 class="modal-title">{{ modalTitle }}</h2>
       <button type="button" class="close-button" @click="$emit('close')">
         <XIcon class="close-icon" />
       </button>
@@ -12,21 +12,22 @@
     <div class="modal-content">
       <!-- Confirmation state -->
       <template v-if="!currentTxHash">
-        <div class="warning-banner">
-          <ExclamationIcon class="warning-icon" />
+        <div class="warning-banner" :class="{ 'info-banner': mode === 'promote' }">
+          <ExclamationIcon v-if="mode === 'skip'" class="warning-icon" />
+          <InformationCircleIcon v-else class="info-icon" />
           <div class="warning-text">
-            <p class="warning-title">{{ t("goToProduction.warningTitle") }}</p>
-            <p class="warning-description">{{ t("goToProduction.warningDescription") }}</p>
+            <p class="warning-title">{{ warningTitle }}</p>
+            <p class="warning-description">{{ warningDescription }}</p>
           </div>
         </div>
 
         <!-- Contracts affected section -->
         <div class="contracts-affected">
           <h3 class="section-title">
-            {{ t("goToProduction.contractsAffectedTitle", coveredAccountsCount) }}
+            {{ contractsAffectedTitle }}
           </h3>
           <p class="section-description">
-            {{ t("goToProduction.contractsAffectedDescription") }}
+            {{ contractsAffectedDescription }}
           </p>
 
           <ul class="contracts-list">
@@ -42,8 +43,8 @@
           </ul>
         </div>
 
-        <!-- Authorization Warning -->
-        <div v-if="!isAuthLoading && !isAuthorizedForAll" class="auth-warning">
+        <!-- Authorization Warning - only shown for skip mode (goToProduction requires authorized owner of all contracts) -->
+        <div v-if="mode === 'skip' && !isAuthLoading && !isAuthorizedForAll" class="auth-warning">
           <ExclamationCircleIcon class="auth-warning-icon" />
           <div class="auth-warning-text">
             <p class="auth-warning-title">{{ t("authorization.notAuthorizedForAll") }}</p>
@@ -71,12 +72,12 @@
         <div class="success-banner">
           <CheckCircleIcon class="success-icon" />
           <div class="success-text">
-            <p class="success-title">{{ t("goToProduction.successTitle") }}</p>
-            <p class="success-description">{{ t("goToProduction.successDescription") }}</p>
+            <p class="success-title">{{ successTitle }}</p>
+            <p class="success-description">{{ successDescription }}</p>
           </div>
         </div>
         <a :href="txLink" target="_blank" class="tx-link">
-          {{ t("goToProduction.viewTransaction") }}
+          {{ viewTransactionText }}
           <ExternalLinkIcon class="external-icon" />
         </a>
       </template>
@@ -90,12 +91,12 @@
         </button>
         <button
           type="button"
-          class="btn-danger"
-          :disabled="currentIsProcessing || isAuthLoading || !isAuthorizedForAll"
+          :class="mode === 'skip' ? 'btn-danger' : 'btn-primary'"
+          :disabled="currentIsProcessing || (mode === 'skip' && (isAuthLoading || !isAuthorizedForAll))"
           @click="handleConfirm"
         >
           <span v-if="currentIsProcessing" class="loading-spinner" />
-          {{ currentIsProcessing ? t("common.processing") : t("goToProduction.confirmButton") }}
+          {{ currentIsProcessing ? t("common.processing") : confirmButtonText }}
         </button>
       </template>
       <template v-else>
@@ -111,13 +112,14 @@
 import { computed, onMounted, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { ExclamationIcon } from "@heroicons/vue/outline";
+import { ExclamationIcon, InformationCircleIcon } from "@heroicons/vue/outline";
 import { CheckCircleIcon, ExclamationCircleIcon, ExternalLinkIcon, XIcon } from "@heroicons/vue/solid";
 
 import useAgreementDetails from "@/composables/useAgreementDetails";
 import useContext from "@/composables/useContext";
 import { fetchAuthorizedOwners } from "@/composables/useContractAuthorization";
 import useGoToProduction from "@/composables/useGoToProduction";
+import useRequestPromotion from "@/composables/useRequestPromotion";
 
 import type { PropType } from "vue";
 
@@ -132,6 +134,11 @@ const props = defineProps({
   agreementAddress: {
     type: String,
     required: true,
+  },
+  // Mode: 'skip' for skipping attackable phase, 'promote' for requesting promotion after attackable
+  mode: {
+    type: String as PropType<"skip" | "promote">,
+    default: "skip",
   },
   // Override props for Storybook
   overrideProcessing: {
@@ -161,7 +168,65 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const context = useContext();
 
-const { isProcessing, error, txHash, goToProduction, reset } = useGoToProduction();
+// Use the appropriate composable based on mode
+const skipComposable = useGoToProduction();
+const promoteComposable = useRequestPromotion();
+
+// Mode-specific computed properties for text
+const modalTitle = computed(() => (props.mode === "skip" ? t("goToProduction.title") : t("requestPromotion.title")));
+
+const warningTitle = computed(() =>
+  props.mode === "skip" ? t("goToProduction.warningTitle") : t("requestPromotion.warningTitle")
+);
+
+const warningDescription = computed(() =>
+  props.mode === "skip" ? t("goToProduction.warningDescription") : t("requestPromotion.warningDescription")
+);
+
+const contractsAffectedTitle = computed(() =>
+  props.mode === "skip"
+    ? t("goToProduction.contractsAffectedTitle", coveredAccountsCount.value)
+    : t("requestPromotion.contractsAffectedTitle", coveredAccountsCount.value)
+);
+
+const contractsAffectedDescription = computed(() =>
+  props.mode === "skip"
+    ? t("goToProduction.contractsAffectedDescription")
+    : t("requestPromotion.contractsAffectedDescription")
+);
+
+const confirmButtonText = computed(() =>
+  props.mode === "skip" ? t("goToProduction.confirmButton") : t("requestPromotion.confirmButton")
+);
+
+const successTitle = computed(() =>
+  props.mode === "skip" ? t("goToProduction.successTitle") : t("requestPromotion.successTitle")
+);
+
+const successDescription = computed(() =>
+  props.mode === "skip" ? t("goToProduction.successDescription") : t("requestPromotion.successDescription")
+);
+
+const viewTransactionText = computed(() =>
+  props.mode === "skip" ? t("goToProduction.viewTransaction") : t("requestPromotion.viewTransaction")
+);
+
+// Unified state from the appropriate composable
+const isProcessing = computed(() =>
+  props.mode === "skip" ? skipComposable.isProcessing.value : promoteComposable.isProcessing.value
+);
+
+const error = computed(() => (props.mode === "skip" ? skipComposable.error.value : promoteComposable.error.value));
+
+const txHash = computed(() => (props.mode === "skip" ? skipComposable.txHash.value : promoteComposable.txHash.value));
+
+const reset = () => {
+  if (props.mode === "skip") {
+    skipComposable.reset();
+  } else {
+    promoteComposable.reset();
+  }
+};
 
 // Wallet state
 const walletAddress = ref<string | null>(null);
@@ -255,7 +320,12 @@ const txLink = computed(() => {
 const handleConfirm = async () => {
   // Skip actual request if using overrides (Storybook mode)
   if (props.overrideProcessing !== undefined) return;
-  await goToProduction(props.agreementAddress);
+
+  if (props.mode === "skip") {
+    await skipComposable.goToProduction(props.agreementAddress);
+  } else {
+    await promoteComposable.requestPromotion(props.agreementAddress);
+  }
 };
 
 const handleReset = () => {
@@ -346,11 +416,21 @@ onMounted(async () => {
   @apply flex gap-3 rounded-lg border p-4;
   border-color: var(--warning-border, var(--border-default));
   background-color: var(--warning-bg, var(--bg-secondary));
+
+  &.info-banner {
+    border-color: var(--info-border, var(--border-default));
+    background-color: var(--info-bg, var(--bg-secondary));
+  }
 }
 
 .warning-icon {
   @apply h-5 w-5 shrink-0;
   color: var(--warning, #f59e0b);
+}
+
+.info-icon {
+  @apply h-5 w-5 shrink-0;
+  color: var(--info, #3b82f6);
 }
 
 .warning-text {

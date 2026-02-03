@@ -102,6 +102,8 @@
                 :contract-state="contractState"
                 @agreement-updated="handleAgreementUpdated"
                 @connect-wallet="connectWallet"
+                @request-promotion="openRequestPromotionModal"
+                @cancel-promotion="openCancelPromotionModal"
               />
             </template>
             <NoAgreementWarning
@@ -132,6 +134,24 @@
       @close="closeGoToProductionModal"
       @success="handleGoToProductionSuccess"
     />
+
+    <!-- Request Promotion Modal (uses GoToProductionModal with mode="promote") -->
+    <GoToProductionModal
+      :is-open="showRequestPromotionModal"
+      :contract-address="contractAddress"
+      :agreement-address="agreement?.agreementAddress ?? ''"
+      mode="promote"
+      @close="closeRequestPromotionModal"
+      @success="handleRequestPromotionSuccess"
+    />
+
+    <!-- Cancel Promotion Modal -->
+    <CancelPromotionModal
+      :is-open="showCancelPromotionModal"
+      :agreement-address="agreement?.agreementAddress ?? ''"
+      @close="closeCancelPromotionModal"
+      @success="handleCancelPromotionSuccess"
+    />
   </div>
 </template>
 <script lang="ts" setup>
@@ -150,6 +170,7 @@ import Tabs from "@/components/common/Tabs.vue";
 import Title from "@/components/common/Title.vue";
 import ContentLoader from "@/components/common/loaders/ContentLoader.vue";
 import AgreementDetails from "@/components/contract/AgreementDetails.vue";
+import CancelPromotionModal from "@/components/contract/CancelPromotionModal.vue";
 import ContractInfoTab from "@/components/contract/ContractInfoTab.vue";
 import GoToProductionModal from "@/components/contract/GoToProductionModal.vue";
 import ContractInfoTable from "@/components/contract/InfoTable.vue";
@@ -277,6 +298,40 @@ const closeGoToProductionModal = () => {
 const handleGoToProductionSuccess = () => {
   showGoToProductionModal.value = false;
   // Refetch contract state after successful transition to production
+  fetchContractState();
+};
+
+// Request Promotion modal state
+const showRequestPromotionModal = ref(false);
+
+const openRequestPromotionModal = () => {
+  showRequestPromotionModal.value = true;
+};
+
+const closeRequestPromotionModal = () => {
+  showRequestPromotionModal.value = false;
+};
+
+const handleRequestPromotionSuccess = () => {
+  showRequestPromotionModal.value = false;
+  // Refetch contract state after successful promotion request
+  fetchContractState();
+};
+
+// Cancel Promotion modal state
+const showCancelPromotionModal = ref(false);
+
+const openCancelPromotionModal = () => {
+  showCancelPromotionModal.value = true;
+};
+
+const closeCancelPromotionModal = () => {
+  showCancelPromotionModal.value = false;
+};
+
+const handleCancelPromotionSuccess = () => {
+  showCancelPromotionModal.value = false;
+  // Refetch contract state after canceling promotion (returns to UNDER_ATTACK)
   fetchContractState();
 };
 

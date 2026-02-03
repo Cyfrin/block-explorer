@@ -163,16 +163,17 @@ WHERE agreement_address IN (
   '0xaaaa000000000000000000000000000000000009'
 );
 
+-- Using Anvil test address as owner so it becomes the attack moderator
 INSERT INTO battlechainindexer_agreement_factory.agreement_created
   (agreement_address, owner, salt, tx_hash, block_number, log_index, block_timestamp, contract_address, block_hash, network, tx_index)
 VALUES
-  ('0xaaaa000000000000000000000000000000000003', '0x1111111111111111111111111111111111111111', '\x00', '0x' || repeat('1', 64), 101, '1', NOW() - INTERVAL '6 days', '0x' || repeat('0', 40), '0x' || repeat('d', 64), 'local', 1),
-  ('0xaaaa000000000000000000000000000000000004', '0x1111111111111111111111111111111111111111', '\x01', '0x' || repeat('2', 64), 102, '1', NOW() - INTERVAL '5 days', '0x' || repeat('0', 40), '0x' || repeat('f', 64), 'local', 1),
-  ('0xaaaa000000000000000000000000000000000005', '0x1111111111111111111111111111111111111111', '\x02', '0x' || repeat('3', 64), 104, '1', NOW() - INTERVAL '10 days', '0x' || repeat('0', 40), '0x' || repeat('4', 64), 'local', 1),
-  ('0xaaaa000000000000000000000000000000000006', '0x1111111111111111111111111111111111111111', '\x03', '0x' || repeat('4', 64), 107, '1', NOW() - INTERVAL '20 days', '0x' || repeat('0', 40), '0x' || repeat('8', 64), 'local', 1),
-  ('0xaaaa000000000000000000000000000000000007', '0x1111111111111111111111111111111111111111', '\x04', '0x' || repeat('5', 64), 111, '1', NOW() - INTERVAL '30 days', '0x' || repeat('0', 40), '0x' || repeat('e', 64), 'local', 1),
-  ('0xaaaa000000000000000000000000000000000008', '0x1111111111111111111111111111111111111111', '\x05', '0x' || repeat('6', 64), 116, '1', NOW() - INTERVAL '14 days', '0x' || repeat('0', 40), '0x01' || repeat('0', 62), 'local', 1),
-  ('0xaaaa000000000000000000000000000000000009', '0x1111111111111111111111111111111111111111', '\x06', '0x' || repeat('7', 64), 118, '1', NOW() - INTERVAL '15 days', '0x' || repeat('0', 40), '0x03' || repeat('0', 62), 'local', 1);
+  ('0xaaaa000000000000000000000000000000000003', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x00', '0x' || repeat('1', 64), 101, '1', NOW() - INTERVAL '6 days', '0x' || repeat('0', 40), '0x' || repeat('d', 64), 'local', 1),
+  ('0xaaaa000000000000000000000000000000000004', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x01', '0x' || repeat('2', 64), 102, '1', NOW() - INTERVAL '5 days', '0x' || repeat('0', 40), '0x' || repeat('f', 64), 'local', 1),
+  ('0xaaaa000000000000000000000000000000000005', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x02', '0x' || repeat('3', 64), 104, '1', NOW() - INTERVAL '10 days', '0x' || repeat('0', 40), '0x' || repeat('4', 64), 'local', 1),
+  ('0xaaaa000000000000000000000000000000000006', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x03', '0x' || repeat('4', 64), 107, '1', NOW() - INTERVAL '20 days', '0x' || repeat('0', 40), '0x' || repeat('8', 64), 'local', 1),
+  ('0xaaaa000000000000000000000000000000000007', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x04', '0x' || repeat('5', 64), 111, '1', NOW() - INTERVAL '30 days', '0x' || repeat('0', 40), '0x' || repeat('e', 64), 'local', 1),
+  ('0xaaaa000000000000000000000000000000000008', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x05', '0x' || repeat('6', 64), 116, '1', NOW() - INTERVAL '14 days', '0x' || repeat('0', 40), '0x01' || repeat('0', 62), 'local', 1),
+  ('0xaaaa000000000000000000000000000000000009', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x06', '0x' || repeat('7', 64), 118, '1', NOW() - INTERVAL '15 days', '0x' || repeat('0', 40), '0x03' || repeat('0', 62), 'local', 1);
 
 -- ============================================
 -- 4. Create agreement current state table (materialized view)
@@ -243,6 +244,7 @@ WHERE agreement_address IN (
 -- Insert test agreement states with full details
 
 -- Agreement for 0x03: NEW_DEPLOYMENT with full agreement details
+-- Owner is Anvil test address (also the attack moderator)
 INSERT INTO battlechainindexer_agreement.agreement_current_state (
   agreement_address, owner, created_at_block, created_at,
   protocol_name, agreement_uri, bounty_percentage, bounty_cap_usd,
@@ -252,7 +254,7 @@ INSERT INTO battlechainindexer_agreement.agreement_current_state (
 )
 VALUES (
   '0xaaaa000000000000000000000000000000000003',
-  '0x1111111111111111111111111111111111111111',
+  '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
   101, NOW() - INTERVAL '6 days',
   'Test Protocol Alpha', 'ipfs://QmTestHash123456789', 10, 5000000,
   false, 0, NULL, 10000000,
@@ -272,7 +274,7 @@ INSERT INTO battlechainindexer_agreement.agreement_current_state (
 )
 VALUES (
   '0xaaaa000000000000000000000000000000000004',
-  '0x1111111111111111111111111111111111111111',
+  '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
   102, NOW() - INTERVAL '5 days',
   'Vault Finance', 'ar://ArweaveHashXYZ789', 15, 10000000,
   true, 1, NULL, 0,
@@ -292,7 +294,7 @@ INSERT INTO battlechainindexer_agreement.agreement_current_state (
 )
 VALUES (
   '0xaaaa000000000000000000000000000000000005',
-  '0x1111111111111111111111111111111111111111',
+  '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
   104, NOW() - INTERVAL '10 days',
   'DeFi Lending Pool', 'https://example.com/agreement.pdf', 20, 25000000,
   false, 2, 'Must provide valid government ID and proof of address', 50000000,
@@ -312,7 +314,7 @@ INSERT INTO battlechainindexer_agreement.agreement_current_state (
 )
 VALUES (
   '0xaaaa000000000000000000000000000000000006',
-  '0x1111111111111111111111111111111111111111',
+  '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
   107, NOW() - INTERVAL '20 days',
   'Staking Protocol', 'ipfs://QmStakingProtocolAgreement', 12, 8000000,
   false, 0, NULL, 0,
@@ -332,7 +334,7 @@ INSERT INTO battlechainindexer_agreement.agreement_current_state (
 )
 VALUES (
   '0xaaaa000000000000000000000000000000000007',
-  '0x1111111111111111111111111111111111111111',
+  '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
   111, NOW() - INTERVAL '30 days',
   'Battle-Tested DEX', 'ipfs://QmBattleTestedDEX', 10, 15000000,
   false, 1, NULL, 30000000,
@@ -352,7 +354,7 @@ INSERT INTO battlechainindexer_agreement.agreement_current_state (
 )
 VALUES (
   '0xaaaa000000000000000000000000000000000008',
-  '0x1111111111111111111111111111111111111111',
+  '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
   116, NOW() - INTERVAL '14 days',
   'Multi-Sig Treasury', NULL, 5, 1000000,
   false, 1, NULL, 5000000,
@@ -372,7 +374,7 @@ INSERT INTO battlechainindexer_agreement.agreement_current_state (
 )
 VALUES (
   '0xaaaa000000000000000000000000000000000009',
-  '0x1111111111111111111111111111111111111111',
+  '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
   118, NOW() - INTERVAL '15 days',
   'Vulnerable Protocol', 'ipfs://QmVulnerableProtocol', 10, 5000000,
   false, 0, NULL, 10000000,
@@ -528,7 +530,30 @@ VALUES
   (2007, '0x2222222222222222222222222222222222222222', '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc', '0x' || repeat('b', 64), 101, '2', NOW() - INTERVAL '5 days');
 
 -- ============================================
--- 8. Summary output
+-- 8. Create attack_moderator_transferred table (for tracking moderator transfers)
+-- ============================================
+-- This table tracks when attack moderator role is transferred for an agreement.
+-- The initial attack moderator equals the Agreement owner at registration time.
+-- This table only tracks subsequent transfers via transferAttackModerator().
+
+CREATE TABLE IF NOT EXISTS battlechainindexer_attack_registry.attack_moderator_transferred (
+  rindexer_id INT PRIMARY KEY,
+  agreement_address CHAR(42) NOT NULL,
+  new_moderator CHAR(42) NOT NULL,
+  tx_hash CHAR(66) NOT NULL,
+  block_number NUMERIC NOT NULL,
+  log_index VARCHAR(78) NOT NULL,
+  block_timestamp TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_attack_moderator_transferred_agreement
+  ON battlechainindexer_attack_registry.attack_moderator_transferred(agreement_address);
+
+-- No seed data needed - if no records exist, the API falls back to agreement owner
+-- which is the correct initial attack moderator
+
+-- ============================================
+-- 9. Summary output
 -- ============================================
 SELECT 'Seeding complete!' AS status;
 SELECT 'Contracts seeded:' AS info;

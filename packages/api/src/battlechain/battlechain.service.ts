@@ -6,7 +6,15 @@ import { AgreementCreated } from "./agreement.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
 import { AgreementAccount } from "./agreementAccount.entity";
 import { AgreementOwnerAuthorized } from "./agreementOwnerAuthorized.entity";
-import { ContractState, ContractStateInfoDto, AgreementDto, IdentityRequirement, CoveredAccountDto } from "./battlechain.dto";
+import { AttackModeratorTransferred } from "./attackModeratorTransferred.entity";
+import {
+  ContractState,
+  ContractStateInfoDto,
+  AgreementDto,
+  IdentityRequirement,
+  CoveredAccountDto,
+  AttackModeratorDto,
+} from "./battlechain.dto";
 import { PROMOTION_WINDOW_MS, PROMOTION_DELAY_MS } from "./battlechain.constants";
 
 @Injectable()
@@ -25,7 +33,9 @@ export class BattlechainService {
     @InjectRepository(AgreementAccount)
     private readonly agreementAccountRepository: Repository<AgreementAccount>,
     @InjectRepository(AgreementOwnerAuthorized)
-    private readonly agreementOwnerAuthorizedRepository: Repository<AgreementOwnerAuthorized>
+    private readonly agreementOwnerAuthorizedRepository: Repository<AgreementOwnerAuthorized>,
+    @InjectRepository(AttackModeratorTransferred)
+    private readonly attackModeratorTransferredRepository: Repository<AttackModeratorTransferred>
   ) {}
 
   /**
@@ -366,5 +376,50 @@ export class BattlechainService {
     }
 
     return results;
+  }
+
+  /**
+   * Get the current attack moderator for an agreement.
+   *
+   * The attack moderator is initially set to the Agreement owner when the agreement
+   * is registered in the AttackRegistry. It can be transferred via transferAttackModerator().
+   *
+   * Logic:
+   * 1. Check for any AttackModeratorTransferred events (most recent wins)
+   * 2. If no transfers, fall back to the Agreement owner (initial moderator)
+   *
+   * @returns AttackModeratorDto with the current moderator address and transfer status
+   */
+  async getAttackModerator(agreementAddress: string): Promise<AttackModeratorDto | null> {
+    const normalizedAddress = agreementAddress.toLowerCase();
+
+    // First, check if there have been any moderator transfers
+    const latestTransfer = await this.attackModeratorTransferredRepository.findOne({
+      where: { agreementAddress: normalizedAddress },
+      order: { blockNumber: "DESC", rindexerId: "DESC" },
+    });
+
+    if (latestTransfer) {
+      // Moderator was transferred, use the new moderator
+      return {
+        attackModerator: latestTransfer.newModerator,
+        wasTransferred: true,
+      };
+    }
+
+    // No transfers - initial moderator equals the Agreement owner at registration time
+    // Get the agreement to find its owner
+    const agreement = await this.agreementStateRepository.findOne({
+      where: { agreementAddress: normalizedAddress },
+    });
+
+    if (!agreement) {
+      return null;
+    }
+
+    return {
+      attackModerator: agreement.owner,
+      wasTransferred: false,
+    };
   }
 }

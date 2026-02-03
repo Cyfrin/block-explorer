@@ -809,6 +809,8 @@
     "safeHarbor": "Safe Harbor"
   },
   "safeHarbor": {
+    "requestPromotionButton": "Request Promotion to Production",
+    "cancelPromotionButton": "Cancel Promotion",
     "bounty": "Bounty",
     "cap": "Cap",
     "anonymousAllowed": "Anonymous OK",
@@ -1056,6 +1058,26 @@
     "confirmButton": "Go to Production",
     "successTitle": "Contract is now in Production!",
     "successDescription": "Your contract has been moved to production mode and is no longer available for ethical hacking.",
+    "viewTransaction": "View transaction"
+  },
+  "requestPromotion": {
+    "title": "Request Promotion",
+    "warningTitle": "Exit Attackable Mode?",
+    "warningDescription": "Requesting promotion will start a 3-day waiting period. During this time, your contract remains attackable and whitehats can continue testing. After the delay, your contract will move to Production.",
+    "contractsAffectedTitle": "{count} contract will be promoted | {count} contracts will be promoted",
+    "contractsAffectedDescription": "The following contracts will exit Attackable mode after the 3-day delay.",
+    "confirmButton": "Request Promotion",
+    "successTitle": "Promotion Requested!",
+    "successDescription": "Your contract will move to Production in 3 days. During this time, it remains in Attackable mode and whitehats can continue testing.",
+    "viewTransaction": "View transaction"
+  },
+  "cancelPromotion": {
+    "title": "Cancel Promotion",
+    "infoTitle": "Return to Attackable Mode?",
+    "infoDescription": "Canceling the promotion will return your contract to Attackable mode. Whitehats will be able to continue testing your contract under Safe Harbor protection.",
+    "confirmButton": "Cancel Promotion",
+    "successTitle": "Promotion Canceled",
+    "successDescription": "Your contract has returned to Attackable mode and is open for ethical hacking.",
     "viewTransaction": "View transaction"
   },
   "requestAttackableMode": {
