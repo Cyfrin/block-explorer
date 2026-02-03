@@ -27,9 +27,12 @@
             <span class="detail-label">{{ t("safeHarbor.cap") }}:</span>
             <span class="detail-value">{{ formattedBountyCap }}</span>
           </span>
-          <span v-if="allowsAnonymous" class="detail-item anonymous-allowed">
-            {{ t("safeHarbor.anonymousAllowed") }}
-          </span>
+          <Tooltip class="identity-tooltip">
+            <span class="detail-item identity-requirement">
+              {{ identityRequirementLabel }}
+            </span>
+            <template #content>{{ identityRequirementTooltip }}</template>
+          </Tooltip>
         </div>
       </template>
       <template v-else>
@@ -51,6 +54,7 @@ import { ClockIcon } from "@heroicons/vue/outline";
 import { ChevronRightIcon, ExclamationCircleIcon, ShieldCheckIcon, ShieldExclamationIcon } from "@heroicons/vue/solid";
 
 import Badge from "@/components/common/Badge.vue";
+import Tooltip from "@/components/common/Tooltip.vue";
 
 import type { SafeHarborAgreement } from "@/types";
 import type { PropType } from "vue";
@@ -97,10 +101,32 @@ const formattedBountyCap = computed(() => {
   return cap.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 });
 
-// Anonymous whitehats are allowed if identityRequirement is "Anonymous" or not set
-const allowsAnonymous = computed(() => {
-  if (!props.agreement) return false;
-  return props.agreement.identityRequirement === "Anonymous" || props.agreement.identityRequirement === undefined;
+// Identity requirement label for display
+const identityRequirementLabel = computed(() => {
+  if (!props.agreement) return "";
+  switch (props.agreement.identityRequirement) {
+    case "Named":
+      return t("safeHarbor.identityNamed");
+    case "Pseudonymous":
+      return t("safeHarbor.identityPseudonymous");
+    case "Anonymous":
+    default:
+      return t("safeHarbor.anonymousAllowed");
+  }
+});
+
+// Identity requirement tooltip for explanation
+const identityRequirementTooltip = computed(() => {
+  if (!props.agreement) return "";
+  switch (props.agreement.identityRequirement) {
+    case "Named":
+      return t("safeHarbor.identityNamedTooltip");
+    case "Pseudonymous":
+      return t("safeHarbor.identityPseudonymousTooltip");
+    case "Anonymous":
+    default:
+      return t("safeHarbor.anonymousAllowedTooltip");
+  }
 });
 </script>
 
@@ -194,8 +220,13 @@ const allowsAnonymous = computed(() => {
     color: var(--text-secondary);
   }
 
-  .anonymous-allowed {
-    color: var(--success-text);
+  .identity-tooltip {
+    width: fit-content;
+  }
+
+  .identity-requirement {
+    cursor: help;
+    border-bottom: 1px dotted currentColor;
   }
 
   .view-details-link {

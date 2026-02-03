@@ -36,12 +36,21 @@ const mockAgreement: SafeHarborAgreement = {
   coveredContracts: ["0xabcdef1234567890abcdef1234567890abcdef12"],
 };
 
-const mockAgreementNoCap: SafeHarborAgreement = {
+const mockAgreementNamed: SafeHarborAgreement = {
   agreementAddress: "0x1234567890123456789012345678901234567890",
-  protocolName: "Small Protocol",
+  protocolName: "KYC Protocol",
   bountyPercentage: 10,
   bountyCapUsd: "500000", // $500K
   identityRequirement: "Named",
+  coveredContracts: [],
+};
+
+const mockAgreementPseudonymous: SafeHarborAgreement = {
+  agreementAddress: "0x1234567890123456789012345678901234567890",
+  protocolName: "Semi-Anonymous Protocol",
+  bountyPercentage: 12,
+  bountyCapUsd: "1000000",
+  identityRequirement: "Pseudonymous",
   coveredContracts: [],
 };
 
@@ -55,7 +64,7 @@ WithAgreement.args = {
 
 export const WithAgreementNoAnonymous = Template.bind({}) as unknown as { args: Args };
 WithAgreementNoAnonymous.args = {
-  agreement: mockAgreementNoCap,
+  agreement: mockAgreementNamed,
   hasAgreement: true,
   linkToTab: true,
   contractState: "UNDER_ATTACK",
@@ -124,4 +133,29 @@ StateCorrupted.args = {
   hasAgreement: true,
   linkToTab: true,
   contractState: "CORRUPTED",
+};
+
+// Identity requirement stories
+export const IdentityAnonymous = Template.bind({}) as unknown as { args: Args };
+IdentityAnonymous.args = {
+  agreement: mockAgreement,
+  hasAgreement: true,
+  linkToTab: true,
+  contractState: "UNDER_ATTACK",
+};
+
+export const IdentityPseudonymous = Template.bind({}) as unknown as { args: Args };
+IdentityPseudonymous.args = {
+  agreement: mockAgreementPseudonymous,
+  hasAgreement: true,
+  linkToTab: true,
+  contractState: "UNDER_ATTACK",
+};
+
+export const IdentityNamed = Template.bind({}) as unknown as { args: Args };
+IdentityNamed.args = {
+  agreement: mockAgreementNamed,
+  hasAgreement: true,
+  linkToTab: true,
+  contractState: "UNDER_ATTACK",
 };

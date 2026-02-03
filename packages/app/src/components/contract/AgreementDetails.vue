@@ -109,10 +109,8 @@
             <span class="detail-value">{{ formattedBountyCap }}</span>
           </div>
           <div class="detail-row">
-            <span class="detail-label">{{ t("safeHarbor.anonymousWhitehats") }}</span>
-            <span class="detail-value" :class="allowsAnonymous ? 'allowed' : 'not-allowed'">
-              {{ allowsAnonymous ? t("safeHarbor.allowed") : t("safeHarbor.notAllowed") }}
-            </span>
+            <span class="detail-label">{{ t("safeHarbor.identityRequirement") }}</span>
+            <span class="detail-value">{{ identityRequirementLabel }}</span>
           </div>
           <div v-if="agreement.retainable !== undefined" class="detail-row">
             <span class="detail-label">{{ t("safeHarbor.retainable") }}</span>
@@ -666,8 +664,16 @@ const formattedAggregateBountyCap = computed(() => {
   return cap.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 });
 
-const allowsAnonymous = computed(() => {
-  return props.agreement.identityRequirement === "Anonymous" || props.agreement.identityRequirement === undefined;
+const identityRequirementLabel = computed(() => {
+  switch (props.agreement.identityRequirement) {
+    case "Named":
+      return t("safeHarbor.identityNamed");
+    case "Pseudonymous":
+      return t("safeHarbor.identityPseudonymous");
+    case "Anonymous":
+    default:
+      return t("safeHarbor.anonymousAllowed");
+  }
 });
 
 const agreementLink = computed(() => {
