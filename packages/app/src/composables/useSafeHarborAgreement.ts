@@ -19,6 +19,7 @@ interface AgreementByContractResponse {
   agreement: {
     agreementAddress: string;
     owner: string;
+    state?: string;
     protocolName?: string;
     agreementUri?: string;
     bountyPercentage?: number;
@@ -43,6 +44,7 @@ interface AgreementByContractResponse {
 
 export default (contractAddress: Ref<string> | ComputedRef<string>, context = useContext()) => {
   const agreement = ref<SafeHarborAgreement | null>(null);
+  const agreementState = ref<string | null>(null);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
   const isFetched = ref(false);
@@ -61,6 +63,7 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
     error.value = null;
     isFetched.value = false;
     isAgreementContract.value = false;
+    agreementState.value = null;
 
     try {
       const response = await FetchInstance.api(context)<AgreementByContractResponse>(
@@ -70,6 +73,9 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
       isAgreementContract.value = response.isAgreementContract;
 
       if (response.agreement) {
+        // Store the agreement state if available
+        agreementState.value = response.agreement.state ?? null;
+
         // Map API response to SafeHarborAgreement type
         agreement.value = {
           agreementAddress: response.agreement.agreementAddress as Address,
@@ -102,6 +108,7 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
       // so a 404 means the BattleChain API routes aren't available
       error.value = e instanceof Error ? e.message : "Failed to fetch agreement";
       agreement.value = null;
+      agreementState.value = null;
       isAgreementContract.value = false;
     } finally {
       isLoading.value = false;
@@ -110,6 +117,7 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
 
   return {
     agreement,
+    agreementState: computed(() => agreementState.value),
     isLoading,
     error,
     isFetched,

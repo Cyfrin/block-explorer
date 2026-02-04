@@ -312,10 +312,18 @@ export class BattlechainService {
     const normalizedAddress = contractAddress.toLowerCase();
 
     // First check if this address IS an agreement contract
-    const isAgreement = await this.getAgreement(contractAddress);
-    if (isAgreement) {
+    const agreementState = await this.agreementStateRepository.findOne({
+      where: { agreementAddress: normalizedAddress },
+    });
+
+    if (agreementState) {
+      // It's an agreement contract - get its state and covered accounts
+      const coveredAccounts = await this.getCoveredAccounts(normalizedAddress);
+      const statesByAgreement = await this.getAgreementStates([normalizedAddress]);
+      const computedState = statesByAgreement.get(normalizedAddress);
+
       return {
-        agreement: isAgreement,
+        agreement: this.mapStateToDto(agreementState, coveredAccounts, computedState),
         isAgreementContract: true,
       };
     }
@@ -336,9 +344,9 @@ export class BattlechainService {
       protocolName: "agreement.protocolName",
       bountyPercentage: "agreement.bountyPercentage",
       bountyCapUsd: "agreement.bountyCapUsd",
-      createdAt: "agreement.createdAtBlock",
+      createdAt: "agreement.createdAt",
     };
-    return sortColumnMap[sortBy] || "agreement.createdAtBlock";
+    return sortColumnMap[sortBy] || "agreement.createdAt";
   }
 
   /**

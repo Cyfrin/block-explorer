@@ -167,6 +167,10 @@ const blockExplorerLinks = reactive([
     label: computed(() => t("tokensView.title")),
     to: { name: "tokens" },
   },
+  {
+    label: computed(() => t("agreementsView.title")),
+    to: { name: "agreements" },
+  },
 ]);
 
 const links = [

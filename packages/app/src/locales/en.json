@@ -929,27 +929,27 @@
     "stateMessages": {
       "registered": {
         "title": "Registered",
-        "description": "This contract is protected by the standard SEAL Whitehat Safe Harbor Agreement, which protects whitehats who intervene during active exploits by malicious actors. This contract is NOT a legal target for proactive security testing until the owner requests attack mode."
+        "description": "All contracts covered by this agreement are protected by the standard SEAL Whitehat Safe Harbor Agreement, which protects whitehats who intervene during active exploits by malicious actors. Covered contracts are NOT legal targets for proactive security testing until the owner requests attack mode."
       },
       "pendingApproval": {
         "title": "Pending Approval",
-        "description": "This contract is protected by the standard SEAL Whitehat Safe Harbor Agreement, which protects whitehats who intervene during active exploits by malicious actors. This contract is NOT a legal target for proactive security testing until the DAO approves attack mode."
+        "description": "All contracts covered by this agreement are protected by the standard SEAL Whitehat Safe Harbor Agreement, which protects whitehats who intervene during active exploits by malicious actors. Covered contracts are NOT legal targets for proactive security testing until the DAO approves attack mode."
       },
       "active": {
         "title": "Active Protection",
-        "description": "This contract is currently in attack mode. Whitehats are protected under these Safe Harbor terms when conducting authorized security testing."
+        "description": "All contracts covered by this agreement are currently in attack mode. Whitehats are protected under these Safe Harbor terms when conducting authorized security testing on any covered contract."
       },
       "promotionPending": {
         "title": "Promotion Pending",
-        "description": "The owner has requested promotion to production. This contract remains attackable during the 3-day promotion window."
+        "description": "The owner has requested promotion to production. All covered contracts remain attackable during the 3-day promotion window."
       },
       "production": {
         "title": "Production Mode",
-        "description": "This contract has been promoted to production and is no longer open for attack mode testing. For responsible disclosure or bug bounty inquiries, contact the protocol using the details below."
+        "description": "This agreement has been promoted to production. Covered contracts are no longer open for attack mode testing. For responsible disclosure or bug bounty inquiries, contact the protocol using the details below."
       },
       "corrupted": {
         "title": "Compromised",
-        "description": "This contract was marked as compromised following a successful attack. The Safe Harbor agreement terms may apply for asset recovery."
+        "description": "This agreement was marked as compromised following a successful attack. The Safe Harbor agreement terms may apply for asset recovery across all covered contracts."
       }
     },
     "badges": {

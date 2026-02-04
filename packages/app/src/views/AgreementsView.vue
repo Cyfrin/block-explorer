@@ -192,7 +192,6 @@ const breadcrumbItems = computed((): BreadcrumbItem[] => [
   @apply flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between;
 
   h1 {
-    @apply text-2xl font-semibold;
     color: var(--text-primary);
   }
 }

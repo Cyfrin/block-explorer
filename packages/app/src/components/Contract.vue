@@ -152,6 +152,7 @@
         :agreement="agreement"
         :owner="agreement.owner"
         :wallet-address="walletAddress"
+        :contract-state="agreementState"
         readonly
         @agreement-updated="handleAgreementUpdated"
         @connect-wallet="connectWallet"
@@ -277,11 +278,11 @@ const props = defineProps({
 const contractAddress = computed(() => props.contract?.address || "");
 const {
   agreement,
+  agreementState,
   hasAgreement,
   isAgreementContract,
   isLoading: isAgreementLoading,
   isFetched: isAgreementFetched,
-  defaultAgreementTerms,
   fetch: fetchAgreement,
 } = useSafeHarborAgreement(contractAddress);
 
@@ -534,12 +535,14 @@ const transactionsSearchParams = computed(() => ({
 }
 
 .agreement-contract-details {
-  @apply mt-4 overflow-hidden rounded-lg;
+  @apply mt-4 overflow-hidden rounded-lg p-4;
   background-color: var(--bg-primary);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-md);
   scroll-margin-top: 4.5rem; // Header height (3.5rem/56px) + some padding
 
   .agreement-loader {
-    @apply m-4 h-6 w-48;
+    @apply h-6 w-48;
   }
 }
 .safe-harbor-tab-content {
