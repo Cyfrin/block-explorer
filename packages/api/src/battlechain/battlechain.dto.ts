@@ -280,6 +280,12 @@ export class AgreementByContractDto {
     example: true,
   })
   hasCoverage: boolean;
+
+  @ApiProperty({
+    description: "True if the queried address IS an agreement contract itself (not just covered by one)",
+    example: false,
+  })
+  isAgreementContract: boolean;
 }
 
 export class AuthorizedOwnerDto {

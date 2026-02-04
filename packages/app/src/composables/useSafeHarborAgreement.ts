@@ -38,6 +38,7 @@ interface AgreementByContractResponse {
     createdAt: number | null;
   } | null;
   hasCoverage: boolean;
+  isAgreementContract: boolean;
 }
 
 export default (contractAddress: Ref<string> | ComputedRef<string>, context = useContext()) => {
@@ -45,6 +46,7 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
   const isLoading = ref(false);
   const error = ref<string | null>(null);
   const isFetched = ref(false);
+  const isAgreementContract = ref(false);
 
   const hasAgreement = computed(() => agreement.value !== null);
 
@@ -58,11 +60,14 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
     isLoading.value = true;
     error.value = null;
     isFetched.value = false;
+    isAgreementContract.value = false;
 
     try {
       const response = await FetchInstance.api(context)<AgreementByContractResponse>(
         `/battlechain/agreement/by-contract/${contractAddress.value}`
       );
+
+      isAgreementContract.value = response.isAgreementContract;
 
       if (response.agreement) {
         // Map API response to SafeHarborAgreement type
@@ -97,6 +102,7 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
       // so a 404 means the BattleChain API routes aren't available
       error.value = e instanceof Error ? e.message : "Failed to fetch agreement";
       agreement.value = null;
+      isAgreementContract.value = false;
     } finally {
       isLoading.value = false;
     }
@@ -108,6 +114,7 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
     error,
     isFetched,
     hasAgreement,
+    isAgreementContract: computed(() => isAgreementContract.value),
     canModifyTerms,
     fetch,
   };

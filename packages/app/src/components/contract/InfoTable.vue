@@ -31,7 +31,7 @@
           {{ contract.totalTransactions }}
         </table-body-column>
       </tr>
-      <tr v-if="!isBattlechainExcluded">
+      <tr v-if="!isBattlechainExcluded && !props.isAgreementContract">
         <table-body-column class="contract-info-field-label"> Contract state </table-body-column>
         <table-body-column class="contract-info-field-value contract-state-cell">
           <ContentLoader v-if="isContractStateLoading" />
@@ -96,8 +96,8 @@
           <span v-else class="fetch-error">Unable to load</span>
         </table-body-column>
       </tr>
-      <!-- Safe Harbor row only shows after contract has called requestUnderAttack -->
-      <tr v-if="!isBattlechainExcluded && hasStateInfo && hasRequestedAttack">
+      <!-- Safe Harbor row only shows after contract has called requestUnderAttack (not for agreement contracts) -->
+      <tr v-if="!isBattlechainExcluded && !props.isAgreementContract && hasStateInfo && hasRequestedAttack">
         <table-body-column class="contract-info-field-label">
           {{ t("tabs.safeHarbor") }}
         </table-body-column>
@@ -164,6 +164,10 @@ const props = defineProps({
   loading: {
     type: Boolean,
     default: true,
+  },
+  isAgreementContract: {
+    type: Boolean,
+    default: false,
   },
 });
 

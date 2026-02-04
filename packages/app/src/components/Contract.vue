@@ -11,6 +11,26 @@
     :is-evm-like="contract?.isEvmLike"
   />
   <Spinner v-else size="md" />
+
+  <!-- Safe Harbor Agreement Banner - shown for agreement contracts -->
+  <div v-if="isAgreementContract && !pending && isAgreementFetched && hasAgreement" class="agreement-banner">
+    <div class="banner-content">
+      <ShieldCheckIcon class="banner-icon" />
+      <div class="banner-text">
+        <span class="banner-title">Safe Harbor Agreement Contract</span>
+        <span class="banner-subtitle"
+          >This contract is a registered Safe Harbor agreement{{
+            agreement?.protocolName ? ` for ${agreement.protocolName}` : ""
+          }}</span
+        >
+      </div>
+    </div>
+    <a href="#agreement-details" class="view-details-link" @click.prevent="scrollToAgreementDetails">
+      View Agreement
+      <ChevronDownIcon class="link-icon" />
+    </a>
+  </div>
+
   <div class="tables-container">
     <div class="contract-tables-container">
       <div>
@@ -18,6 +38,7 @@
           class="contract-info-table"
           :loading="pending"
           :contract="contract!"
+          :is-agreement-contract="isAgreementContract"
           @request-attackable-mode="openRequestUnderAttackModal"
           @go-to-production="handleGoToProduction"
         />
@@ -118,6 +139,25 @@
       </template>
     </Tabs>
 
+    <!-- Agreement Details - shown below tabs for agreement contracts -->
+    <div
+      v-if="isAgreementContract && !pending"
+      id="agreement-details"
+      ref="agreementDetailsRef"
+      class="agreement-contract-details"
+    >
+      <ContentLoader v-if="isAgreementLoading" class="agreement-loader" />
+      <AgreementDetails
+        v-else-if="isAgreementFetched && hasAgreement && agreement"
+        :agreement="agreement"
+        :owner="agreement.owner"
+        :wallet-address="walletAddress"
+        readonly
+        @agreement-updated="handleAgreementUpdated"
+        @connect-wallet="connectWallet"
+      />
+    </div>
+
     <!-- Request Under Attack Modal -->
     <RequestUnderAttackModal
       :is-open="showRequestUnderAttackModal"
@@ -158,7 +198,7 @@
 import { computed, type PropType, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { ExclamationCircleIcon } from "@heroicons/vue/outline";
+import { ChevronDownIcon, ExclamationCircleIcon } from "@heroicons/vue/outline";
 import { CheckCircleIcon, ShieldCheckIcon } from "@heroicons/vue/solid";
 
 import SearchForm from "@/components/SearchForm.vue";
@@ -211,6 +251,13 @@ const walletContext = {
 
 const { address: walletAddress, connect: connectWallet } = useWallet(walletContext);
 
+// Ref for agreement details section (used for smooth scrolling)
+const agreementDetailsRef = ref<HTMLElement | null>(null);
+
+const scrollToAgreementDetails = () => {
+  agreementDetailsRef.value?.scrollIntoView({ behavior: "smooth", block: "start" });
+};
+
 const props = defineProps({
   contract: {
     type: [Object, null] as PropType<Contract | null>,
@@ -231,6 +278,7 @@ const contractAddress = computed(() => props.contract?.address || "");
 const {
   agreement,
   hasAgreement,
+  isAgreementContract,
   isLoading: isAgreementLoading,
   isFetched: isAgreementFetched,
   defaultAgreementTerms,
@@ -251,9 +299,10 @@ const showRequestUnderAttackPrompt = computed(
   () => contractState.value === ContractState.NEW_DEPLOYMENT && hasAgreement.value && agreement.value
 );
 
-// Show Safe Harbor tab only after contract has called requestUnderAttack
+// Show Safe Harbor tab when contract has called requestUnderAttack (covered contract with attack flow started)
+// Do NOT show for agreement contracts - they display AgreementDetails directly on the page
 const showSafeHarborTab = computed(
-  () => !isBattlechainExcluded.value && hasStateInfo.value && hasRequestedAttack.value
+  () => !isBattlechainExcluded.value && !isAgreementContract.value && hasStateInfo.value && hasRequestedAttack.value
 );
 
 watch(
@@ -440,6 +489,58 @@ const transactionsSearchParams = computed(() => ({
 }
 .transaction-table-error {
   @apply text-2xl text-error-700;
+}
+.agreement-banner {
+  @apply mt-8 flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4;
+  border-color: var(--accent-muted, var(--border-default));
+  background-color: var(--bg-primary);
+
+  .banner-content {
+    @apply flex items-center gap-2 sm:gap-3;
+  }
+
+  .banner-icon {
+    @apply hidden h-6 w-6 shrink-0 sm:block sm:h-8 sm:w-8;
+    color: var(--accent);
+  }
+
+  .banner-text {
+    @apply flex flex-col;
+  }
+
+  .banner-title {
+    @apply text-xs font-semibold sm:text-sm;
+    color: var(--text-primary);
+  }
+
+  .banner-subtitle {
+    @apply text-xs leading-snug;
+    color: var(--text-muted);
+  }
+
+  .view-details-link {
+    @apply flex w-full shrink-0 items-center justify-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors sm:w-auto sm:py-1.5;
+    background-color: var(--bg-tertiary);
+    color: var(--accent);
+
+    &:hover {
+      background-color: var(--bg-hover);
+    }
+
+    .link-icon {
+      @apply h-4 w-4;
+    }
+  }
+}
+
+.agreement-contract-details {
+  @apply mt-4 overflow-hidden rounded-lg;
+  background-color: var(--bg-primary);
+  scroll-margin-top: 4.5rem; // Header height (3.5rem/56px) + some padding
+
+  .agreement-loader {
+    @apply m-4 h-6 w-48;
+  }
 }
 .safe-harbor-tab-content {
   @apply p-4;

@@ -302,6 +302,33 @@ export class BattlechainService {
   }
 
   /**
+   * Get agreement info for a contract address, checking both:
+   * 1. If the address IS an agreement contract itself
+   * 2. If the address is covered BY an agreement
+   */
+  async getAgreementInfoForContract(
+    contractAddress: string
+  ): Promise<{ agreement: AgreementDto | null; isAgreementContract: boolean }> {
+    const normalizedAddress = contractAddress.toLowerCase();
+
+    // First check if this address IS an agreement contract
+    const isAgreement = await this.getAgreement(contractAddress);
+    if (isAgreement) {
+      return {
+        agreement: isAgreement,
+        isAgreementContract: true,
+      };
+    }
+
+    // Otherwise check if it's covered by an agreement
+    const coveredBy = await this.getAgreementByContract(contractAddress);
+    return {
+      agreement: coveredBy,
+      isAgreementContract: false,
+    };
+  }
+
+  /**
    * Map frontend sort keys to database column names
    */
   private mapSortColumn(sortBy: string): string {
