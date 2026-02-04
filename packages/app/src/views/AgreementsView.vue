@@ -8,10 +8,11 @@
       <h1>{{ t("agreementsView.title") }}</h1>
       <div class="header-actions">
         <Dropdown
-          v-model="selectedFilter"
+          :model-value="stateFilter"
           :options="filterOptions"
           :formatter="formatFilterOption"
           class="filter-dropdown"
+          @update:model-value="updateFilter"
         />
         <button type="button" class="create-button" @click="openCreateModal">
           <PlusIcon class="icon" />
@@ -23,7 +24,17 @@
       <span v-if="error" class="error-message">
         {{ error }}
       </span>
-      <AgreementsTable v-else class="agreements-table" :loading="isLoading" :agreements="agreements ?? []" />
+      <AgreementsTable
+        v-else
+        class="agreements-table"
+        :loading="isLoading"
+        :agreements="agreements ?? []"
+        :total="total ?? 0"
+        :page-size="currentPageSize"
+        :sort-key="sortKey"
+        :sort-direction="sortDirection"
+        @update:sort="updateSort"
+      />
     </div>
 
     <CreateAgreementModal
@@ -36,8 +47,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 
 import { PlusIcon } from "@heroicons/vue/solid";
 
@@ -47,24 +59,37 @@ import Breadcrumbs, { type BreadcrumbItem } from "@/components/common/Breadcrumb
 import Dropdown from "@/components/common/Dropdown.vue";
 import CreateAgreementModal from "@/components/contract/CreateAgreementModal.vue";
 
-import useAgreements, { type AgreementStateFilter } from "@/composables/useAgreements";
+import useAgreements, {
+  type AgreementSearchParams,
+  type AgreementStateFilter,
+  type SortDirection,
+  type SortKey,
+} from "@/composables/useAgreements";
 import useContext from "@/composables/useContext";
 
 import { ContractState } from "@/types";
 
 const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const context = useContext();
 
-// Filter state
-const selectedFilter = ref<string>("ALL");
+// Read all state from URL query params
+const activePage = computed(() => parseInt(route.query.page as string) || 1);
+const currentPageSize = computed(() => parseInt(route.query.pageSize as string) || 10);
+const sortKey = computed<SortKey | null>(() => (route.query.sortBy as SortKey) || null);
+const sortDirection = computed<SortDirection>(() => (route.query.sortOrder as SortDirection) || null);
+const stateFilter = computed<AgreementStateFilter>(() => (route.query.state as AgreementStateFilter) || "ALL");
+
+// Filter options
 const filterOptions = [
   "ALL",
-  ContractState.UNDER_ATTACK,
+  ContractState.NEW_DEPLOYMENT,
   ContractState.ATTACK_REQUESTED,
+  ContractState.UNDER_ATTACK,
+  ContractState.CORRUPTED,
   ContractState.PROMOTION_REQUESTED,
   ContractState.PRODUCTION,
-  ContractState.CORRUPTED,
-  ContractState.NEW_DEPLOYMENT,
 ];
 
 const formatFilterOption = (value: unknown): string => {
@@ -72,16 +97,60 @@ const formatFilterOption = (value: unknown): string => {
   return t(`agreementsView.states.${value}`);
 };
 
-// Convert to the expected type
-const stateFilter = computed<AgreementStateFilter>(() => {
-  if (selectedFilter.value === "ALL") return "ALL";
-  return selectedFilter.value as ContractState;
-});
+// Build search params from URL state
+const searchParams = computed<AgreementSearchParams>(() => ({
+  state: stateFilter.value,
+  sortBy: sortKey.value,
+  sortOrder: sortDirection.value,
+}));
 
 // Fetch agreements
-const { agreements, isLoading, error, fetch } = useAgreements(stateFilter, context);
+const { data: agreements, total, isLoading, error, load } = useAgreements(searchParams, context);
+
+// Watch for URL changes and reload data
+watch(
+  [activePage, currentPageSize, searchParams],
+  ([page, pageSize]) => {
+    load(page, pageSize);
+  },
+  { immediate: true }
+);
+
+// Update URL when sort changes (called from table component)
+function updateSort(key: SortKey | null, direction: SortDirection) {
+  const query: Record<string, string | undefined> = {
+    ...route.query,
+    page: "1", // Reset to page 1 on sort change
+    sortBy: key || undefined,
+    sortOrder: direction || undefined,
+  };
+
+  // Clean up undefined values
+  Object.keys(query).forEach((k) => {
+    if (query[k] === undefined) delete query[k];
+  });
+
+  router.push({ query });
+}
+
+// Update URL when filter changes
+function updateFilter(state: string) {
+  const query: Record<string, string | undefined> = {
+    ...route.query,
+    page: "1", // Reset to page 1 on filter change
+    state: state === "ALL" ? undefined : state,
+  };
+
+  // Clean up undefined values
+  Object.keys(query).forEach((k) => {
+    if (query[k] === undefined) delete query[k];
+  });
+
+  router.push({ query });
+}
 
 // Modal state
+import { ref } from "vue";
 const isCreateModalOpen = ref(false);
 
 const openCreateModal = () => {
@@ -95,7 +164,7 @@ const closeCreateModal = () => {
 const handleCreateSuccess = () => {
   closeCreateModal();
   // Refresh the agreements list
-  fetch();
+  load(activePage.value, currentPageSize.value);
 };
 
 // Breadcrumbs

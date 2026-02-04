@@ -14,6 +14,7 @@ import {
   IdentityRequirement,
   CoveredAccountDto,
   AttackModeratorDto,
+  PaginatedAgreementsDto,
 } from "./battlechain.dto";
 import { PROMOTION_WINDOW_MS, PROMOTION_DELAY_MS } from "./battlechain.constants";
 
@@ -301,18 +302,129 @@ export class BattlechainService {
   }
 
   /**
-   * Get all agreements with optional state filtering.
+   * Map frontend sort keys to database column names
+   */
+  private mapSortColumn(sortBy: string): string {
+    const sortColumnMap: Record<string, string> = {
+      protocolName: "agreement.protocolName",
+      bountyPercentage: "agreement.bountyPercentage",
+      bountyCapUsd: "agreement.bountyCapUsd",
+      createdAt: "agreement.createdAtBlock",
+    };
+    return sortColumnMap[sortBy] || "agreement.createdAtBlock";
+  }
+
+  /**
+   * Get all agreements with optional state filtering, pagination, and sorting.
    * Uses the materialized agreement_current_state table for efficient retrieval.
    */
-  async getAllAgreements(stateFilter?: string): Promise<AgreementDto[]> {
-    const states = await this.agreementStateRepository.find({
-      order: { createdAtBlock: "DESC" },
-    });
+  async getAllAgreements(
+    stateFilter?: string,
+    page: number = 1,
+    limit: number = 10,
+    sortBy: string = "createdAt",
+    sortOrder: "ASC" | "DESC" = "DESC"
+  ): Promise<PaginatedAgreementsDto> {
+    // Clamp limit to max 100
+    const safeLimit = Math.min(Math.max(1, limit), 100);
+    const safePage = Math.max(1, page);
+    const offset = (safePage - 1) * safeLimit;
 
-    // Get all accounts in a single query for efficiency
-    const allAccounts = await this.agreementAccountRepository.find();
+    // Build query
+    let query = this.agreementStateRepository.createQueryBuilder("agreement");
+
+    // Apply sorting (state sorting handled after we compute states)
+    const isStateSorting = sortBy === "state";
+    if (!isStateSorting) {
+      const sortColumn = this.mapSortColumn(sortBy);
+      query = query.orderBy(sortColumn, sortOrder, "NULLS LAST");
+    }
+
+    // For state filtering/sorting, we need to get all agreements first and then filter in memory
+    // because state is computed from state change events
+    // This is acceptable for the expected scale of agreements
+
+    // Get all agreement states to compute their current state
+    const allStates = await query.getMany();
+    const allAddresses = allStates.map((s) => s.agreementAddress.toLowerCase());
+    const statesByAgreement = await this.getAgreementStates(allAddresses);
+
+    // Filter by state if provided
+    let filteredStates = allStates;
+    if (stateFilter) {
+      filteredStates = allStates.filter((s) => {
+        const computedState = statesByAgreement.get(s.agreementAddress.toLowerCase());
+        return computedState === stateFilter;
+      });
+    }
+
+    // Sort by state if requested
+    if (isStateSorting) {
+      const stateOrder: Record<string, number> = {
+        NEW_DEPLOYMENT: 0,
+        ATTACK_REQUESTED: 1,
+        UNDER_ATTACK: 2,
+        CORRUPTED: 3,
+        PROMOTION_REQUESTED: 4,
+        PRODUCTION: 5,
+        NOT_REGISTERED: 99,
+      };
+      filteredStates.sort((a, b) => {
+        const aState = statesByAgreement.get(a.agreementAddress.toLowerCase()) || "NOT_REGISTERED";
+        const bState = statesByAgreement.get(b.agreementAddress.toLowerCase()) || "NOT_REGISTERED";
+        const aOrder = stateOrder[aState] ?? 99;
+        const bOrder = stateOrder[bState] ?? 99;
+        return sortOrder === "ASC" ? aOrder - bOrder : bOrder - aOrder;
+      });
+    }
+
+    // Get total count after filtering
+    const total = filteredStates.length;
+
+    // Apply pagination
+    const paginatedStates = filteredStates.slice(offset, offset + safeLimit);
+
+    // Get accounts only for paginated results
+    const paginatedAddresses = paginatedStates.map((s) => s.agreementAddress.toLowerCase());
+    const accountsByAgreement = await this.getAccountsForAgreements(paginatedAddresses);
+
+    // Map to DTOs
+    const items = paginatedStates.map((state) =>
+      this.mapStateToDto(
+        state,
+        accountsByAgreement.get(state.agreementAddress.toLowerCase()),
+        statesByAgreement.get(state.agreementAddress.toLowerCase())
+      )
+    );
+
+    return {
+      items,
+      meta: {
+        currentPage: safePage,
+        itemCount: items.length,
+        itemsPerPage: safeLimit,
+        totalItems: total,
+        totalPages: Math.ceil(total / safeLimit),
+      },
+    };
+  }
+
+  /**
+   * Get covered accounts for a set of agreements efficiently
+   */
+  private async getAccountsForAgreements(agreementAddresses: string[]): Promise<Map<string, CoveredAccountDto[]>> {
     const accountsByAgreement = new Map<string, CoveredAccountDto[]>();
-    for (const account of allAccounts) {
+
+    if (agreementAddresses.length === 0) {
+      return accountsByAgreement;
+    }
+
+    const accounts = await this.agreementAccountRepository
+      .createQueryBuilder("account")
+      .where("LOWER(account.agreementAddress) IN (:...addresses)", { addresses: agreementAddresses })
+      .getMany();
+
+    for (const account of accounts) {
       const key = account.agreementAddress.toLowerCase();
       if (!accountsByAgreement.has(key)) {
         accountsByAgreement.set(key, []);
@@ -323,25 +435,7 @@ export class BattlechainService {
       });
     }
 
-    // Get states for all agreements efficiently
-    const agreementAddresses = states.map((s) => s.agreementAddress.toLowerCase());
-    const statesByAgreement = await this.getAgreementStates(agreementAddresses);
-
-    // Map to DTOs and apply state filter if provided
-    const agreements = states.map((state) =>
-      this.mapStateToDto(
-        state,
-        accountsByAgreement.get(state.agreementAddress.toLowerCase()),
-        statesByAgreement.get(state.agreementAddress.toLowerCase())
-      )
-    );
-
-    // Filter by state if provided
-    if (stateFilter) {
-      return agreements.filter((a) => a.state === stateFilter);
-    }
-
-    return agreements;
+    return accountsByAgreement;
   }
 
   /**

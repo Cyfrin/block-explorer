@@ -313,3 +313,28 @@ export class AttackModeratorDto {
   })
   wasTransferred: boolean;
 }
+
+export class PaginationMetaDto {
+  @ApiProperty({ description: "Current page number (1-indexed)", example: 1 })
+  currentPage: number;
+
+  @ApiProperty({ description: "Number of items in the current response", example: 10 })
+  itemCount: number;
+
+  @ApiProperty({ description: "Number of items per page", example: 10 })
+  itemsPerPage: number;
+
+  @ApiProperty({ description: "Total number of items", example: 42 })
+  totalItems: number;
+
+  @ApiProperty({ description: "Total number of pages", example: 5 })
+  totalPages: number;
+}
+
+export class PaginatedAgreementsDto {
+  @ApiProperty({ type: [AgreementDto], description: "Array of agreement items" })
+  items: AgreementDto[];
+
+  @ApiProperty({ type: PaginationMetaDto, description: "Pagination metadata" })
+  meta: PaginationMetaDto;
+}

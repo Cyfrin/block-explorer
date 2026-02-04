@@ -9,6 +9,7 @@ import {
   AuthorizedOwnerDto,
   AuthorizedOwnersResponseDto,
   AttackModeratorDto,
+  PaginatedAgreementsDto,
 } from "./battlechain.dto";
 import { ParseAddressPipe } from "../common/pipes/parseAddress.pipe";
 
@@ -85,12 +86,48 @@ export class BattlechainController {
     enum: ["NEW_DEPLOYMENT", "ATTACK_REQUESTED", "UNDER_ATTACK", "PROMOTION_REQUESTED", "PRODUCTION", "CORRUPTED"],
     description: "Filter agreements by state",
   })
-  @ApiOkResponse({
-    description: "List of all agreements returned successfully",
-    type: [AgreementDto],
+  @ApiQuery({
+    name: "page",
+    required: false,
+    type: Number,
+    description: "Page number (1-indexed, default: 1)",
   })
-  async getAllAgreements(@Query("state") state?: string): Promise<AgreementDto[]> {
-    return await this.battlechainService.getAllAgreements(state);
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    type: Number,
+    description: "Items per page (default: 10, max: 100)",
+  })
+  @ApiQuery({
+    name: "sortBy",
+    required: false,
+    enum: ["protocolName", "state", "bountyPercentage", "bountyCapUsd", "createdAt"],
+    description: "Field to sort by (default: createdAt)",
+  })
+  @ApiQuery({
+    name: "sortOrder",
+    required: false,
+    enum: ["ASC", "DESC"],
+    description: "Sort order (default: DESC)",
+  })
+  @ApiOkResponse({
+    description: "Paginated list of agreements returned successfully",
+    type: PaginatedAgreementsDto,
+  })
+  async getAllAgreements(
+    @Query("state") state?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+    @Query("sortBy") sortBy?: string,
+    @Query("sortOrder") sortOrder?: "ASC" | "DESC"
+  ): Promise<PaginatedAgreementsDto> {
+    return await this.battlechainService.getAllAgreements(
+      state,
+      page ? parseInt(page, 10) : undefined,
+      limit ? parseInt(limit, 10) : undefined,
+      sortBy,
+      sortOrder
+    );
   }
 
   @Get("authorized-owner/:contractAddress")

@@ -9,12 +9,12 @@
         </thead>
         <tbody v-if="!loading">
           <slot />
-          <template v-if="items?.length">
+          <template v-if="items?.length && $slots['table-row']">
             <tr v-for="(item, index) in items" :key="index" class="table-row">
               <slot name="table-row" :item="item" :index="index" />
             </tr>
           </template>
-          <template v-else-if="$slots.empty && !failed">
+          <template v-else-if="$slots.empty && !items?.length && !failed">
             <slot name="empty" />
           </template>
           <template v-else-if="$slots.failed && failed">

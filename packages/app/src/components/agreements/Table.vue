@@ -1,5 +1,5 @@
 <template>
-  <Table class="agreements-table" :class="{ loading }" :items="sortedAgreements" :loading="loading">
+  <Table class="agreements-table" :class="{ loading }" :items="agreements" :loading="loading">
     <template v-if="agreements?.length || loading" #table-head>
       <TableHeadColumn class="expand-column"></TableHeadColumn>
       <TableHeadColumn class="sortable-column" @click="toggleSort('protocolName')">
@@ -56,7 +56,7 @@
       </tr>
     </template>
     <!-- Manual row rendering to support expandable rows -->
-    <template v-for="item in sortedAgreements" :key="item.agreementAddress">
+    <template v-for="item in agreements" :key="item.agreementAddress">
       <tr class="table-row clickable-row" @click="toggleRow(item.agreementAddress)">
         <TableBodyColumn class="expand-column">
           <ChevronDownIcon v-if="expandedRows.has(item.agreementAddress)" class="expand-icon" />
@@ -94,8 +94,14 @@
         <slot name="not-found">{{ t("agreementsView.table.noAgreements") }}</slot>
       </TableBodyColumn>
     </template>
-    <template v-if="$slots.footer" #footer>
-      <slot name="footer"></slot>
+    <template v-if="agreements?.length" #footer>
+      <Pagination
+        :active-page="activePage"
+        :use-query="true"
+        :total-items="total"
+        :page-size="pageSize"
+        :disabled="loading"
+      />
     </template>
   </Table>
 </template>
@@ -103,12 +109,14 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 
 import SortIcon from "@/components/agreements/SortIcon.vue";
 import Badge from "@/components/common/Badge.vue";
 import CopyButton from "@/components/common/CopyButton.vue";
+import Pagination from "@/components/common/Pagination.vue";
 import ContentLoader from "@/components/common/loaders/ContentLoader.vue";
 import Table from "@/components/common/table/Table.vue";
 import TableBodyColumn from "@/components/common/table/TableBodyColumn.vue";
@@ -116,13 +124,14 @@ import TableHeadColumn from "@/components/common/table/TableHeadColumn.vue";
 import TimeField from "@/components/common/table/fields/TimeField.vue";
 import AgreementDetails from "@/components/contract/AgreementDetails.vue";
 
-import type { AgreementListItem } from "@/composables/useAgreements";
+import type { AgreementListItem, SortDirection, SortKey } from "@/composables/useAgreements";
 import type { SafeHarborAgreement } from "@/types";
 import type { PropType } from "vue";
 
 import { ContractState, TimeFormat } from "@/types";
 
 const { t } = useI18n();
+const route = useRoute();
 
 const props = defineProps({
   agreements: {
@@ -137,92 +146,50 @@ const props = defineProps({
     type: Number,
     default: 10,
   },
+  total: {
+    type: Number,
+    default: 0,
+  },
+  pageSize: {
+    type: Number,
+    default: 10,
+  },
+  sortKey: {
+    type: String as PropType<SortKey | null>,
+    default: null,
+  },
+  sortDirection: {
+    type: String as PropType<SortDirection>,
+    default: null,
+  },
 });
 
-// Sorting state
-type SortKey = "protocolName" | "state" | "bountyPercentage" | "bountyCapUsd" | "createdAt";
-type SortDirection = "asc" | "desc" | null;
+const emit = defineEmits<{
+  (e: "update:sort", key: SortKey | null, direction: SortDirection): void;
+}>();
 
-const sortKey = ref<SortKey | null>(null);
-const sortDirection = ref<SortDirection>(null);
+// Get current page from route for pagination component
+const activePage = computed(() => parseInt(route.query.page as string) || 1);
 
-// State order for sorting (lifecycle order)
-const stateOrder: Record<string, number> = {
-  [ContractState.NEW_DEPLOYMENT]: 0, // Registered
-  [ContractState.ATTACK_REQUESTED]: 1, // Warming Up
-  [ContractState.UNDER_ATTACK]: 2, // Attackable
-  [ContractState.CORRUPTED]: 3, // Compromised
-  [ContractState.PROMOTION_REQUESTED]: 4, // Promotion Pending
-  [ContractState.PRODUCTION]: 5, // Production
-};
-
+// Sort handling - emit to parent to update URL
 function toggleSort(key: SortKey) {
-  if (sortKey.value === key) {
+  if (props.sortKey === key) {
     // Cycle through: asc -> desc -> null
-    if (sortDirection.value === "asc") {
-      sortDirection.value = "desc";
-    } else if (sortDirection.value === "desc") {
-      sortKey.value = null;
-      sortDirection.value = null;
+    if (props.sortDirection === "asc") {
+      emit("update:sort", key, "desc");
+    } else if (props.sortDirection === "desc") {
+      emit("update:sort", null, null);
     } else {
-      sortDirection.value = "asc";
+      emit("update:sort", key, "asc");
     }
   } else {
-    sortKey.value = key;
-    sortDirection.value = "asc";
+    emit("update:sort", key, "asc");
   }
 }
 
 function getSortDirection(key: SortKey): SortDirection {
-  return sortKey.value === key ? sortDirection.value : null;
+  return props.sortKey === key ? props.sortDirection : null;
 }
-
-const sortedAgreements = computed(() => {
-  if (!sortKey.value || !sortDirection.value) {
-    return props.agreements;
-  }
-
-  const multiplier = sortDirection.value === "asc" ? 1 : -1;
-
-  return [...props.agreements].sort((a, b) => {
-    let comparison = 0;
-
-    switch (sortKey.value) {
-      case "protocolName": {
-        const aName = (a.protocolName || "").toLowerCase();
-        const bName = (b.protocolName || "").toLowerCase();
-        comparison = aName.localeCompare(bName);
-        break;
-      }
-      case "state": {
-        const aOrder = a.state ? stateOrder[a.state] ?? 99 : 99;
-        const bOrder = b.state ? stateOrder[b.state] ?? 99 : 99;
-        comparison = aOrder - bOrder;
-        break;
-      }
-      case "bountyPercentage": {
-        const aVal = a.bountyPercentage ?? -1;
-        const bVal = b.bountyPercentage ?? -1;
-        comparison = aVal - bVal;
-        break;
-      }
-      case "bountyCapUsd": {
-        const aVal = Number(a.bountyCapUsd || 0);
-        const bVal = Number(b.bountyCapUsd || 0);
-        comparison = aVal - bVal;
-        break;
-      }
-      case "createdAt": {
-        const aVal = a.createdAt ?? 0;
-        const bVal = b.createdAt ?? 0;
-        comparison = aVal - bVal;
-        break;
-      }
-    }
-
-    return comparison * multiplier;
-  });
-});
 
 // Expanded rows state
 const expandedRows = ref<Set<string>>(new Set());

@@ -39,12 +39,13 @@
               </button>
             </template>
           </div>
-          <span class="agreement-address">
-            {{ t("safeHarbor.agreementContract") }}:
-            <AddressLink :address="agreement.agreementAddress">
-              {{ shortValue(agreement.agreementAddress) }}
+          <div class="agreement-address">
+            <span class="address-label">{{ t("safeHarbor.agreementContract") }}:</span>
+            <AddressLink :address="agreement.agreementAddress" class="address-link">
+              <span class="address-value">{{ shortValue(agreement.agreementAddress) }}</span>
+              <ExternalLinkIcon class="link-icon" />
             </AddressLink>
-          </span>
+          </div>
           <div v-if="saveError && activeSection === 'protocolName'" class="header-error">{{ saveError }}</div>
         </div>
       </div>
@@ -1063,13 +1064,29 @@ const getChildScopeTooltip = (scope: number): string => {
   }
 
   .agreement-address {
-    @apply flex flex-wrap items-center gap-1 text-xs;
+    @apply flex flex-wrap items-center gap-2 text-xs;
     color: var(--text-muted);
 
-    a {
+    .address-label {
+      color: var(--text-muted);
+    }
+
+    .address-link {
+      @apply inline-flex items-center gap-1 rounded-md px-2 py-0.5 transition-colors;
+      background-color: var(--bg-tertiary);
       color: var(--accent);
+
       &:hover {
-        @apply underline;
+        background-color: var(--bg-hover);
+        text-decoration: underline;
+      }
+
+      .address-value {
+        @apply font-mono;
+      }
+
+      .link-icon {
+        @apply h-3 w-3 shrink-0 opacity-60;
       }
     }
   }
