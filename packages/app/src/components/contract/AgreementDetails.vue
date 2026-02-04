@@ -220,14 +220,23 @@
         @cancel="cancelEditing"
       >
         <template #default>
-          <div
-            v-if="agreement.coveredContracts && agreement.coveredContracts.length > 0"
-            class="covered-contracts-list"
-          >
-            <div v-for="contractAddr in agreement.coveredContracts" :key="contractAddr" class="covered-contract">
-              <AddressLink :address="contractAddr">
-                {{ shortValue(contractAddr) }}
+          <div v-if="coveredAccountsWithScope.length > 0" class="covered-contracts-list">
+            <div
+              v-for="account in coveredAccountsWithScope"
+              :key="account.accountAddress"
+              class="covered-contract-item"
+            >
+              <AddressLink :address="account.accountAddress" class="contract-address">
+                {{ shortValue(account.accountAddress) }}
               </AddressLink>
+              <Badge
+                v-if="account.childContractScope !== ChildContractScope.None"
+                size="sm"
+                :color="getChildScopeBadgeColor(account.childContractScope)"
+                :tooltip="getChildScopeTooltip(account.childContractScope)"
+              >
+                {{ getChildScopeLabel(account.childContractScope) }}
+              </Badge>
             </div>
           </div>
           <div v-else class="no-contracts">
@@ -358,10 +367,10 @@ import useAttackModerator from "@/composables/useAttackModerator";
 
 import type { BountyTermsFormData } from "@/components/contract/BountyTermsForm.vue";
 import type { CoveredContractsChange } from "@/components/contract/CoveredContractsForm.vue";
-import type { ContactDetail, SafeHarborAgreement } from "@/types";
+import type { ContactDetail, CoveredAccount, SafeHarborAgreement } from "@/types";
 import type { PropType } from "vue";
 
-import { TimeFormat } from "@/types";
+import { ChildContractScope, TimeFormat } from "@/types";
 import { shortValue, truncateMiddle, truncateString } from "@/utils/formatters";
 import { ISOStringFromUnixTimestamp, localDateFromUnixTimestamp } from "@/utils/helpers";
 
@@ -771,6 +780,45 @@ const formattedRegisteredAt = computed(() => formatTimestamp(props.agreement.reg
 const formattedLastModified = computed(() => formatTimestamp(props.agreement.lastModified));
 const registeredAtISO = computed(() => toISOString(props.agreement.registeredAt));
 const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified));
+
+// Covered accounts with scope info
+// Falls back to coveredContracts with scope=None if coveredAccounts not available
+const coveredAccountsWithScope = computed((): CoveredAccount[] => {
+  if (props.agreement.coveredAccounts?.length) {
+    return props.agreement.coveredAccounts;
+  }
+  // Fallback: convert coveredContracts to accounts with None scope
+  return (props.agreement.coveredContracts || []).map((addr) => ({
+    accountAddress: addr,
+    childContractScope: ChildContractScope.None,
+  }));
+});
+
+// Scope label helper
+const getChildScopeLabel = (scope: number): string => {
+  const scopeMap: Record<number, string> = {
+    [ChildContractScope.None]: t("safeHarbor.childScope.none"),
+    [ChildContractScope.ExistingOnly]: t("safeHarbor.childScope.existingOnly"),
+    [ChildContractScope.All]: t("safeHarbor.childScope.all"),
+    [ChildContractScope.FutureOnly]: t("safeHarbor.childScope.futureOnly"),
+  };
+  return scopeMap[scope] ?? scopeMap[ChildContractScope.None];
+};
+
+// Badge color based on scope - use neutral for consistency with parent component
+const getChildScopeBadgeColor = (_scope: number): "neutral" | "success" | "accent" => {
+  return "neutral";
+};
+
+// Tooltip with fuller explanation
+const getChildScopeTooltip = (scope: number): string => {
+  const tooltips: Record<number, string> = {
+    [ChildContractScope.ExistingOnly]: t("safeHarbor.childScope.existingOnlyTooltip"),
+    [ChildContractScope.All]: t("safeHarbor.childScope.allTooltip"),
+    [ChildContractScope.FutureOnly]: t("safeHarbor.childScope.futureOnlyTooltip"),
+  };
+  return tooltips[scope] ?? "";
+};
 </script>
 
 <style scoped lang="scss">
@@ -1148,13 +1196,13 @@ const lastModifiedISO = computed(() => toISOString(props.agreement.lastModified)
     @apply flex flex-wrap gap-2;
   }
 
-  .covered-contract {
-    @apply rounded-md px-2 py-1 text-xs sm:text-sm;
+  .covered-contract-item {
+    @apply flex items-center gap-2 rounded-md px-2 py-1;
     background-color: var(--bg-tertiary);
+  }
 
-    :deep(a) {
-      @apply block truncate;
-    }
+  .contract-address {
+    @apply truncate text-xs sm:text-sm;
   }
 
   :deep(.timestamp-copy.copy-button-container) {

@@ -932,6 +932,15 @@
       "production": "Production",
       "corrupted": "Compromised"
     },
+    "childScope": {
+      "none": "This contract only",
+      "existingOnly": "+ existing children",
+      "existingOnlyTooltip": "Includes child contracts that existed when the agreement was created",
+      "all": "+ all children",
+      "allTooltip": "Includes all child contracts created by this contract (past and future)",
+      "futureOnly": "+ future children",
+      "futureOnlyTooltip": "Only includes child contracts created after the agreement"
+    },
     "createAgreement": {
       "title": "Create Safe Harbor Agreement",
       "step1Label": "Create Agreement",

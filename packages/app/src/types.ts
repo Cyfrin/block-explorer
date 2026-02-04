@@ -87,6 +87,7 @@ export interface SafeHarborAgreement {
 
   // Scope
   coveredContracts: Address[];
+  coveredAccounts?: CoveredAccount[];
 
   // Contacts - new format from API
   contactDetails?: ContactDetail[];
@@ -121,7 +122,13 @@ export enum ChildContractScope {
   FutureOnly = 3, // Only child contracts created after the agreement are included
 }
 
-// Account entry for chain configuration
+// Covered account with child contract scope (returned from API)
+export interface CoveredAccount {
+  accountAddress: Address;
+  childContractScope: ChildContractScope;
+}
+
+// Account entry for chain configuration (used in forms)
 export interface ChainAccount {
   accountAddress: string;
   childContractScope: ChildContractScope;

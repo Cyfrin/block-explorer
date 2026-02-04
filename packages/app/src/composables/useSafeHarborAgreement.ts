@@ -4,7 +4,14 @@ import useContext from "./useContext";
 
 import { FetchInstance } from "@/composables/useFetchInstance";
 
-import type { Address, ContactDetail, IdentityRequirement, SafeHarborAgreement } from "@/types";
+import type {
+  Address,
+  ChildContractScope,
+  ContactDetail,
+  CoveredAccount,
+  IdentityRequirement,
+  SafeHarborAgreement,
+} from "@/types";
 import type { ComputedRef, Ref } from "vue";
 
 // Response type from the API
@@ -23,6 +30,10 @@ interface AgreementByContractResponse {
     contactDetails?: ContactDetail[];
     commitmentDeadline?: number;
     coveredContracts?: string[];
+    coveredAccounts?: {
+      accountAddress: string;
+      childContractScope: ChildContractScope;
+    }[];
     createdAtBlock: number;
     createdAt: number | null;
   } | null;
@@ -69,6 +80,10 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
           contactDetails: response.agreement.contactDetails,
           commitmentDeadline: response.agreement.commitmentDeadline,
           coveredContracts: (response.agreement.coveredContracts || []) as Address[],
+          coveredAccounts: response.agreement.coveredAccounts?.map((acc) => ({
+            accountAddress: acc.accountAddress as Address,
+            childContractScope: acc.childContractScope,
+          })) as CoveredAccount[] | undefined,
           createdAtBlock: response.agreement.createdAtBlock,
           registeredAt: response.agreement.createdAt,
         };
