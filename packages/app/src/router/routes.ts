@@ -117,6 +117,14 @@ export default [
     },
   },
   {
+    path: "/agreements",
+    name: "agreements",
+    component: () => import("@/views/AgreementsView.vue"),
+    meta: {
+      title: "agreementsView.title",
+    },
+  },
+  {
     path: "/tools/debugger",
     name: "debugger",
     component: () => import("@/views/DebuggerView.vue"),

@@ -220,10 +220,15 @@ export class BattlechainService {
   /**
    * Map AgreementCurrentState entity to AgreementDto
    */
-  private mapStateToDto(state: AgreementCurrentState, coveredAccounts?: CoveredAccountDto[]): AgreementDto {
+  private mapStateToDto(
+    state: AgreementCurrentState,
+    coveredAccounts?: CoveredAccountDto[],
+    agreementState?: string
+  ): AgreementDto {
     return {
       agreementAddress: state.agreementAddress,
       owner: state.owner,
+      state: agreementState,
       protocolName: state.protocolName ?? undefined,
       agreementUri: state.agreementUri ?? undefined,
       bountyPercentage: state.bountyPercentage ? Number(state.bountyPercentage) : undefined,
@@ -296,10 +301,10 @@ export class BattlechainService {
   }
 
   /**
-   * Get all agreements.
+   * Get all agreements with optional state filtering.
    * Uses the materialized agreement_current_state table for efficient retrieval.
    */
-  async getAllAgreements(): Promise<AgreementDto[]> {
+  async getAllAgreements(stateFilter?: string): Promise<AgreementDto[]> {
     const states = await this.agreementStateRepository.find({
       order: { createdAtBlock: "DESC" },
     });
@@ -318,9 +323,81 @@ export class BattlechainService {
       });
     }
 
-    return states.map((state) =>
-      this.mapStateToDto(state, accountsByAgreement.get(state.agreementAddress.toLowerCase()))
+    // Get states for all agreements efficiently
+    const agreementAddresses = states.map((s) => s.agreementAddress.toLowerCase());
+    const statesByAgreement = await this.getAgreementStates(agreementAddresses);
+
+    // Map to DTOs and apply state filter if provided
+    const agreements = states.map((state) =>
+      this.mapStateToDto(
+        state,
+        accountsByAgreement.get(state.agreementAddress.toLowerCase()),
+        statesByAgreement.get(state.agreementAddress.toLowerCase())
+      )
     );
+
+    // Filter by state if provided
+    if (stateFilter) {
+      return agreements.filter((a) => a.state === stateFilter);
+    }
+
+    return agreements;
+  }
+
+  /**
+   * Get the current state for multiple agreements efficiently.
+   * Returns a map of agreement address -> state string.
+   */
+  private async getAgreementStates(agreementAddresses: string[]): Promise<Map<string, string>> {
+    const statesByAgreement = new Map<string, string>();
+
+    if (agreementAddresses.length === 0) {
+      return statesByAgreement;
+    }
+
+    // Get all state changes for all agreements in a single query
+    const stateChanges = await this.agreementStateChangeRepository
+      .createQueryBuilder("change")
+      .where("LOWER(change.agreementAddress) IN (:...addresses)", { addresses: agreementAddresses })
+      .orderBy("change.blockNumber", "ASC")
+      .addOrderBy("change.logIndex", "ASC")
+      .getMany();
+
+    // Group state changes by agreement and find current state
+    const changesByAgreement = new Map<string, typeof stateChanges>();
+    for (const change of stateChanges) {
+      const key = change.agreementAddress.toLowerCase();
+      if (!changesByAgreement.has(key)) {
+        changesByAgreement.set(key, []);
+      }
+      changesByAgreement.get(key)!.push(change);
+    }
+
+    const stateNames: Record<number, string> = {
+      [ContractState.NOT_REGISTERED]: "NOT_REGISTERED",
+      [ContractState.NOT_DEPLOYED]: "NOT_DEPLOYED",
+      [ContractState.NEW_DEPLOYMENT]: "NEW_DEPLOYMENT",
+      [ContractState.ATTACK_REQUESTED]: "ATTACK_REQUESTED",
+      [ContractState.UNDER_ATTACK]: "UNDER_ATTACK",
+      [ContractState.PROMOTION_REQUESTED]: "PROMOTION_REQUESTED",
+      [ContractState.PRODUCTION]: "PRODUCTION",
+      [ContractState.CORRUPTED]: "CORRUPTED",
+    };
+
+    // Calculate current state for each agreement
+    for (const address of agreementAddresses) {
+      const changes = changesByAgreement.get(address) || [];
+      if (changes.length === 0) {
+        statesByAgreement.set(address, "NOT_REGISTERED");
+        continue;
+      }
+
+      // The last state change determines current state
+      const lastChange = changes[changes.length - 1];
+      statesByAgreement.set(address, stateNames[lastChange.newState] || "NOT_REGISTERED");
+    }
+
+    return statesByAgreement;
   }
 
   /**

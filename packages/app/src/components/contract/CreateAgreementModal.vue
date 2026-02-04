@@ -23,7 +23,7 @@ const props = defineProps({
   },
   contractAddress: {
     type: String,
-    required: true,
+    default: "",
   },
 });
 

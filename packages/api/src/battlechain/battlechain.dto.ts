@@ -174,6 +174,13 @@ export class AgreementDto {
   owner: string;
 
   @ApiPropertyOptional({
+    description: "Current state of the agreement (from AttackRegistry)",
+    enum: ["NOT_REGISTERED", "NEW_DEPLOYMENT", "ATTACK_REQUESTED", "UNDER_ATTACK", "PROMOTION_REQUESTED", "PRODUCTION", "CORRUPTED"],
+    example: "NEW_DEPLOYMENT",
+  })
+  state?: string;
+
+  @ApiPropertyOptional({
     description: "Name of the protocol",
     example: "Uniswap V3",
   })

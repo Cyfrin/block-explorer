@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Param, Body, NotFoundException } from "@nestjs/common";
-import { ApiTags, ApiParam, ApiBody, ApiOkResponse, ApiNotFoundResponse, ApiBadRequestResponse } from "@nestjs/swagger";
+import { Controller, Get, Post, Param, Body, Query, NotFoundException } from "@nestjs/common";
+import { ApiTags, ApiParam, ApiQuery, ApiBody, ApiOkResponse, ApiNotFoundResponse, ApiBadRequestResponse } from "@nestjs/swagger";
 // Note: NotFoundException still used for agreement endpoints
 import { BattlechainService } from "./battlechain.service";
 import {
@@ -79,12 +79,18 @@ export class BattlechainController {
   }
 
   @Get("agreements")
+  @ApiQuery({
+    name: "state",
+    required: false,
+    enum: ["NEW_DEPLOYMENT", "ATTACK_REQUESTED", "UNDER_ATTACK", "PROMOTION_REQUESTED", "PRODUCTION", "CORRUPTED"],
+    description: "Filter agreements by state",
+  })
   @ApiOkResponse({
     description: "List of all agreements returned successfully",
     type: [AgreementDto],
   })
-  async getAllAgreements(): Promise<AgreementDto[]> {
-    return await this.battlechainService.getAllAgreements();
+  async getAllAgreements(@Query("state") state?: string): Promise<AgreementDto[]> {
+    return await this.battlechainService.getAllAgreements(state);
   }
 
   @Get("authorized-owner/:contractAddress")

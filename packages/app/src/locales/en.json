@@ -700,6 +700,33 @@
       "tokenAddressL1": "L1 Token address"
     }
   },
+  "agreementsView": {
+    "title": "Safe Harbor Agreements",
+    "createButton": "Create Agreement",
+    "table": {
+      "protocolName": "Protocol",
+      "agreementAddress": "Agreement",
+      "state": "State",
+      "bountyPercentage": "Bounty",
+      "bountyCapUsd": "Cap",
+      "coveredContracts": "Contracts",
+      "createdAt": "Created",
+      "noAgreements": "No agreements found"
+    },
+    "filters": {
+      "all": "All States"
+    },
+    "states": {
+      "NOT_REGISTERED": "Not Registered",
+      "NOT_DEPLOYED": "Not Deployed",
+      "NEW_DEPLOYMENT": "Registered",
+      "ATTACK_REQUESTED": "Warming Up",
+      "UNDER_ATTACK": "Attackable",
+      "PROMOTION_REQUESTED": "Promotion Pending",
+      "PRODUCTION": "Production",
+      "CORRUPTED": "Compromised"
+    }
+  },
   "tokenHolders": {
     "notFound": "Token doesn't have any holders at this moment",
     "table": {
@@ -1016,7 +1043,8 @@
         "bountyCapRequired": "Bounty cap is required",
         "contactRequired": "At least one contact method is required",
         "recoveryAddressRequired": "Asset recovery address is required",
-        "invalidAddress": "Invalid address format"
+        "invalidAddress": "Invalid address format",
+        "contractRequired": "At least one contract address is required"
       }
     }
   },

@@ -221,14 +221,14 @@
       >
         <template #default>
           <div v-if="coveredAccountsWithScope.length > 0" class="covered-contracts-list">
-            <div
+            <AddressLink
               v-for="account in coveredAccountsWithScope"
               :key="account.accountAddress"
-              class="covered-contract-item"
+              :address="account.accountAddress"
+              class="covered-contract-link"
             >
-              <AddressLink :address="account.accountAddress" class="contract-address">
-                {{ shortValue(account.accountAddress) }}
-              </AddressLink>
+              <span class="contract-address">{{ shortValue(account.accountAddress) }}</span>
+              <ExternalLinkIcon class="link-icon" />
               <Badge
                 v-if="account.childContractScope !== ChildContractScope.None"
                 size="sm"
@@ -237,7 +237,7 @@
               >
                 {{ getChildScopeLabel(account.childContractScope) }}
               </Badge>
-            </div>
+            </AddressLink>
           </div>
           <div v-else class="no-contracts">
             {{ t("safeHarbor.noCoveredContracts") }}
@@ -317,8 +317,8 @@
       </div>
     </div>
 
-    <!-- Owner Edit Prompt - shows when not connected (moved to bottom) -->
-    <div v-if="!walletAddress" class="edit-prompt-banner">
+    <!-- Owner Edit Prompt - shows when not connected and not in readonly mode -->
+    <div v-if="!walletAddress && !readonly" class="edit-prompt-banner">
       <PencilIcon class="icon" />
       <div class="prompt-content">
         <span class="prompt-text">
@@ -392,6 +392,14 @@ const props = defineProps({
   contractState: {
     type: String as PropType<string | null>,
     default: null,
+  },
+  /**
+   * When true, disables all editing functionality and hides the owner prompt.
+   * Used when displaying agreements in read-only contexts like the agreements list.
+   */
+  readonly: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -483,6 +491,8 @@ const emit = defineEmits<{
 
 // Ownership check (for editing agreement terms)
 const isOwner = computed(() => {
+  // In readonly mode, never show as owner (disables all edit functionality)
+  if (props.readonly) return false;
   if (!props.owner || !props.walletAddress) return false;
   return props.owner.toLowerCase() === props.walletAddress.toLowerCase();
 });
@@ -1196,13 +1206,23 @@ const getChildScopeTooltip = (scope: number): string => {
     @apply flex flex-wrap gap-2;
   }
 
-  .covered-contract-item {
-    @apply flex items-center gap-2 rounded-md px-2 py-1;
+  .covered-contract-link {
+    @apply inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors sm:text-sm;
     background-color: var(--bg-tertiary);
-  }
+    color: var(--accent);
 
-  .contract-address {
-    @apply truncate text-xs sm:text-sm;
+    &:hover {
+      background-color: var(--bg-hover);
+      text-decoration: underline;
+    }
+
+    .contract-address {
+      @apply font-mono;
+    }
+
+    .link-icon {
+      @apply h-3 w-3 shrink-0 opacity-60;
+    }
   }
 
   :deep(.timestamp-copy.copy-button-container) {

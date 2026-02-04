@@ -75,6 +75,7 @@ export interface SafeHarborAgreement {
   // Core identification - the agreement is its own smart contract
   agreementAddress: Address;
   owner?: Address;
+  state?: ContractState;
   protocolName?: string;
 
   // Bounty terms (machine-readable)

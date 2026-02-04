@@ -191,11 +191,17 @@
             </template>
           </FormItem>
 
-          <FormItem :label="t('safeHarbor.createAgreement.coveredContracts')">
-            <!-- Primary contract (from props, non-removable) -->
+          <FormItem :label="t('safeHarbor.createAgreement.coveredContracts')" :error="errors.firstContract">
+            <!-- Primary contract - locked when contractAddress prop provided, editable in standalone mode -->
             <div class="contract-row">
               <div class="contract-address">
-                <Input :model-value="props.contractAddress" disabled />
+                <Input
+                  v-if="isStandaloneMode"
+                  v-model="formData.chains[0].accounts[0].accountAddress"
+                  :placeholder="t('safeHarbor.createAgreement.contractAddressPlaceholder')"
+                  :disabled="isCreatingAgreement"
+                />
+                <Input v-else :model-value="props.contractAddress" disabled />
               </div>
               <div class="contract-scope">
                 <select
@@ -414,7 +420,7 @@ const context = useContext();
 const props = defineProps({
   contractAddress: {
     type: String,
-    required: true,
+    default: "",
   },
   // When embedded in another component (e.g., RequestUnderAttackContent),
   // hides the header and cancel button
@@ -497,6 +503,9 @@ const wasAdopted = computed(() => props.overrideWasAdopted ?? didAdopt.value);
 // Get CAIP-2 chain ID from network config
 const caip2ChainId = computed(() => `eip155:${context.currentNetwork.value.l2ChainId}`);
 
+// Standalone mode: when no contractAddress is provided
+const isStandaloneMode = computed(() => !props.contractAddress);
+
 const formData = reactive<AgreementFormData>({
   protocolName: "",
   contactDetails: [{ name: "Email", contact: "" }],
@@ -506,7 +515,7 @@ const formData = reactive<AgreementFormData>({
       assetRecoveryAddress: "",
       accounts: [
         {
-          accountAddress: props.contractAddress,
+          accountAddress: props.contractAddress || "",
           childContractScope: ChildContractScope.None, // Only this contract
         },
       ],
@@ -529,6 +538,7 @@ const errors = reactive({
   bountyCapUsd: "",
   contact: "",
   assetRecoveryAddress: "",
+  firstContract: "",
 });
 
 const isFormValid = computed(() => {
@@ -548,6 +558,13 @@ const isFormValid = computed(() => {
   // Asset recovery address required and valid
   if (!formData.chains[0].assetRecoveryAddress || !/^0x[a-fA-F0-9]{40}$/.test(formData.chains[0].assetRecoveryAddress))
     return false;
+  // In standalone mode, at least one valid contract address required
+  if (isStandaloneMode.value) {
+    const hasValidContract = formData.chains[0].accounts.some(
+      (acc) => acc.accountAddress && /^0x[a-fA-F0-9]{40}$/.test(acc.accountAddress)
+    );
+    if (!hasValidContract) return false;
+  }
   return true;
 });
 
@@ -560,6 +577,7 @@ const validateForm = (): boolean => {
   errors.bountyCapUsd = "";
   errors.contact = "";
   errors.assetRecoveryAddress = "";
+  errors.firstContract = "";
 
   if (!formData.protocolName.trim()) {
     errors.protocolName = t("safeHarbor.createAgreement.errors.protocolNameRequired");
@@ -591,6 +609,18 @@ const validateForm = (): boolean => {
   } else if (!/^0x[a-fA-F0-9]{40}$/.test(formData.chains[0].assetRecoveryAddress)) {
     errors.assetRecoveryAddress = t("safeHarbor.createAgreement.errors.invalidAddress");
     isValid = false;
+  }
+
+  // In standalone mode, validate first contract address
+  if (isStandaloneMode.value) {
+    const firstContract = formData.chains[0].accounts[0]?.accountAddress;
+    if (!firstContract) {
+      errors.firstContract = t("safeHarbor.createAgreement.errors.contractRequired");
+      isValid = false;
+    } else if (!/^0x[a-fA-F0-9]{40}$/.test(firstContract)) {
+      errors.firstContract = t("safeHarbor.createAgreement.errors.invalidAddress");
+      isValid = false;
+    }
   }
 
   return isValid;
@@ -644,13 +674,25 @@ const handleCreateAgreement = async () => {
 
   // Update the chain config with current values
   formData.chains[0].caip2ChainId = caip2ChainId.value;
-  formData.chains[0].accounts[0].accountAddress = props.contractAddress;
 
-  await createAgreement(formData, props.contractAddress);
+  // In standalone mode, use the first account address from the form
+  // Otherwise, use the prop value
+  const primaryContract = isStandaloneMode.value
+    ? formData.chains[0].accounts[0].accountAddress
+    : props.contractAddress;
+
+  if (!isStandaloneMode.value) {
+    formData.chains[0].accounts[0].accountAddress = props.contractAddress;
+  }
+
+  await createAgreement(formData, primaryContract);
 };
 
 const handleAdoptAgreement = async () => {
-  await adoptSafeHarbor(props.contractAddress);
+  const primaryContract = isStandaloneMode.value
+    ? formData.chains[0].accounts[0].accountAddress
+    : props.contractAddress;
+  await adoptSafeHarbor(primaryContract);
   if (adoptedTxHash.value) {
     didAdopt.value = true;
     emit("success", {
