@@ -1,0 +1,250 @@
+#!/bin/bash
+set -e
+
+# BattleChain Contract Deployer for zkSync Local Node
+# Deploys contracts using forge script with CreateX for deterministic addresses
+
+# Configuration from environment
+RPC_URL="${BLOCKCHAIN_RPC_URL:-http://zksync:3050}"
+PRIVATE_KEY="${DEPLOYER_PRIVATE_KEY:-0x7726827caac94a7f9e1b160f7ea819f172f7b6f9d2a97f992c38edeab82d4110}"
+CHAIN_ID="${CHAIN_ID:-270}"
+OUTPUT_DIR="${OUTPUT_DIR:-/shared}"
+SEED_DATA="${SEED_BATTLECHAIN_DATA:-false}"
+CONTRACTS_SOURCE="${CONTRACTS_DIR:-/app/contracts}"
+CONTRACTS_DIR="/app/contracts-build"
+
+echo "========================================"
+echo "BattleChain Contract Deployer"
+echo "========================================"
+echo "RPC URL: $RPC_URL"
+echo "Chain ID: $CHAIN_ID"
+echo "Seed Data: $SEED_DATA"
+echo "Contracts Source: $CONTRACTS_SOURCE"
+echo ""
+
+# Check if contracts directory exists
+if [ ! -d "$CONTRACTS_SOURCE/src" ]; then
+    echo "ERROR: Contracts not found at $CONTRACTS_SOURCE/src"
+    echo ""
+    echo "The BattleChain contracts submodule may not be initialized."
+    echo "Run: git submodule update --init --recursive"
+    exit 1
+fi
+
+# Copy contracts to writable location (volume mounts may be read-only)
+echo "Copying contracts to build directory..."
+rm -rf "$CONTRACTS_DIR"
+cp -r "$CONTRACTS_SOURCE" "$CONTRACTS_DIR"
+
+# Check if lib directory has content (git submodules may not be initialized in volume)
+if [ ! -d "$CONTRACTS_DIR/lib/forge-std/src" ]; then
+    echo "Installing Foundry dependencies..."
+    cd "$CONTRACTS_DIR"
+    forge install --no-git 2>/dev/null || {
+        echo "ERROR: Failed to install dependencies. Ensure foundry is installed."
+        exit 1
+    }
+fi
+
+# Wait for RPC to be ready
+echo "Waiting for zkSync RPC to be ready..."
+max_attempts=60
+attempt=0
+until curl -s -X POST "$RPC_URL" \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' 2>/dev/null | grep -q result; do
+    attempt=$((attempt + 1))
+    if [ $attempt -ge $max_attempts ]; then
+        echo "ERROR: RPC not ready after $max_attempts attempts"
+        exit 1
+    fi
+    echo "  Attempt $attempt/$max_attempts - RPC not ready, waiting..."
+    sleep 2
+done
+echo "RPC is ready!"
+echo ""
+
+# Navigate to contracts directory
+cd "$CONTRACTS_DIR"
+
+# Build contracts for zkSync
+echo "Building contracts for zkSync..."
+forge build --zksync
+
+echo ""
+echo "========================================"
+echo "Step 1: Deploy Registry and Factory"
+echo "========================================"
+echo ""
+
+# Deploy Registry and Factory using the local deployment script
+# This uses standard CREATE opcode (no CreateX) to avoid zkSync compatibility issues
+DEPLOY_OUTPUT=$(forge script script/DeployLocal.s.sol:DeployLocal \
+    --rpc-url "$RPC_URL" \
+    --private-key "$PRIVATE_KEY" \
+    --broadcast \
+    --zksync \
+    --legacy \
+    -vvv 2>&1) || {
+    echo "ERROR: Deploy script failed"
+    echo "$DEPLOY_OUTPUT"
+    exit 1
+}
+
+echo "$DEPLOY_OUTPUT"
+
+# Extract Registry and Factory addresses from output
+SAFE_HARBOR_REGISTRY_ADDRESS=$(echo "$DEPLOY_OUTPUT" | grep "Registry Proxy deployed at:" | awk '{print $NF}')
+AGREEMENT_FACTORY_ADDRESS=$(echo "$DEPLOY_OUTPUT" | grep "AgreementFactory Proxy deployed at:" | awk '{print $NF}')
+
+if [ -z "$SAFE_HARBOR_REGISTRY_ADDRESS" ] || [ -z "$AGREEMENT_FACTORY_ADDRESS" ]; then
+    echo ""
+    echo "ERROR: Failed to extract Registry/Factory addresses from deploy output"
+    exit 1
+fi
+
+echo ""
+echo "Registry: $SAFE_HARBOR_REGISTRY_ADDRESS"
+echo "Factory: $AGREEMENT_FACTORY_ADDRESS"
+
+echo ""
+echo "========================================"
+echo "Step 2: Deploy AttackRegistry"
+echo "========================================"
+echo ""
+
+# Deploy AttackRegistry using DeployAttackRegistryLocal.s.sol (no CreateX)
+ATTACK_OUTPUT=$(forge script script/DeployAttackRegistryLocal.s.sol:DeployAttackRegistryLocal \
+    --rpc-url "$RPC_URL" \
+    --private-key "$PRIVATE_KEY" \
+    --broadcast \
+    --zksync \
+    --legacy \
+    --sig "run(address,address)" \
+    "$SAFE_HARBOR_REGISTRY_ADDRESS" \
+    "$AGREEMENT_FACTORY_ADDRESS" \
+    -vvv 2>&1) || {
+    echo "ERROR: AttackRegistry deploy script failed"
+    echo "$ATTACK_OUTPUT"
+    exit 1
+}
+
+echo "$ATTACK_OUTPUT"
+
+# Extract AttackRegistry address
+ATTACK_REGISTRY_ADDRESS=$(echo "$ATTACK_OUTPUT" | grep "AttackRegistry Proxy deployed at:" | awk '{print $NF}')
+
+if [ -z "$ATTACK_REGISTRY_ADDRESS" ]; then
+    echo ""
+    echo "ERROR: Failed to extract AttackRegistry address from deploy output"
+    exit 1
+fi
+
+echo ""
+echo "AttackRegistry: $ATTACK_REGISTRY_ADDRESS"
+
+echo ""
+echo "========================================"
+echo "Step 3: Deploy BattleChainDeployer"
+echo "========================================"
+echo ""
+
+# BattleChainDeployer uses Solidity 0.8.23 (CreateX compatibility), deploy via forge create
+# Note: --broadcast flag is needed for foundry-zksync to actually send the transaction
+DEPLOYER_OUTPUT=$(forge create --zksync --legacy --rpc-url "$RPC_URL" \
+    --private-key "$PRIVATE_KEY" \
+    --broadcast \
+    src/BattleChainDeployer.sol:BattleChainDeployer \
+    --constructor-args "$ATTACK_REGISTRY_ADDRESS" 2>&1)
+
+BATTLECHAIN_DEPLOYER_ADDRESS=$(echo "$DEPLOYER_OUTPUT" | grep -oE "Deployed to: 0x[a-fA-F0-9]{40}" | grep -oE "0x[a-fA-F0-9]{40}" | head -1)
+if [ -z "$BATTLECHAIN_DEPLOYER_ADDRESS" ]; then
+    echo "ERROR: Failed to deploy BattleChainDeployer"
+    echo "$DEPLOYER_OUTPUT"
+    exit 1
+fi
+echo "BattleChainDeployer: $BATTLECHAIN_DEPLOYER_ADDRESS"
+
+echo ""
+echo "========================================"
+echo "Step 4: Configure AttackRegistry"
+echo "========================================"
+echo ""
+
+# Set BattleChainDeployer in AttackRegistry
+echo "Setting AttackRegistry.battleChainDeployer..."
+cast send --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" \
+    "$ATTACK_REGISTRY_ADDRESS" \
+    "setBattleChainDeployer(address)" \
+    "$BATTLECHAIN_DEPLOYER_ADDRESS" \
+    --legacy >/dev/null 2>&1
+echo "Done!"
+
+# Get current block number for START_BLOCK
+START_BLOCK=$(curl -s -X POST "$RPC_URL" \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' | \
+    grep -oE '"result":"0x[a-fA-F0-9]+"' | grep -oE '0x[a-fA-F0-9]+' | xargs printf "%d" 2>/dev/null || echo "0")
+
+echo ""
+echo "========================================"
+echo "Deployment Complete!"
+echo "========================================"
+echo ""
+echo "Contract Addresses:"
+echo "  SAFE_HARBOR_REGISTRY_ADDRESS: $SAFE_HARBOR_REGISTRY_ADDRESS"
+echo "  AGREEMENT_FACTORY_ADDRESS:    $AGREEMENT_FACTORY_ADDRESS"
+echo "  ATTACK_REGISTRY_ADDRESS:      $ATTACK_REGISTRY_ADDRESS"
+echo "  BATTLECHAIN_DEPLOYER_ADDRESS: $BATTLECHAIN_DEPLOYER_ADDRESS"
+echo "  START_BLOCK:                  $START_BLOCK"
+echo ""
+
+# Write addresses to shared volume
+mkdir -p "$OUTPUT_DIR"
+
+# JSON format for programmatic access
+cat > "$OUTPUT_DIR/addresses.json" << EOF
+{
+  "SAFE_HARBOR_REGISTRY_ADDRESS": "$SAFE_HARBOR_REGISTRY_ADDRESS",
+  "AGREEMENT_FACTORY_ADDRESS": "$AGREEMENT_FACTORY_ADDRESS",
+  "ATTACK_REGISTRY_ADDRESS": "$ATTACK_REGISTRY_ADDRESS",
+  "BATTLECHAIN_DEPLOYER_ADDRESS": "$BATTLECHAIN_DEPLOYER_ADDRESS",
+  "START_BLOCK": "$START_BLOCK",
+  "CHAIN_ID": "$CHAIN_ID",
+  "DEPLOYED_AT": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+EOF
+
+# Shell-sourceable format
+cat > "$OUTPUT_DIR/addresses.env" << EOF
+SAFE_HARBOR_REGISTRY_ADDRESS=$SAFE_HARBOR_REGISTRY_ADDRESS
+AGREEMENT_FACTORY_ADDRESS=$AGREEMENT_FACTORY_ADDRESS
+ATTACK_REGISTRY_ADDRESS=$ATTACK_REGISTRY_ADDRESS
+BATTLECHAIN_DEPLOYER_ADDRESS=$BATTLECHAIN_DEPLOYER_ADDRESS
+START_BLOCK=$START_BLOCK
+CHAIN_ID=$CHAIN_ID
+EOF
+
+echo "Addresses written to:"
+echo "  $OUTPUT_DIR/addresses.json"
+echo "  $OUTPUT_DIR/addresses.env"
+echo ""
+
+# Optional: Seed test data
+if [ "$SEED_DATA" = "true" ]; then
+    echo "========================================"
+    echo "Seeding Test Data"
+    echo "========================================"
+    if [ -f "/app/seed-data.sh" ]; then
+        /app/seed-data.sh "$RPC_URL" "$PRIVATE_KEY" \
+            "$AGREEMENT_FACTORY_ADDRESS" \
+            "$ATTACK_REGISTRY_ADDRESS" \
+            "$BATTLECHAIN_DEPLOYER_ADDRESS"
+    else
+        echo "WARNING: seed-data.sh not found, skipping seeding"
+    fi
+fi
+
+echo ""
+echo "Deployment complete! Exiting in 5 seconds..."
+sleep 5

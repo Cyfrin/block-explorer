@@ -1,0 +1,72 @@
+name: battlechain-indexer
+description: Indexes BattleChain contract states and Safe Harbor agreements
+repository: https://github.com/pickleyd/block-explorer
+project_type: no-code
+
+networks:
+  - name: battlechain
+    chain_id: ${CHAIN_ID}
+    rpc: ${BLOCKCHAIN_RPC_URL}
+
+storage:
+  postgres:
+    enabled: true
+
+contracts:
+  # Core State Tracking - AttackRegistry
+  - name: AttackRegistry
+    details:
+      - network: battlechain
+        address: "${ATTACK_REGISTRY_ADDRESS}"
+        start_block: "${START_BLOCK}"
+    abi: ./abis/AttackRegistry.abi.json
+    include_events:
+      - AgreementStateChanged
+      - ContractRegistered
+      - AgreementOwnerAuthorized
+      - AttackModeratorTransferred
+
+  # Agreement Factory - tracks new agreement deployments
+  - name: AgreementFactory
+    details:
+      - network: battlechain
+        address: "${AGREEMENT_FACTORY_ADDRESS}"
+        start_block: "${START_BLOCK}"
+    abi: ./abis/AgreementFactory.abi.json
+    include_events:
+      - AgreementCreated
+
+  # BattleChain Safe Harbor Registry - tracks adoptions
+  - name: BattleChainSafeHarborRegistry
+    details:
+      - network: battlechain
+        address: "${SAFE_HARBOR_REGISTRY_ADDRESS}"
+        start_block: "${START_BLOCK}"
+    abi: ./abis/BattleChainSafeHarborRegistry.abi.json
+    include_events:
+      - BattleChainSafeHarborAdoption
+
+  # Individual Agreement contracts - indexed via factory pattern
+  - name: Agreement
+    details:
+      - network: battlechain
+        factory:
+          name: AgreementFactory
+          address: "${AGREEMENT_FACTORY_ADDRESS}"
+          abi: ./abis/AgreementFactory.abi.json
+          event_name: AgreementCreated
+          input_name: "agreementAddress"
+    abi: ./abis/Agreement.abi.json
+    include_events:
+      - ProtocolNameUpdated
+      - AgreementURIUpdated
+      - BountyTermsUpdated
+      - ContactDetailsSet
+      - CommitmentWindowExtended
+      - BattleChainScopeAddressAdded
+      - BattleChainScopeAddressRemoved
+      - BattleChainScopeCleared
+      - AccountAdded
+      - AccountRemoved
+      - ChainAddedOrSet
+      - ChainRemoved

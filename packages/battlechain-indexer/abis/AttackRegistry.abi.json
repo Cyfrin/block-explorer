@@ -662,7 +662,7 @@
     "name": "AgreementOwnerAuthorized",
     "inputs": [
       {
-        "name": "contractAddress",
+        "name": "registeredContractAddress",
         "type": "address",
         "indexed": true,
         "internalType": "address"
@@ -732,7 +732,7 @@
     "name": "ContractRegistered",
     "inputs": [
       {
-        "name": "contractAddress",
+        "name": "registeredContractAddress",
         "type": "address",
         "indexed": true,
         "internalType": "address"

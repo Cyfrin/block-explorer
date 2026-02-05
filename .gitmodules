@@ -1,0 +1,3 @@
+[submodule "packages/battlechain-deployer/contracts"]
+	path = packages/battlechain-deployer/contracts
+	url = https://github.com/Cyfrin/battlechain-safe-harbor
