@@ -28,6 +28,7 @@ RUN forge --version && cast --version
 # Copy deployment scripts
 COPY deploy.sh /app/deploy.sh
 COPY seed-data.sh /app/seed-data.sh
+COPY scripts/ /app/scripts/
 
 RUN chmod +x /app/deploy.sh /app/seed-data.sh
 

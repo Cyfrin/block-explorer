@@ -36,6 +36,10 @@ echo "Copying contracts to build directory..."
 rm -rf "$CONTRACTS_DIR"
 cp -r "$CONTRACTS_SOURCE" "$CONTRACTS_DIR"
 
+# Copy local deployment scripts into the contracts script directory
+echo "Copying local deployment scripts..."
+cp /app/scripts/*.sol "$CONTRACTS_DIR/script/"
+
 # Check if lib directory has content (git submodules may not be initialized in volume)
 if [ ! -d "$CONTRACTS_DIR/lib/forge-std/src" ]; then
     echo "Installing Foundry dependencies..."
