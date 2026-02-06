@@ -3,9 +3,11 @@
     {
       "groupId": "battlechain",
       "apiUrl": "https://block-explorer-api.testnet.battlechain.com",
-      "verificationApiUrl": "https://explorer.sepolia.era.zksync.dev",
+      "verificationApiUrl": "https://block-explorer-api.testnet.battlechain.com/api",
       "bridgeUrl": "https://portal.battlechain.com/bridge/?network=sepolia",
-      "hostnames": [],
+      "hostnames": [
+        "block-explorer.testnet.battlechain.com"
+      ],
       "icon": "/images/icons/zksync-arrows.svg",
       "l1ExplorerUrl": "https://sepolia.etherscan.io",
       "settlementChains": [{
