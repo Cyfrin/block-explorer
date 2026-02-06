@@ -6,7 +6,7 @@
       "verificationApiUrl": "https://block-explorer-api.testnet.battlechain.com/api",
       "bridgeUrl": "https://portal.battlechain.com/bridge/?network=sepolia",
       "hostnames": [
-        "block-explorer.testnet.battlechain.com"
+        "https://block-explorer.testnet.battlechain.com"
       ],
       "icon": "/images/icons/zksync-arrows.svg",
       "l1ExplorerUrl": "https://sepolia.etherscan.io",
