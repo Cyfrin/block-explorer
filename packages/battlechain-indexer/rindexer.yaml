@@ -1,6 +1,6 @@
 name: battlechain-indexer
 description: Indexes BattleChain contract states and Safe Harbor agreements
-repository: https://github.com/pickleyd/block-explorer
+repository: https://github.com/Cyfrin/block-explorer
 project_type: no-code
 
 networks:
