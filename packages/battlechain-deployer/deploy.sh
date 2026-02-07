@@ -234,6 +234,85 @@ echo "  $OUTPUT_DIR/addresses.json"
 echo "  $OUTPUT_DIR/addresses.env"
 echo ""
 
+# Optional: Create test agreement for smoke testing
+CREATE_TEST_AGREEMENT="${CREATE_TEST_AGREEMENT:-false}"
+if [ "$CREATE_TEST_AGREEMENT" = "true" ]; then
+    echo "========================================"
+    echo "Creating Test Agreement"
+    echo "========================================"
+    echo ""
+
+    # Wait for the indexer to be ready and discover the factory.
+    # The rindexer needs time to:
+    # 1. Start up and read the addresses file
+    # 2. Index the AgreementCreated event when we create an agreement
+    # 3. Discover the agreement address and start indexing its events
+    #
+    # To ensure events emitted from the Agreement contract are indexed,
+    # we wait for the indexer to be fully synced before creating the agreement.
+    INDEXER_URL="${INDEXER_HEALTHCHECK_URL:-http://battlechain-indexer:3001/health}"
+    echo "Waiting for indexer to be ready..."
+
+    # Give the indexer time to start and sync
+    sleep 30
+
+    # Additional wait to ensure indexer has processed all initial events
+    # and is in "live" mode waiting for new blocks
+    attempt=0
+    max_attempts=30
+    while [ $attempt -lt $max_attempts ]; do
+        # Check if indexer is responsive (health endpoint may not exist, so we just wait)
+        # The key is that the indexer needs to be synced to the current block
+        current_block=$(curl -s -X POST "$RPC_URL" \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' | \
+            grep -oE '"result":"0x[a-fA-F0-9]+"' | grep -oE '0x[a-fA-F0-9]+' | xargs printf "%d" 2>/dev/null || echo "0")
+
+        if [ "$current_block" -gt 0 ]; then
+            echo "Blockchain at block $current_block, indexer should be synced"
+            break
+        fi
+
+        attempt=$((attempt + 1))
+        echo "  Waiting for indexer sync... ($attempt/$max_attempts)"
+        sleep 2
+    done
+
+    echo "Creating test agreement..."
+
+    AGREEMENT_OUTPUT=$(forge script script/CreateTestAgreement.s.sol:CreateTestAgreement \
+        --rpc-url "$RPC_URL" \
+        --private-key "$PRIVATE_KEY" \
+        --broadcast \
+        --zksync \
+        --legacy \
+        --sig "run(address)" \
+        "$AGREEMENT_FACTORY_ADDRESS" \
+        -vvv 2>&1) || {
+        echo "ERROR: CreateTestAgreement script failed"
+        echo "$AGREEMENT_OUTPUT"
+        exit 1
+    }
+
+    echo "$AGREEMENT_OUTPUT"
+
+    # Extract agreement address
+    TEST_AGREEMENT_ADDRESS=$(echo "$AGREEMENT_OUTPUT" | grep "Agreement created at:" | awk '{print $NF}')
+
+    if [ -n "$TEST_AGREEMENT_ADDRESS" ]; then
+        echo ""
+        echo "Test Agreement: $TEST_AGREEMENT_ADDRESS"
+
+        # Add to addresses.json
+        TMP_JSON=$(mktemp)
+        jq --arg addr "$TEST_AGREEMENT_ADDRESS" '. + {"TEST_AGREEMENT_ADDRESS": $addr}' "$OUTPUT_DIR/addresses.json" > "$TMP_JSON"
+        mv "$TMP_JSON" "$OUTPUT_DIR/addresses.json"
+
+        # Add to addresses.env
+        echo "TEST_AGREEMENT_ADDRESS=$TEST_AGREEMENT_ADDRESS" >> "$OUTPUT_DIR/addresses.env"
+    fi
+fi
+
 # Optional: Seed test data
 if [ "$SEED_DATA" = "true" ]; then
     echo "========================================"

@@ -132,6 +132,7 @@ services:
       - CHAIN_ID=270
       - DEPLOYER_PRIVATE_KEY=${DEPLOYER_PRIVATE_KEY:-0x7726827caac94a7f9e1b160f7ea819f172f7b6f9d2a97f992c38edeab82d4110}
       - SEED_BATTLECHAIN_DATA=${SEED_BATTLECHAIN_DATA:-false}
+      - CREATE_TEST_AGREEMENT=${CREATE_TEST_AGREEMENT:-false}
     volumes:
       - battlechain-shared:/shared
       - ./packages/battlechain-deployer/contracts:/app/contracts:ro

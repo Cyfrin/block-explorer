@@ -1,16 +1,22 @@
-FROM ghcr.io/joshstevens19/rindexer:latest
+# Using forked rindexer with tuple[] JSONB support
+# Fork: https://github.com/cyfrin/rindexer
+# Fix: tuple[] (array of structs) now stored as JSONB instead of panicking
+FROM ghcr.io/cyfrin/rindexer:sha-4c1f59a
 
 WORKDIR /app
 
-# Install tools needed for address loading and config generation
+# Install tools needed for address loading, config generation, and DB setup
 USER root
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends jq gettext-base && \
+    apt-get install -y --no-install-recommends jq gettext-base postgresql-client && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy entrypoint script
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
+
+# Copy SQL scripts for database setup (agreement_current_state table and triggers)
+COPY sql/ ./sql/
 
 # Copy configuration template and ABIs
 COPY rindexer.yaml.template .

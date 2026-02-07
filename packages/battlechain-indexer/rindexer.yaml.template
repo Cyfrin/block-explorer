@@ -47,9 +47,12 @@ contracts:
       - BattleChainSafeHarborAdoption
 
   # Individual Agreement contracts - indexed via factory pattern
+  # Note: start_block is set to ensure discovered contracts are indexed from their creation block
+  # This works with rindexer's "birth block optimization" to avoid missing events
   - name: Agreement
     details:
       - network: battlechain
+        start_block: "${START_BLOCK}"
         factory:
           name: AgreementFactory
           address: "${AGREEMENT_FACTORY_ADDRESS}"

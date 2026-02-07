@@ -5,6 +5,9 @@
 -- Create schema for Agreement events (rindexer will also create this)
 CREATE SCHEMA IF NOT EXISTS battlechainindexer_agreement;
 
+-- Set search path so functions are created in the correct schema
+SET search_path TO battlechainindexer_agreement, public;
+
 -- ============================================
 -- Create the materialized current state table
 -- ============================================
@@ -276,4 +279,190 @@ CREATE TRIGGER trg_scope_cleared
   AFTER INSERT ON battlechainindexer_agreement.battle_chain_scope_cleared
   FOR EACH ROW EXECUTE FUNCTION update_agreement_scope_clear();
 
-SELECT 'Agreement current state table and triggers created successfully!' AS status;
+-- ============================================
+-- Backfill existing data (if any events were indexed before triggers existed)
+-- ============================================
+INSERT INTO battlechainindexer_agreement.agreement_current_state (
+    agreement_address, owner, created_at_block, created_at, last_updated_at
+)
+SELECT
+    agreement_address,
+    owner,
+    block_number,
+    block_timestamp,
+    NOW()
+FROM battlechainindexer_agreement_factory.agreement_created
+ON CONFLICT (agreement_address) DO UPDATE SET
+    owner = EXCLUDED.owner,
+    created_at_block = EXCLUDED.created_at_block,
+    created_at = EXCLUDED.created_at,
+    last_updated_at = NOW();
+
+-- ============================================
+-- Create agreement_accounts table for API
+-- ============================================
+-- This table stores the current set of covered accounts per agreement.
+-- Updated via triggers on account_added, account_removed, chain_added_or_set, chain_removed events.
+
+CREATE TABLE IF NOT EXISTS battlechainindexer_agreement.agreement_accounts (
+  id SERIAL PRIMARY KEY,
+  agreement_address CHAR(42) NOT NULL,
+  caip2_chain_id VARCHAR(100) NOT NULL,
+  account_address VARCHAR(100) NOT NULL,
+  child_contract_scope SMALLINT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  -- Prevent duplicates
+  UNIQUE (agreement_address, caip2_chain_id, account_address)
+);
+
+-- Index for fast lookups by agreement
+CREATE INDEX IF NOT EXISTS idx_agreement_accounts_agreement_address
+  ON battlechainindexer_agreement.agreement_accounts (agreement_address);
+
+-- Index for case-insensitive lookups (API uses LOWER())
+CREATE INDEX IF NOT EXISTS idx_agreement_accounts_agreement_address_lower
+  ON battlechainindexer_agreement.agreement_accounts (LOWER(agreement_address));
+
+-- ============================================
+-- Trigger: Insert account on AccountAdded
+-- ============================================
+CREATE OR REPLACE FUNCTION insert_agreement_account()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO battlechainindexer_agreement.agreement_accounts (
+    agreement_address, caip2_chain_id, account_address,
+    child_contract_scope, created_at, updated_at
+  )
+  VALUES (
+    NEW.contract_address,
+    NEW.caip_2_chain_id,
+    NEW.account_account_address,
+    NEW.account_child_contract_scope,
+    NEW.block_timestamp,
+    NEW.block_timestamp
+  )
+  ON CONFLICT (agreement_address, caip2_chain_id, account_address) DO UPDATE SET
+    child_contract_scope = EXCLUDED.child_contract_scope,
+    updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_account_added ON battlechainindexer_agreement.account_added;
+CREATE TRIGGER trg_account_added
+  AFTER INSERT ON battlechainindexer_agreement.account_added
+  FOR EACH ROW EXECUTE FUNCTION insert_agreement_account();
+
+-- ============================================
+-- Trigger: Remove account on AccountRemoved
+-- ============================================
+CREATE OR REPLACE FUNCTION remove_agreement_account()
+RETURNS TRIGGER AS $$
+BEGIN
+  DELETE FROM battlechainindexer_agreement.agreement_accounts
+  WHERE agreement_address = NEW.contract_address
+    AND caip2_chain_id = NEW.caip_2_chain_id
+    AND account_address = NEW.account_address;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_account_removed ON battlechainindexer_agreement.account_removed;
+CREATE TRIGGER trg_account_removed
+  AFTER INSERT ON battlechainindexer_agreement.account_removed
+  FOR EACH ROW EXECUTE FUNCTION remove_agreement_account();
+
+-- ============================================
+-- Trigger: Insert/update accounts from ChainAddedOrSet
+-- Note: With forked rindexer, accounts is stored as JSONB array
+-- Each element has: accountAddress, childContractScope
+-- ============================================
+CREATE OR REPLACE FUNCTION upsert_chain_accounts()
+RETURNS TRIGGER AS $$
+DECLARE
+  account JSONB;
+BEGIN
+  -- Iterate through the JSONB array of accounts
+  FOR account IN SELECT * FROM jsonb_array_elements(NEW.accounts)
+  LOOP
+    INSERT INTO battlechainindexer_agreement.agreement_accounts (
+      agreement_address, caip2_chain_id, account_address,
+      child_contract_scope, created_at, updated_at
+    )
+    VALUES (
+      NEW.contract_address,
+      NEW.caip_2_chain_id,
+      account->>'accountAddress',
+      (account->>'childContractScope')::SMALLINT,
+      NEW.block_timestamp,
+      NEW.block_timestamp
+    )
+    ON CONFLICT (agreement_address, caip2_chain_id, account_address) DO UPDATE SET
+      child_contract_scope = EXCLUDED.child_contract_scope,
+      updated_at = NOW();
+  END LOOP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_chain_added_or_set ON battlechainindexer_agreement.chain_added_or_set;
+CREATE TRIGGER trg_chain_added_or_set
+  AFTER INSERT ON battlechainindexer_agreement.chain_added_or_set
+  FOR EACH ROW EXECUTE FUNCTION upsert_chain_accounts();
+
+-- ============================================
+-- Trigger: Remove all accounts for chain on ChainRemoved
+-- ============================================
+CREATE OR REPLACE FUNCTION remove_chain_accounts()
+RETURNS TRIGGER AS $$
+BEGIN
+  DELETE FROM battlechainindexer_agreement.agreement_accounts
+  WHERE agreement_address = NEW.contract_address
+    AND caip2_chain_id = NEW.caip_2_chain_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_chain_removed ON battlechainindexer_agreement.chain_removed;
+CREATE TRIGGER trg_chain_removed
+  AFTER INSERT ON battlechainindexer_agreement.chain_removed
+  FOR EACH ROW EXECUTE FUNCTION remove_chain_accounts();
+
+-- ============================================
+-- Backfill agreement_accounts from existing events
+-- ============================================
+
+-- Backfill from account_added events
+INSERT INTO battlechainindexer_agreement.agreement_accounts (
+  agreement_address, caip2_chain_id, account_address,
+  child_contract_scope, created_at, updated_at
+)
+SELECT
+  contract_address,
+  caip_2_chain_id,
+  account_account_address,
+  account_child_contract_scope,
+  block_timestamp,
+  block_timestamp
+FROM battlechainindexer_agreement.account_added
+ON CONFLICT (agreement_address, caip2_chain_id, account_address) DO NOTHING;
+
+-- Backfill from chain_added_or_set events (accounts stored as JSONB array)
+INSERT INTO battlechainindexer_agreement.agreement_accounts (
+  agreement_address, caip2_chain_id, account_address,
+  child_contract_scope, created_at, updated_at
+)
+SELECT
+  c.contract_address,
+  c.caip_2_chain_id,
+  account->>'accountAddress',
+  (account->>'childContractScope')::SMALLINT,
+  c.block_timestamp,
+  c.block_timestamp
+FROM battlechainindexer_agreement.chain_added_or_set c,
+     jsonb_array_elements(c.accounts) AS account
+ON CONFLICT (agreement_address, caip2_chain_id, account_address) DO NOTHING;
+
+SELECT 'Agreement current state and accounts tables created successfully!' AS status;

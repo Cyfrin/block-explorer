@@ -101,9 +101,63 @@ else
     echo ""
 fi
 
+# Function to run SQL setup scripts after rindexer creates tables
+run_sql_setup() {
+    echo ""
+    echo "========================================"
+    echo "Running SQL Setup Scripts"
+    echo "========================================"
+    echo ""
+
+    # Parse DATABASE_URL to extract components for psql
+    # Format: postgres://user:pass@host:port/dbname?options
+    local db_url="$DATABASE_URL"
+
+    # Wait for rindexer to create the event tables (needs a few seconds on startup)
+    echo "Waiting for rindexer to create event tables..."
+    sleep 10
+
+    # Check if the tables we need exist (agreement_created table from AgreementFactory events)
+    local max_attempts=30
+    local attempt=0
+    while [ $attempt -lt $max_attempts ]; do
+        if psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement_factory.agreement_created LIMIT 0" 2>/dev/null; then
+            echo "Event tables exist, running setup scripts..."
+            break
+        fi
+        attempt=$((attempt + 1))
+        echo "  Waiting for event tables... ($attempt/$max_attempts)"
+        sleep 5
+    done
+
+    if [ $attempt -ge $max_attempts ]; then
+        echo "WARNING: Event tables not found after ${max_attempts} attempts"
+        echo "SQL setup scripts may fail - triggers may need manual setup"
+    fi
+
+    # Run the agreement_current_state setup script
+    if [ -f "/app/sql/create-agreement-current-state.sql" ]; then
+        echo "Running create-agreement-current-state.sql..."
+        if psql "$DATABASE_URL" -f /app/sql/create-agreement-current-state.sql; then
+            echo "SQL setup completed successfully!"
+        else
+            echo "WARNING: SQL setup script had errors (non-fatal)"
+        fi
+    else
+        echo "WARNING: create-agreement-current-state.sql not found"
+    fi
+
+    echo ""
+    echo "SQL setup process finished"
+}
+
 # Start rindexer with passed arguments
 echo "========================================"
 echo "Starting rindexer"
 echo "========================================"
 echo ""
+
+# Run SQL setup in background after a delay (rindexer needs to create tables first)
+run_sql_setup &
+
 exec /app/rindexer "$@"

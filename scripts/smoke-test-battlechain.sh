@@ -171,12 +171,16 @@ get_addresses() {
   ATTACK_REGISTRY=$(jq -r '.ATTACK_REGISTRY_ADDRESS' "$ADDRESSES_FILE")
   SAFE_HARBOR_REGISTRY=$(jq -r '.SAFE_HARBOR_REGISTRY_ADDRESS' "$ADDRESSES_FILE")
   BATTLECHAIN_DEPLOYER=$(jq -r '.BATTLECHAIN_DEPLOYER_ADDRESS' "$ADDRESSES_FILE")
+  TEST_AGREEMENT_ADDRESS=$(jq -r '.TEST_AGREEMENT_ADDRESS // empty' "$ADDRESSES_FILE")
 
   log_info "Contract Addresses:"
   echo "  AGREEMENT_FACTORY:    $AGREEMENT_FACTORY"
   echo "  ATTACK_REGISTRY:      $ATTACK_REGISTRY"
   echo "  SAFE_HARBOR_REGISTRY: $SAFE_HARBOR_REGISTRY"
   echo "  BATTLECHAIN_DEPLOYER: $BATTLECHAIN_DEPLOYER"
+  if [ -n "$TEST_AGREEMENT_ADDRESS" ]; then
+    echo "  TEST_AGREEMENT:       $TEST_AGREEMENT_ADDRESS"
+  fi
 }
 
 # =============================================================================
@@ -348,6 +352,69 @@ test_contract_state_endpoint() {
   assert "Unknown contract returns NOT_REGISTERED" '[ "$state" = "NOT_REGISTERED" ]'
 }
 
+test_agreement_indexed() {
+  echo ""
+  log_info "=== Test: Agreement Indexing (CREATE_TEST_AGREEMENT=true) ==="
+
+  if [ -z "$TEST_AGREEMENT_ADDRESS" ]; then
+    log_info "No test agreement deployed (CREATE_TEST_AGREEMENT not set)"
+    return 0
+  fi
+
+  log_info "Test agreement address: $TEST_AGREEMENT_ADDRESS"
+  log_info "Waiting for indexer to process agreement creation event..."
+
+  # Wait for the agreement to be indexed (up to 30 seconds)
+  local elapsed=0
+  local max_wait=30
+  local indexed=false
+
+  while [ $elapsed -lt $max_wait ]; do
+    local response=$(curl -s "$API_URL/battlechain/agreement/$TEST_AGREEMENT_ADDRESS")
+    local agreement_addr=$(echo "$response" | jq -r '.agreementAddress // empty')
+
+    if [ -n "$agreement_addr" ] && [ "$agreement_addr" != "null" ]; then
+      indexed=true
+      break
+    fi
+
+    sleep 2
+    elapsed=$((elapsed + 2))
+    echo -n "."
+  done
+  echo ""
+
+  assert "Test agreement indexed within ${max_wait}s" '[ "$indexed" = true ]'
+
+  if [ "$indexed" = true ]; then
+    # Verify agreement details
+    local response=$(curl -s "$API_URL/battlechain/agreement/$TEST_AGREEMENT_ADDRESS")
+
+    local protocol_name=$(echo "$response" | jq -r '.protocolName // empty')
+    assert "Agreement has correct protocolName (SmokeTestProtocol)" '[ "$protocol_name" = "SmokeTestProtocol" ]'
+
+    local owner=$(echo "$response" | jq -r '.owner // empty')
+    local expected_owner="0x36615Cf349d7F6344891B1e7CA7C72883F5dc049"
+    # Case-insensitive comparison
+    local owner_lower=$(echo "$owner" | tr '[:upper:]' '[:lower:]')
+    local expected_lower=$(echo "$expected_owner" | tr '[:upper:]' '[:lower:]')
+    assert "Agreement has correct owner" '[ "$owner_lower" = "$expected_lower" ]'
+
+    log_info "Agreement details from API:"
+    echo "$response" | jq '{agreementAddress, owner, protocolName, state}' 2>/dev/null || echo "$response"
+  fi
+
+  # Test agreements list includes our test agreement
+  local list_response=$(curl -s "$API_URL/battlechain/agreements")
+  local total_items=$(echo "$list_response" | jq '.meta.totalItems // 0')
+  assert "Agreements list has at least 1 agreement" '[ "$total_items" -ge 1 ]'
+
+  # Verify agreement appears in list
+  local found_in_list=$(echo "$list_response" | jq --arg addr "$TEST_AGREEMENT_ADDRESS" \
+    '.items | map(select(.agreementAddress == $addr)) | length')
+  assert "Test agreement appears in agreements list" '[ "$found_in_list" -ge 1 ]'
+}
+
 # =============================================================================
 # Main
 # =============================================================================
@@ -384,6 +451,7 @@ main() {
   test_indexer_running
   test_agreement_api_response
   test_contract_state_endpoint
+  test_agreement_indexed
 
   # Cleanup
   if [ "$SKIP_CLEANUP" = false ]; then
