@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { ConfigService } from "@nestjs/config";
 import { mock } from "jest-mock-extended";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository, SelectQueryBuilder } from "typeorm";
@@ -7,6 +8,8 @@ import { AgreementStateChange } from "./agreementState.entity";
 import { AgreementCreated } from "./agreement.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
 import { AgreementAccount } from "./agreementAccount.entity";
+import { AgreementOwnerAuthorized } from "./agreementOwnerAuthorized.entity";
+import { AttackModeratorTransferred } from "./attackModeratorTransferred.entity";
 import { ContractState } from "./battlechain.dto";
 
 describe("BattlechainService", () => {
@@ -15,12 +18,21 @@ describe("BattlechainService", () => {
   let agreementCreatedRepository: Repository<AgreementCreated>;
   let agreementStateRepository: Repository<AgreementCurrentState>;
   let agreementAccountRepository: Repository<AgreementAccount>;
+  let agreementOwnerAuthorizedRepository: Repository<AgreementOwnerAuthorized>;
+  let attackModeratorTransferredRepository: Repository<AttackModeratorTransferred>;
+  let configService: ConfigService;
 
   beforeEach(async () => {
     agreementStateChangeRepository = mock<Repository<AgreementStateChange>>();
     agreementCreatedRepository = mock<Repository<AgreementCreated>>();
     agreementStateRepository = mock<Repository<AgreementCurrentState>>();
     agreementAccountRepository = mock<Repository<AgreementAccount>>();
+    agreementOwnerAuthorizedRepository = mock<Repository<AgreementOwnerAuthorized>>();
+    attackModeratorTransferredRepository = mock<Repository<AttackModeratorTransferred>>();
+    configService = mock<ConfigService>();
+
+    // Default: no RPC URL configured (preserves existing test behavior)
+    (configService.get as jest.Mock).mockReturnValue(null);
 
     // Mock createQueryBuilder for agreementStateRepository
     const mockQueryBuilder = mock<SelectQueryBuilder<AgreementCurrentState>>();
@@ -34,6 +46,10 @@ describe("BattlechainService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BattlechainService,
+        {
+          provide: ConfigService,
+          useValue: configService,
+        },
         {
           provide: getRepositoryToken(AgreementStateChange),
           useValue: agreementStateChangeRepository,
@@ -49,6 +65,14 @@ describe("BattlechainService", () => {
         {
           provide: getRepositoryToken(AgreementAccount),
           useValue: agreementAccountRepository,
+        },
+        {
+          provide: getRepositoryToken(AgreementOwnerAuthorized),
+          useValue: agreementOwnerAuthorizedRepository,
+        },
+        {
+          provide: getRepositoryToken(AttackModeratorTransferred),
+          useValue: attackModeratorTransferredRepository,
         },
       ],
     }).compile();
@@ -111,6 +135,7 @@ describe("BattlechainService", () => {
         commitmentDeadlineUpdatedAt: null,
         scopeUpdatedAt: null,
         lastUpdatedAt: null,
+        rpcFetchedAt: null,
       });
       (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
@@ -166,6 +191,7 @@ describe("BattlechainService", () => {
         commitmentDeadlineUpdatedAt: null,
         scopeUpdatedAt: null,
         lastUpdatedAt: null,
+        rpcFetchedAt: null,
       });
       (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
@@ -226,6 +252,7 @@ describe("BattlechainService", () => {
         commitmentDeadlineUpdatedAt: null,
         scopeUpdatedAt: null,
         lastUpdatedAt: null,
+        rpcFetchedAt: null,
       });
       (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
@@ -365,6 +392,7 @@ describe("BattlechainService", () => {
         coveredContracts: ["0xcontract1", "0xcontract2"],
         createdAtBlock: 100,
         createdAt: timestamp,
+        rpcFetchedAt: new Date(), // Already fetched — no RPC call
       });
 
       const result = await service.getAgreement(agreementAddress);
@@ -387,6 +415,7 @@ describe("BattlechainService", () => {
         coveredContracts: [],
         createdAtBlock: 100,
         createdAt: null,
+        rpcFetchedAt: new Date(),
       });
 
       const result = await service.getAgreement(agreementAddress);
@@ -403,6 +432,44 @@ describe("BattlechainService", () => {
       expect(agreementStateRepository.findOne).toHaveBeenCalledWith({
         where: { agreementAddress: upperCaseAddress.toLowerCase() },
       });
+    });
+
+    it("skips RPC fetch when no RPC URL is configured", async () => {
+      // configService.get returns null (no RPC URL) — default in this test suite
+      (agreementStateRepository.findOne as jest.Mock).mockResolvedValue({
+        agreementAddress: agreementAddress.toLowerCase(),
+        owner: ownerAddress.toLowerCase(),
+        coveredContracts: [],
+        createdAtBlock: 100,
+        createdAt: new Date(),
+        rpcFetchedAt: null, // Not yet fetched
+      });
+
+      const result = await service.getAgreement(agreementAddress);
+
+      // Should return partial data without making RPC call
+      expect(result).toBeDefined();
+      // update() should NOT have been called (no RPC fetch)
+      expect(agreementStateRepository.update).not.toHaveBeenCalled();
+    });
+
+    it("skips RPC fetch when rpcFetchedAt is already set", async () => {
+      (agreementStateRepository.findOne as jest.Mock).mockResolvedValue({
+        agreementAddress: agreementAddress.toLowerCase(),
+        owner: ownerAddress.toLowerCase(),
+        protocolName: "Test Protocol",
+        coveredContracts: [],
+        createdAtBlock: 100,
+        createdAt: new Date(),
+        rpcFetchedAt: new Date("2024-06-01T00:00:00Z"),
+      });
+
+      const result = await service.getAgreement(agreementAddress);
+
+      expect(result).toBeDefined();
+      expect(result?.protocolName).toBe("Test Protocol");
+      // update() should NOT have been called (already fetched)
+      expect(agreementStateRepository.update).not.toHaveBeenCalled();
     });
   });
 
@@ -421,63 +488,6 @@ describe("BattlechainService", () => {
       expect(agreementStateRepository.createQueryBuilder).toHaveBeenCalledWith("state");
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(":address = ANY(state.covered_contracts)", {
         address: contractAddress.toLowerCase(),
-      });
-    });
-  });
-
-  describe("getAllAgreements", () => {
-    it("returns empty array when no agreements exist", async () => {
-      (agreementStateRepository.find as jest.Mock).mockResolvedValue([]);
-
-      const result = await service.getAllAgreements();
-
-      expect(result).toEqual([]);
-      expect(agreementStateRepository.find).toHaveBeenCalledWith({
-        order: { createdAtBlock: "DESC" },
-      });
-    });
-
-    it("returns all agreements with their covered contracts", async () => {
-      const timestamp1 = new Date("2024-01-01T00:00:00Z");
-      const timestamp2 = new Date("2024-01-02T00:00:00Z");
-      const agreement1 = "0xagreement1234567890123456789012345678901";
-      const agreement2 = "0xagreement2234567890123456789012345678902";
-      const owner1 = "0xowner12345678901234567890123456789012345";
-      const owner2 = "0xowner22345678901234567890123456789012346";
-
-      (agreementStateRepository.find as jest.Mock).mockResolvedValue([
-        {
-          agreementAddress: agreement1.toLowerCase(),
-          owner: owner1.toLowerCase(),
-          coveredContracts: ["0xcontract1"],
-          createdAtBlock: 200,
-          createdAt: timestamp2,
-        },
-        {
-          agreementAddress: agreement2.toLowerCase(),
-          owner: owner2.toLowerCase(),
-          coveredContracts: [],
-          createdAtBlock: 100,
-          createdAt: timestamp1,
-        },
-      ]);
-
-      const result = await service.getAllAgreements();
-
-      expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({
-        agreementAddress: agreement1.toLowerCase(),
-        owner: owner1.toLowerCase(),
-        coveredContracts: ["0xcontract1"],
-        createdAtBlock: 200,
-        createdAt: timestamp2.getTime(),
-      });
-      expect(result[1]).toEqual({
-        agreementAddress: agreement2.toLowerCase(),
-        owner: owner2.toLowerCase(),
-        coveredContracts: [],
-        createdAtBlock: 100,
-        createdAt: timestamp1.getTime(),
       });
     });
   });

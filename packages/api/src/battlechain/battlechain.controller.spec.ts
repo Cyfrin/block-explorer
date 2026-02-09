@@ -3,7 +3,7 @@ import { mock } from "jest-mock-extended";
 import { NotFoundException } from "@nestjs/common";
 import { BattlechainController } from "./battlechain.controller";
 import { BattlechainService } from "./battlechain.service";
-import { ContractStateInfoDto, AgreementDto } from "./battlechain.dto";
+import { ContractStateInfoDto, AgreementDto, PaginatedAgreementsDto } from "./battlechain.dto";
 
 describe("BattlechainController", () => {
   let controller: BattlechainController;
@@ -39,6 +39,7 @@ describe("BattlechainController", () => {
         registeredAt: 1704067200000,
         underAttackAt: null,
         productionAt: null,
+        commitmentLockedUntil: null,
       };
       (serviceMock.getContractStateInfo as jest.Mock).mockResolvedValue(stateInfo);
 
@@ -55,6 +56,7 @@ describe("BattlechainController", () => {
         registeredAt: 1704067200000,
         underAttackAt: 1704153600000,
         productionAt: 1704240000000,
+        commitmentLockedUntil: null,
       };
       (serviceMock.getContractStateInfo as jest.Mock).mockResolvedValue(stateInfo);
 
@@ -70,6 +72,7 @@ describe("BattlechainController", () => {
         registeredAt: null,
         underAttackAt: null,
         productionAt: null,
+        commitmentLockedUntil: null,
       };
       (serviceMock.getContractStateInfo as jest.Mock).mockResolvedValue(stateInfo);
 
@@ -124,12 +127,15 @@ describe("BattlechainController", () => {
     const contractAddress = "0xcontract12345678901234567890123456789012";
 
     it("calls service with correct address", async () => {
-      (serviceMock.getAgreementByContract as jest.Mock).mockResolvedValue(null);
+      (serviceMock.getAgreementInfoForContract as jest.Mock).mockResolvedValue({
+        agreement: null,
+        isAgreementContract: false,
+      });
 
       await controller.getAgreementByContract(contractAddress);
 
-      expect(serviceMock.getAgreementByContract).toHaveBeenCalledTimes(1);
-      expect(serviceMock.getAgreementByContract).toHaveBeenCalledWith(contractAddress);
+      expect(serviceMock.getAgreementInfoForContract).toHaveBeenCalledTimes(1);
+      expect(serviceMock.getAgreementInfoForContract).toHaveBeenCalledWith(contractAddress);
     });
 
     it("returns agreement info with hasCoverage true when covered", async () => {
@@ -140,38 +146,56 @@ describe("BattlechainController", () => {
         createdAtBlock: 100,
         createdAt: 1704067200000,
       };
-      (serviceMock.getAgreementByContract as jest.Mock).mockResolvedValue(agreement);
+      (serviceMock.getAgreementInfoForContract as jest.Mock).mockResolvedValue({
+        agreement,
+        isAgreementContract: false,
+      });
 
       const result = await controller.getAgreementByContract(contractAddress);
 
       expect(result).toEqual({
         agreement,
         hasCoverage: true,
+        isAgreementContract: false,
       });
     });
 
     it("returns null agreement with hasCoverage false when not covered", async () => {
-      (serviceMock.getAgreementByContract as jest.Mock).mockResolvedValue(null);
+      (serviceMock.getAgreementInfoForContract as jest.Mock).mockResolvedValue({
+        agreement: null,
+        isAgreementContract: false,
+      });
 
       const result = await controller.getAgreementByContract(contractAddress);
 
       expect(result).toEqual({
         agreement: null,
         hasCoverage: false,
+        isAgreementContract: false,
       });
     });
   });
 
   describe("getAllAgreements", () => {
     it("calls service method", async () => {
-      (serviceMock.getAllAgreements as jest.Mock).mockResolvedValue([]);
+      const paginatedResult: PaginatedAgreementsDto = {
+        items: [],
+        meta: {
+          currentPage: 1,
+          itemCount: 0,
+          itemsPerPage: 10,
+          totalItems: 0,
+          totalPages: 0,
+        },
+      };
+      (serviceMock.getAllAgreements as jest.Mock).mockResolvedValue(paginatedResult);
 
       await controller.getAllAgreements();
 
       expect(serviceMock.getAllAgreements).toHaveBeenCalledTimes(1);
     });
 
-    it("returns list of agreements from service", async () => {
+    it("returns paginated list of agreements from service", async () => {
       const agreements: AgreementDto[] = [
         {
           agreementAddress: "0xagreement1234567890123456789012345678901",
@@ -188,19 +212,39 @@ describe("BattlechainController", () => {
           createdAt: 1704153600000,
         },
       ];
-      (serviceMock.getAllAgreements as jest.Mock).mockResolvedValue(agreements);
+      const paginatedResult: PaginatedAgreementsDto = {
+        items: agreements,
+        meta: {
+          currentPage: 1,
+          itemCount: 2,
+          itemsPerPage: 10,
+          totalItems: 2,
+          totalPages: 1,
+        },
+      };
+      (serviceMock.getAllAgreements as jest.Mock).mockResolvedValue(paginatedResult);
 
       const result = await controller.getAllAgreements();
 
-      expect(result).toEqual(agreements);
+      expect(result).toEqual(paginatedResult);
     });
 
-    it("returns empty array when no agreements exist", async () => {
-      (serviceMock.getAllAgreements as jest.Mock).mockResolvedValue([]);
+    it("returns empty paginated result when no agreements exist", async () => {
+      const paginatedResult: PaginatedAgreementsDto = {
+        items: [],
+        meta: {
+          currentPage: 1,
+          itemCount: 0,
+          itemsPerPage: 10,
+          totalItems: 0,
+          totalPages: 0,
+        },
+      };
+      (serviceMock.getAllAgreements as jest.Mock).mockResolvedValue(paginatedResult);
 
       const result = await controller.getAllAgreements();
 
-      expect(result).toEqual([]);
+      expect(result).toEqual(paginatedResult);
     });
   });
 });

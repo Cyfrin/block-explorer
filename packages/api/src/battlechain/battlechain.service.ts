@@ -1,6 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
+import { JsonRpcProvider, Contract } from "ethers";
 import { AgreementStateChange } from "./agreementState.entity";
 import { AgreementCreated } from "./agreement.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
@@ -18,13 +20,24 @@ import {
 } from "./battlechain.dto";
 import { PROMOTION_WINDOW_MS, PROMOTION_DELAY_MS } from "./battlechain.constants";
 
+const AGREEMENT_ABI = [
+  "function getDetails() view returns (tuple(string protocolName, tuple(string name, string contact)[] contactDetails, tuple(string assetRecoveryAddress, tuple(string accountAddress, uint8 childContractScope)[] accounts, string caip2ChainId)[] chains, tuple(uint256 bountyPercentage, uint256 bountyCapUsd, bool retainable, uint8 identity, string diligenceRequirements, uint256 aggregateBountyCapUsd) bountyTerms, string agreementURI))",
+  "function getCantChangeUntil() view returns (uint256)",
+];
+
+const RPC_FETCH_TIMEOUT_MS = 5000;
+
 @Injectable()
 export class BattlechainService {
   private readonly logger = new Logger(BattlechainService.name);
 
   private readonly identityMap: IdentityRequirement[] = ["Anonymous", "Pseudonymous", "Named"];
 
+  private readonly rpcProvider: JsonRpcProvider | null = null;
+  private readonly inFlightFetches = new Map<string, Promise<void>>();
+
   constructor(
+    private readonly configService: ConfigService,
     @InjectRepository(AgreementStateChange)
     private readonly agreementStateChangeRepository: Repository<AgreementStateChange>,
     @InjectRepository(AgreementCreated)
@@ -37,7 +50,13 @@ export class BattlechainService {
     private readonly agreementOwnerAuthorizedRepository: Repository<AgreementOwnerAuthorized>,
     @InjectRepository(AttackModeratorTransferred)
     private readonly attackModeratorTransferredRepository: Repository<AttackModeratorTransferred>
-  ) {}
+  ) {
+    const rpcUrl = this.configService.get<string>("battlechainRpcUrl");
+    if (rpcUrl) {
+      this.rpcProvider = new JsonRpcProvider(rpcUrl, undefined, { staticNetwork: true });
+      this.logger.log(`RPC provider configured: ${rpcUrl}`);
+    }
+  }
 
   /**
    * Get the current state info for a contract by first finding its agreement,
@@ -262,13 +281,132 @@ export class BattlechainService {
   }
 
   /**
+   * If the agreement has not been RPC-fetched yet, fetch details from the
+   * on-chain contract and update the database. Returns the (possibly updated) entity.
+   */
+  private async ensureAgreementDetails(state: AgreementCurrentState): Promise<AgreementCurrentState> {
+    if (state.rpcFetchedAt || !this.rpcProvider) {
+      return state;
+    }
+
+    const address = state.agreementAddress.trim();
+
+    // Deduplicate concurrent fetches for the same agreement
+    const existing = this.inFlightFetches.get(address);
+    if (existing) {
+      await existing;
+      return (await this.agreementStateRepository.findOne({ where: { agreementAddress: address } })) ?? state;
+    }
+
+    const fetchPromise = this.fetchAndStoreDetails(address);
+    this.inFlightFetches.set(address, fetchPromise);
+
+    try {
+      await fetchPromise;
+      return (await this.agreementStateRepository.findOne({ where: { agreementAddress: address } })) ?? state;
+    } catch (error) {
+      this.logger.error({
+        message: "Failed to fetch agreement details via RPC",
+        stack: (error as Error)?.stack,
+        data: { agreementAddress: address },
+      });
+      return state;
+    } finally {
+      this.inFlightFetches.delete(address);
+    }
+  }
+
+  private async fetchAndStoreDetails(agreementAddress: string): Promise<void> {
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("RPC fetch timeout")), RPC_FETCH_TIMEOUT_MS)
+    );
+
+    await Promise.race([this.fetchAndStoreDetailsInternal(agreementAddress), timeoutPromise]);
+  }
+
+  private async fetchAndStoreDetailsInternal(agreementAddress: string): Promise<void> {
+    const contract = new Contract(agreementAddress, AGREEMENT_ABI, this.rpcProvider);
+
+    const [detailsResult, deadlineResult] = await Promise.allSettled([
+      contract.getDetails(),
+      contract.getCantChangeUntil(),
+    ]);
+
+    const now = new Date();
+    const updateData: Partial<AgreementCurrentState> = {
+      rpcFetchedAt: now,
+      lastUpdatedAt: now,
+    };
+
+    if (detailsResult.status === "fulfilled") {
+      const details = detailsResult.value;
+
+      updateData.protocolName = details.protocolName || null;
+      updateData.protocolNameUpdatedAt = now;
+
+      updateData.agreementUri = details.agreementURI || null;
+      updateData.agreementUriUpdatedAt = now;
+
+      updateData.bountyPercentage = details.bountyTerms.bountyPercentage.toString();
+      updateData.bountyCapUsd = details.bountyTerms.bountyCapUsd.toString();
+      updateData.retainable = details.bountyTerms.retainable;
+      updateData.identityRequirement = Number(details.bountyTerms.identity);
+      updateData.diligenceRequirements = details.bountyTerms.diligenceRequirements || null;
+      updateData.aggregateBountyCapUsd = details.bountyTerms.aggregateBountyCapUsd.toString();
+      updateData.bountyTermsUpdatedAt = now;
+
+      updateData.contactDetails = details.contactDetails.map((c: { name: string; contact: string }) => ({
+        name: c.name,
+        contact: c.contact,
+      }));
+      updateData.contactDetailsUpdatedAt = now;
+
+      // Upsert chain accounts
+      if (details.chains && details.chains.length > 0) {
+        await this.upsertAccountsFromChains(agreementAddress, details.chains);
+      }
+    }
+
+    if (deadlineResult.status === "fulfilled") {
+      updateData.commitmentDeadline = deadlineResult.value.toString();
+      updateData.commitmentDeadlineUpdatedAt = now;
+    }
+
+    await this.agreementStateRepository.update({ agreementAddress }, updateData);
+  }
+
+  private async upsertAccountsFromChains(
+    agreementAddress: string,
+    chains: { assetRecoveryAddress: string; accounts: { accountAddress: string; childContractScope: number }[]; caip2ChainId: string }[]
+  ): Promise<void> {
+    for (const chain of chains) {
+      for (const account of chain.accounts) {
+        await this.agreementAccountRepository
+          .createQueryBuilder()
+          .insert()
+          .into(AgreementAccount)
+          .values({
+            agreementAddress,
+            caip2ChainId: chain.caip2ChainId,
+            accountAddress: account.accountAddress,
+            childContractScope: Number(account.childContractScope),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .orUpdate(["child_contract_scope", "updated_at"], ["agreement_address", "caip2_chain_id", "account_address"])
+          .execute();
+      }
+    }
+  }
+
+  /**
    * Get agreement by its address.
    * Uses the materialized agreement_current_state table for single-query lookup.
    */
   async getAgreement(agreementAddress: string): Promise<AgreementDto | null> {
     const normalizedAddress = agreementAddress.toLowerCase();
 
-    const state = await this.agreementStateRepository.findOne({
+    let state = await this.agreementStateRepository.findOne({
       where: { agreementAddress: normalizedAddress },
     });
 
@@ -276,6 +414,7 @@ export class BattlechainService {
       return null;
     }
 
+    state = await this.ensureAgreementDetails(state);
     const coveredAccounts = await this.getCoveredAccounts(normalizedAddress);
     return this.mapStateToDto(state, coveredAccounts);
   }
@@ -288,7 +427,7 @@ export class BattlechainService {
     const normalizedAddress = contractAddress.toLowerCase();
 
     // Use GIN index for array contains query
-    const state = await this.agreementStateRepository
+    let state = await this.agreementStateRepository
       .createQueryBuilder("state")
       .where(":address = ANY(state.covered_contracts)", { address: normalizedAddress })
       .getOne();
@@ -297,6 +436,7 @@ export class BattlechainService {
       return null;
     }
 
+    state = await this.ensureAgreementDetails(state);
     const coveredAccounts = await this.getCoveredAccounts(state.agreementAddress);
     return this.mapStateToDto(state, coveredAccounts);
   }
@@ -317,18 +457,20 @@ export class BattlechainService {
     });
 
     if (agreementState) {
-      // It's an agreement contract - get its state and covered accounts
+      // It's an agreement contract - lazy-fetch details if needed
+      const enrichedState = await this.ensureAgreementDetails(agreementState);
       const coveredAccounts = await this.getCoveredAccounts(normalizedAddress);
       const statesByAgreement = await this.getAgreementStates([normalizedAddress]);
       const computedState = statesByAgreement.get(normalizedAddress);
 
       return {
-        agreement: this.mapStateToDto(agreementState, coveredAccounts, computedState),
+        agreement: this.mapStateToDto(enrichedState, coveredAccounts, computedState),
         isAgreementContract: true,
       };
     }
 
     // Otherwise check if it's covered by an agreement
+    // (getAgreementByContract already calls ensureAgreementDetails)
     const coveredBy = await this.getAgreementByContract(contractAddress);
     return {
       agreement: coveredBy,

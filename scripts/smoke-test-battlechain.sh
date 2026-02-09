@@ -387,11 +387,17 @@ test_agreement_indexed() {
   assert "Test agreement indexed within ${max_wait}s" '[ "$indexed" = true ]'
 
   if [ "$indexed" = true ]; then
-    # Verify agreement details
+    # Verify agreement details — this request triggers lazy RPC fetch
+    # because the indexer only captures AgreementCreated (address + owner),
+    # and the API fills in the rest via getDetails() RPC call.
     local response=$(curl -s "$API_URL/battlechain/agreement/$TEST_AGREEMENT_ADDRESS")
 
     local protocol_name=$(echo "$response" | jq -r '.protocolName // empty')
-    assert "Agreement has correct protocolName (SmokeTestProtocol)" '[ "$protocol_name" = "SmokeTestProtocol" ]'
+    assert "Agreement has protocolName (RPC-fetched)" '[ -n "$protocol_name" ]'
+
+    if [ -n "$protocol_name" ]; then
+      assert "protocolName is SmokeTestProtocol" '[ "$protocol_name" = "SmokeTestProtocol" ]'
+    fi
 
     local owner=$(echo "$response" | jq -r '.owner // empty')
     local expected_owner="0x36615Cf349d7F6344891B1e7CA7C72883F5dc049"
@@ -400,8 +406,21 @@ test_agreement_indexed() {
     local expected_lower=$(echo "$expected_owner" | tr '[:upper:]' '[:lower:]')
     assert "Agreement has correct owner" '[ "$owner_lower" = "$expected_lower" ]'
 
-    log_info "Agreement details from API:"
-    echo "$response" | jq '{agreementAddress, owner, protocolName, state}' 2>/dev/null || echo "$response"
+    # Verify RPC-fetched fields are populated (not null)
+    local bounty_pct=$(echo "$response" | jq -r '.bountyPercentage // empty')
+    assert "Agreement has bountyPercentage (RPC-fetched)" '[ -n "$bounty_pct" ]'
+
+    local agreement_uri=$(echo "$response" | jq -r '.agreementUri // empty')
+    assert "Agreement has agreementUri (RPC-fetched)" '[ -n "$agreement_uri" ]'
+
+    log_info "Agreement details from API (includes RPC-fetched data):"
+    echo "$response" | jq '{agreementAddress, owner, protocolName, state, bountyPercentage, bountyCapUsd, agreementUri}' 2>/dev/null || echo "$response"
+
+    # Second request should use cached data (rpc_fetched_at is set)
+    log_info "Verifying second request uses cached data..."
+    local response2=$(curl -s "$API_URL/battlechain/agreement/$TEST_AGREEMENT_ADDRESS")
+    local protocol_name2=$(echo "$response2" | jq -r '.protocolName // empty')
+    assert "Second request returns same protocolName (cached)" '[ "$protocol_name2" = "$protocol_name" ]'
   fi
 
   # Test agreements list includes our test agreement
@@ -409,8 +428,9 @@ test_agreement_indexed() {
   local total_items=$(echo "$list_response" | jq '.meta.totalItems // 0')
   assert "Agreements list has at least 1 agreement" '[ "$total_items" -ge 1 ]'
 
-  # Verify agreement appears in list
-  local found_in_list=$(echo "$list_response" | jq --arg addr "$TEST_AGREEMENT_ADDRESS" \
+  # Verify agreement appears in list (case-insensitive: deployer uses checksummed, API lowercases)
+  local addr_lower=$(echo "$TEST_AGREEMENT_ADDRESS" | tr '[:upper:]' '[:lower:]')
+  local found_in_list=$(echo "$list_response" | jq --arg addr "$addr_lower" \
     '.items | map(select(.agreementAddress == $addr)) | length')
   assert "Test agreement appears in agreements list" '[ "$found_in_list" -ge 1 ]'
 }

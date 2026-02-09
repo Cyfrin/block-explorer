@@ -106,6 +106,7 @@ export default () => {
     PRIVIDIUM_SESSION_MAX_AGE,
     PRIVIDIUM_SESSION_SAME_SITE,
     PRIVIDIUM_SESSION_SECRET,
+    BATTLECHAIN_RPC_URL,
   } = process.env;
 
   const MAX_NUMBER_OF_REPLICA = 100;
@@ -232,5 +233,6 @@ export default () => {
     ethToken: getEthToken(),
     gracefulShutdownTimeoutMs: parseInt(GRACEFUL_SHUTDOWN_TIMEOUT_MS, 10) || 0,
     prividium: getPrividiumConfig(),
+    battlechainRpcUrl: BATTLECHAIN_RPC_URL || null,
   };
 };

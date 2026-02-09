@@ -49,7 +49,8 @@ CREATE TABLE IF NOT EXISTS battlechainindexer_agreement.agreement_current_state 
   scope_updated_at TIMESTAMPTZ,
 
   -- Metadata
-  last_updated_at TIMESTAMPTZ DEFAULT NOW()
+  last_updated_at TIMESTAMPTZ DEFAULT NOW(),
+  rpc_fetched_at TIMESTAMPTZ  -- NULL = not yet fetched via RPC
 );
 
 -- Index for reverse lookup (find agreement by covered contract)

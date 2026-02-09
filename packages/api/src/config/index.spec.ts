@@ -68,6 +68,7 @@ describe("config", () => {
       }),
       gracefulShutdownTimeoutMs: 0,
       prividium: {},
+      battlechainRpcUrl: null,
     });
   });
 
@@ -142,6 +143,7 @@ describe("config", () => {
         }),
         gracefulShutdownTimeoutMs: 0,
         prividium: {},
+        battlechainRpcUrl: null,
       });
     });
 
@@ -208,6 +210,7 @@ describe("config", () => {
           }),
           gracefulShutdownTimeoutMs: 0,
           prividium: {},
+          battlechainRpcUrl: null,
         });
       });
     });
@@ -273,6 +276,7 @@ describe("config", () => {
           }),
           gracefulShutdownTimeoutMs: 0,
           prividium: {},
+          battlechainRpcUrl: null,
         });
       });
     });
@@ -371,6 +375,7 @@ describe("config", () => {
         sessionSecret: "secret",
         permissionsApiUrl: "http://localhost:8000",
       },
+      battlechainRpcUrl: null,
     });
   });
 

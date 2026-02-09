@@ -85,4 +85,7 @@ export class AgreementCurrentState {
   // Metadata
   @Column({ name: "last_updated_at", type: "timestamptz", nullable: true })
   lastUpdatedAt: Date | null;
+
+  @Column({ name: "rpc_fetched_at", type: "timestamptz", nullable: true })
+  rpcFetchedAt: Date | null;
 }
