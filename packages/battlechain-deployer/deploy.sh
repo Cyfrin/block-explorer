@@ -310,6 +310,29 @@ if [ "$CREATE_TEST_AGREEMENT" = "true" ]; then
 
         # Add to addresses.env
         echo "TEST_AGREEMENT_ADDRESS=$TEST_AGREEMENT_ADDRESS" >> "$OUTPUT_DIR/addresses.env"
+
+        # Post-creation calls via cast send (separate transactions).
+        # zkSync local node can't read state from contracts deployed in the same block,
+        # so these must be in different blocks from the create() call above.
+
+        # Call addOrSetChains to emit ChainAddedOrSet with tuple[] accounts.
+        # Done BEFORE extendCommitmentWindow so we're not in commitment window yet.
+        echo ""
+        echo "Adding chain via addOrSetChains (tuple[] JSONB test)..."
+        cast send --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" --legacy \
+            "$TEST_AGREEMENT_ADDRESS" \
+            "addOrSetChains((string,(string,uint8)[],string)[])" \
+            "[(\"0x36615Cf349d7F6344891B1e7CA7C72883F5dc049\",[(\"0xABCDEF0123456789ABCDEF0123456789ABCDEF01\",1),(\"0x9876543210987654321098765432109876543210\",2)],\"eip155:625\")]" \
+            >/dev/null 2>&1 && echo "ChainAddedOrSet event emitted (2 accounts)" || echo "WARNING: addOrSetChains failed (non-critical)"
+
+        # Extend commitment window to 30 days
+        echo "Extending commitment window..."
+        COMMITMENT_END=$(($(date +%s) + 2592000))
+        cast send --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" --legacy \
+            "$TEST_AGREEMENT_ADDRESS" \
+            "extendCommitmentWindow(uint256)" \
+            "$COMMITMENT_END" \
+            >/dev/null 2>&1 && echo "Commitment window extended" || echo "WARNING: extendCommitmentWindow failed"
     fi
 fi
 

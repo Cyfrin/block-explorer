@@ -34,7 +34,6 @@ contract CreateTestAgreement is Script {
         contacts[0] = Contact({ name: "Security Team", contact: "security@smoketest.local" });
 
         // Build chain scope - include BattleChain (eip155:626) with a test contract address
-        // We use a deterministic test address that we can verify in the smoke test
         AgreementChain[] memory chains = new AgreementChain[](1);
         AgreementAccount[] memory accounts = new AgreementAccount[](1);
         accounts[0] = AgreementAccount({
@@ -72,32 +71,11 @@ contract CreateTestAgreement is Script {
 
         console.log("Agreement created at:", agreementAddress);
 
-        // Call addOrSetChains to emit the ChainAddedOrSet event with tuple[] accounts
-        // This tests the forked rindexer's JSONB support for tuple arrays
-        AgreementAccount[] memory chainAccounts = new AgreementAccount[](2);
-        chainAccounts[0] = AgreementAccount({
-            accountAddress: "0xABCDEF0123456789ABCDEF0123456789ABCDEF01",
-            childContractScope: ChildContractScope.ExistingOnly
-        });
-        chainAccounts[1] = AgreementAccount({
-            accountAddress: "0x9876543210987654321098765432109876543210",
-            childContractScope: ChildContractScope.All
-        });
-        AgreementChain[] memory newChains = new AgreementChain[](1);
-        newChains[0] = AgreementChain({
-            assetRecoveryAddress: "0x36615Cf349d7F6344891B1e7CA7C72883F5dc049",
-            accounts: chainAccounts,
-            caip2ChainId: "eip155:626" // BattleChain - update existing chain
-        });
-        Agreement(agreementAddress).addOrSetChains(newChains);
-        console.log("ChainAddedOrSet event emitted for indexer (with tuple[] accounts)");
-
-        // Extend commitment window to 30 days (required for production state)
-        uint256 newCommitmentEnd = block.timestamp + 30 days;
-        Agreement(agreementAddress).extendCommitmentWindow(newCommitmentEnd);
-        console.log("Commitment window extended to:", newCommitmentEnd);
-
         vm.stopBroadcast();
+
+        // NOTE: Additional calls (addOrSetChains, extendCommitmentWindow) are done
+        // via cast send in deploy.sh. zkSync local node cannot read state from
+        // contracts deployed in the same block, so these must be separate transactions.
 
         console.log("");
         console.log("Test Agreement Creation Complete!");
