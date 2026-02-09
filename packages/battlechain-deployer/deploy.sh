@@ -7,7 +7,7 @@ set -e
 # Configuration from environment
 RPC_URL="${BLOCKCHAIN_RPC_URL:-http://zksync:3050}"
 PRIVATE_KEY="${DEPLOYER_PRIVATE_KEY:-0x7726827caac94a7f9e1b160f7ea819f172f7b6f9d2a97f992c38edeab82d4110}"
-CHAIN_ID="${CHAIN_ID:-270}"
+CHAIN_ID="${CHAIN_ID:-626}"
 OUTPUT_DIR="${OUTPUT_DIR:-/shared}"
 SEED_DATA="${SEED_BATTLECHAIN_DATA:-false}"
 CONTRACTS_SOURCE="${CONTRACTS_DIR:-/app/contracts}"

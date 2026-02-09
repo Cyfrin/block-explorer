@@ -21,7 +21,7 @@ load_addresses() {
         export AGREEMENT_FACTORY_ADDRESS=$(jq -r '.AGREEMENT_FACTORY_ADDRESS // empty' "$ADDRESSES_FILE")
         export SAFE_HARBOR_REGISTRY_ADDRESS=$(jq -r '.SAFE_HARBOR_REGISTRY_ADDRESS // empty' "$ADDRESSES_FILE")
         export START_BLOCK=$(jq -r '.START_BLOCK // "0"' "$ADDRESSES_FILE")
-        export CHAIN_ID=$(jq -r '.CHAIN_ID // "270"' "$ADDRESSES_FILE")
+        export CHAIN_ID=$(jq -r '.CHAIN_ID // "626"' "$ADDRESSES_FILE")
 
         # Validate addresses are not empty
         if [ -n "$ATTACK_REGISTRY_ADDRESS" ] && [ -n "$AGREEMENT_FACTORY_ADDRESS" ]; then
@@ -74,7 +74,7 @@ else
 fi
 
 # Set defaults for any missing values
-export CHAIN_ID="${CHAIN_ID:-270}"
+export CHAIN_ID="${CHAIN_ID:-626}"
 export BLOCKCHAIN_RPC_URL="${BLOCKCHAIN_RPC_URL:-http://zksync:3050}"
 export START_BLOCK="${START_BLOCK:-0}"
 

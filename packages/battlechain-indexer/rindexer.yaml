@@ -5,7 +5,7 @@ project_type: no-code
 
 networks:
   - name: battlechain
-    chain_id: 270
+    chain_id: 626
     rpc: ${BLOCKCHAIN_RPC_URL}
 
 storage:
