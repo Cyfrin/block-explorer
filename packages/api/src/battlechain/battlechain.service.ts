@@ -4,7 +4,6 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { JsonRpcProvider, Contract } from "ethers";
 import { AgreementStateChange } from "./agreementState.entity";
-import { AgreementCreated } from "./agreement.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
 import { AgreementAccount } from "./agreementAccount.entity";
 import { AgreementOwnerAuthorized } from "./agreementOwnerAuthorized.entity";
@@ -43,8 +42,6 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
     private readonly configService: ConfigService,
     @InjectRepository(AgreementStateChange)
     private readonly agreementStateChangeRepository: Repository<AgreementStateChange>,
-    @InjectRepository(AgreementCreated)
-    private readonly agreementCreatedRepository: Repository<AgreementCreated>,
     @InjectRepository(AgreementCurrentState)
     private readonly agreementStateRepository: Repository<AgreementCurrentState>,
     @InjectRepository(AgreementAccount)

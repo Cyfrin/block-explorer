@@ -25,7 +25,7 @@ COPY abis/ ./abis/
 # - ATTACK_REGISTRY_ADDRESS: Address of AttackRegistry contract
 # - AGREEMENT_FACTORY_ADDRESS: Address of AgreementFactory contract
 # - SAFE_HARBOR_REGISTRY_ADDRESS: Address of BattleChainSafeHarborRegistry contract
-# - START_BLOCK: Block number to start indexing from
+# - BATTLECHAIN_START_BLOCK: Block number to start indexing from
 # - CHAIN_ID: Chain ID of the network
 
 # Use entrypoint to wait for addresses and generate config

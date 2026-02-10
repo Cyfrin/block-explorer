@@ -5,7 +5,6 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository, SelectQueryBuilder } from "typeorm";
 import { BattlechainService } from "./battlechain.service";
 import { AgreementStateChange } from "./agreementState.entity";
-import { AgreementCreated } from "./agreement.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
 import { AgreementAccount } from "./agreementAccount.entity";
 import { AgreementOwnerAuthorized } from "./agreementOwnerAuthorized.entity";
@@ -15,7 +14,6 @@ import { ContractState } from "./battlechain.dto";
 describe("BattlechainService", () => {
   let service: BattlechainService;
   let agreementStateChangeRepository: Repository<AgreementStateChange>;
-  let agreementCreatedRepository: Repository<AgreementCreated>;
   let agreementStateRepository: Repository<AgreementCurrentState>;
   let agreementAccountRepository: Repository<AgreementAccount>;
   let agreementOwnerAuthorizedRepository: Repository<AgreementOwnerAuthorized>;
@@ -24,7 +22,6 @@ describe("BattlechainService", () => {
 
   beforeEach(async () => {
     agreementStateChangeRepository = mock<Repository<AgreementStateChange>>();
-    agreementCreatedRepository = mock<Repository<AgreementCreated>>();
     agreementStateRepository = mock<Repository<AgreementCurrentState>>();
     agreementAccountRepository = mock<Repository<AgreementAccount>>();
     agreementOwnerAuthorizedRepository = mock<Repository<AgreementOwnerAuthorized>>();
@@ -53,10 +50,6 @@ describe("BattlechainService", () => {
         {
           provide: getRepositoryToken(AgreementStateChange),
           useValue: agreementStateChangeRepository,
-        },
-        {
-          provide: getRepositoryToken(AgreementCreated),
-          useValue: agreementCreatedRepository,
         },
         {
           provide: getRepositoryToken(AgreementCurrentState),
@@ -539,7 +532,6 @@ describe("BattlechainService", () => {
           BattlechainService,
           { provide: ConfigService, useValue: rpcConfigService },
           { provide: getRepositoryToken(AgreementStateChange), useValue: mock<Repository<AgreementStateChange>>() },
-          { provide: getRepositoryToken(AgreementCreated), useValue: mock<Repository<AgreementCreated>>() },
           { provide: getRepositoryToken(AgreementCurrentState), useValue: rpcAgreementStateRepository },
           { provide: getRepositoryToken(AgreementAccount), useValue: rpcAgreementAccountRepository },
           { provide: getRepositoryToken(AgreementOwnerAuthorized), useValue: mock<Repository<AgreementOwnerAuthorized>>() },

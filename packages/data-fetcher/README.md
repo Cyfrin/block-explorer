@@ -1,7 +1,7 @@
-# ZKsync Era Block Explorer Data Fetcher
+# Block Explorer Data Fetcher
 ## Overview
 
-`ZKsync Era Block Explorer Data Fetcher` service exposes and implements an HTTP endpoint to retrieve aggregated data for a certain block / range of blocks from the blockchain. This endpoint is called by the [Block Explorer Worker](/packages/worker) service.
+Service that exposes an HTTP endpoint to retrieve aggregated data for a certain block / range of blocks from the blockchain. This endpoint is called by the [Block Explorer Worker](/packages/worker) service.
 
 ## Installation
 

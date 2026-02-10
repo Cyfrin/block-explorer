@@ -1,21 +1,25 @@
-<h1 align="center">ZKsync Block Explorer</h1>
+<h1 align="center">BattleChain Block Explorer</h1>
 
-<p align="center">Online blockchain browser for viewing and analyzing <a href="https://zksync.io">ZKsync</a> blockchain.</p>
+<p align="center">Block explorer for the BattleChain network, forked from the <a href="https://github.com/matter-labs/block-explorer">ZKsync Block Explorer</a>.</p>
 
-## 📌 Overview
-This repository is a monorepo consisting of 4 packages:
-- [Worker](./packages/worker) - an indexer service for [ZKsync](https://zksync.io) blockchain data. The purpose of the service is to read blockchain data in real time, transform it and fill in it's database with the data in a way that makes it easy to be queried by the [API](./packages/api) service.
-- [Data Fetcher](./packages/data-fetcher) - a service that exposes and implements an HTTP endpoint to retrieve aggregated data for a certain block / range of blocks from the blockchain. This endpoint is called by the [Worker](./packages/worker) service.
-- [API](./packages/api) - a service providing Web API for retrieving structured [ZKsync](https://zksync.io) blockchain data collected by [Worker](./packages/worker). It connects to the Worker's database to be able to query the collected data.
-- [App](./packages/app) - a front-end app providing an easy-to-use interface for users to view and inspect transactions, blocks, contracts and more. It makes requests to the [API](./packages/api) to get the data and presents it in a way that's easy to read and understand.
+## Overview
+This repository is a monorepo consisting of 6 packages:
 
-## 🏛 Architecture
-The following diagram illustrates how are the block explorer components connected:
+**Core (from upstream ZKsync Block Explorer):**
+- [Worker](./packages/worker) - an indexer service for blockchain data. Reads blockchain data in real time, transforms it and fills its database in a way that makes it easy to be queried by the [API](./packages/api) service.
+- [Data Fetcher](./packages/data-fetcher) - a service that exposes an HTTP endpoint to retrieve aggregated data for a certain block / range of blocks from the blockchain. Called by the [Worker](./packages/worker) service.
+- [API](./packages/api) - a service providing Web API for retrieving structured blockchain data collected by [Worker](./packages/worker). Also serves the [BattleChain API](#battlechain-api) endpoints.
+- [App](./packages/app) - a front-end app providing an easy-to-use interface for users to view and inspect transactions, blocks, contracts and more. Includes a [Safe Harbor Agreements](#safe-harbor-agreements) page.
 
+**BattleChain-specific:**
+- [BattleChain Deployer](./packages/battlechain-deployer) - deploys BattleChain smart contracts (AttackRegistry, AgreementFactory, SafeHarborRegistry) to the local chain and outputs deployed addresses to a shared volume.
+- [BattleChain Indexer](./packages/battlechain-indexer) - indexes BattleChain contract events using [rindexer](https://github.com/joshstevens19/rindexer). Populates the `battlechain` schema in the shared PostgreSQL database.
+
+## Architecture
 ```mermaid
 flowchart
   subgraph blockchain[Blockchain]
-    Blockchain[ZKsync JSON-RPC API]
+    Blockchain[JSON-RPC API]
   end
 
   subgraph explorer[Block explorer]
@@ -24,12 +28,17 @@ flowchart
     Data-Fetcher(Data Fetcher service)
     API(API service)
     App(App)
-    
+    BC-Indexer(BattleChain Indexer)
+
     Worker-."Request aggregated data (HTTP)".->Data-Fetcher
     Data-Fetcher-."Request data (HTTP)".->Blockchain
     Worker-.Save processed data.->Database
 
+    BC-Indexer-."Index BattleChain events".->Database
+    BC-Indexer-."Subscribe to events (HTTP)".->Blockchain
+
     API-.Query data.->Database
+    API-."Fetch agreement details (RPC)".->Blockchain
     App-."Request data (HTTP)".->API
     App-."Request data (HTTP)".->Blockchain
   end
@@ -37,107 +46,117 @@ flowchart
   Worker-."Request data (HTTP)".->Blockchain
 ```
 
-[Worker](./packages/worker) service retrieves aggregated data from the [Data Fetcher](./packages/data-fetcher) via HTTP and also directly from the blockchain using [ZKsync JSON-RPC API](https://docs.zksync.io/build/api-reference/ethereum-rpc), processes it and saves into the database. [API](./packages/api) service is connected to the same database where it gets the data from to handle API requests. It performs only read requests to the database. The front-end [App](./packages/app) makes HTTP calls to the Block Explorer [API](./packages/api) to get blockchain data and to the [ZKsync JSON-RPC API](https://docs.zksync.io/build/api-reference/ethereum-rpc) for reading contracts, performing transactions etc.
+The [Worker](./packages/worker) and [Data Fetcher](./packages/data-fetcher) handle general blockchain indexing (transactions, blocks, tokens, etc.). The [BattleChain Indexer](./packages/battlechain-indexer) indexes BattleChain-specific contract events (agreement creation, state changes, scope updates) into the `battlechain` schema. The [API](./packages/api) serves both the standard block explorer endpoints and BattleChain-specific endpoints, including proactive RPC polling to fetch on-chain agreement details.
 
-## 🚀 Features
+## BattleChain API
+The API exposes BattleChain endpoints under `/battlechain/*`:
 
-- ✅ View transactions, blocks, transfers and logs.
-- ✅ Inspect accounts, contracts, tokens and balances.
-- ✅ Verify smart contracts.
-- ✅ Interact with smart contracts.
-- ✅ Standalone HTTP API.
-- ✅ Local node support.
+| Endpoint | Description |
+|----------|-------------|
+| `GET /battlechain/contract-state/:address` | Get the current AttackRegistry state for a contract |
+| `GET /battlechain/agreement/:address` | Get agreement details by agreement address |
+| `GET /battlechain/agreement/by-contract/:address` | Find the agreement covering a specific contract |
+| `GET /battlechain/agreements` | List all agreements (paginated, sortable, filterable by state) |
+| `GET /battlechain/authorized-owner/:address` | Check if a contract was deployed via BattleChainDeployer |
+| `POST /battlechain/authorized-owners` | Batch check authorized owners for multiple contracts |
+| `GET /battlechain/attack-moderator/:address` | Get the current attack moderator for an agreement |
 
-## 📋 Prerequisites
+Agreement details (protocol name, bounty terms, contact info) are fetched from the chain via RPC and cached in the database. A polling job proactively fetches details for newly indexed agreements within ~10 seconds of creation.
 
-- Ensure you have `node >= 18.0.0` and `npm >= 9.0.0` installed.
+## Safe Harbor Agreements
+The front-end App includes a Safe Harbor Agreements page (`/agreements`) that displays all agreements created via the AgreementFactory contract. Agreements that haven't had their on-chain details fetched yet show loading placeholders that resolve once the polling job completes.
 
-## 🛠 Installation
+## Prerequisites
+
+- `node >= 18.0.0` and `npm >= 9.0.0`
+- Docker and Docker Compose (for running the full stack)
+
+## Running in Docker
+The recommended way to run the full stack locally:
+```bash
+docker compose up
+```
+This starts: local Ethereum node (reth), ZKsync, PostgreSQL, BattleChain Deployer, BattleChain Indexer, Worker, Data Fetcher, API, and App.
+
+To also deploy a test agreement on startup:
+```bash
+CREATE_TEST_AGREEMENT=true docker compose up
+```
+
+To seed BattleChain development data:
+```bash
+SEED_BATTLECHAIN_DATA=true docker compose up
+```
+
+### Rebuilding after code changes
+If you've made changes to the API or indexer code, rebuild the affected images:
+```bash
+docker compose up -d --build api battlechain-indexer
+```
+
+If you've changed the database schema, do a full volume reset:
+```bash
+docker compose down -v
+docker compose up
+```
+
+## Running locally (without Docker)
+
+Make sure you have a PostgreSQL database server running and all environment variables configured. See individual package READMEs for env variable details:
+- [Worker](./packages/worker#setting-up-env-variables)
+- [Data Fetcher](./packages/data-fetcher#setting-up-env-variables)
+- [API](./packages/api#setting-up-env-variables)
+- [App](./packages/app#environment-configs)
 
 ```bash
 npm install
-```
-
-## ⚙️ Setting up env variables
-
-### Manually set up env variables
-Make sure you have set up all the necessary env variables. Follow setting up env variables instructions for [Worker](./packages/worker#setting-up-env-variables), [Data Fetcher](./packages/data-fetcher#setting-up-env-variables) and [API](./packages/api#setting-up-env-variables). For the [App](./packages/app) package you might want to edit environment config, see [Environment configs](./packages/app#environment-configs).
-
-### Configure custom base token
-For networks with a custom base token, make sure to configure the base token for both Worker and API services by following the corresponding instructions [here](./packages/worker/README.md#custom-base-token-configuration) and [here](./packages/api/README.md#custom-base-token-configuration).
-
-### Build env variables based on your [zksync-era](https://github.com/matter-labs/zksync-era) local repo setup
-Make sure you have [zksync-era](https://github.com/matter-labs/zksync-era) repo set up locally. You must have your environment variables files present in the [zksync-era](https://github.com/matter-labs/zksync-era) repo at `/etc/env/*.env` for the build envs script to work.
-
-The following script sets `.env` files for [Worker](./packages/worker), [Data Fetcher](./packages/data-fetcher) and [API](./packages/api) packages as well as environment configuration file for [App](./packages/app) package based on your local [zksync-era](https://github.com/matter-labs/zksync-era) repo setup.
-```bash
-npm run hyperchain:configure
-```
-You can review and edit generated files if you need to change any settings.
-
-## 👨‍💻 Running locally
-
-Before running the solution, make sure you have a database server up and running, you have created a database and set up all the required environment variables.
-To create a database run the following command:
-```bash
 npm run db:create
-```
-
-To run all the packages (`Worker`, `Data Fetcher`, `API` and front-end `App`) in `development` mode run the following command from the root directory.
-```bash
 npm run dev
 ```
 
-For `production` mode run:
-```bash
-npm run build
-npm run start
-```
+## Verify services are running
 
-Each component can also be started individually. Follow individual packages `README` for details.
+| Service | URL |
+|---------|-----|
+| App | http://localhost:3010 |
+| API | http://localhost:3020 |
+| API Swagger Docs | http://localhost:3020/docs |
+| Worker | http://localhost:3001 |
+| Data Fetcher | http://localhost:3040 |
 
-## 🐳 Running in Docker
-There is a docker compose configuration that allows you to run Block Explorer and all its dependencies in docker. Just run the following command to spin up the whole environment:
-```
-docker compose up
-```
-It will run local Ethereum node, ZkSync, Postgres DB and all Block Explorer services.
-
-## ⛓️ Connection to your Hyperchain
-To get block-explorer connected to your ZK Stack Hyperchain you need to set up all the the necessary environment and configuration files with your Hyperchain settings. You can use a script to build them. See [Setting up env variables](#%EF%B8%8F-setting-up-env-variables).
-
-## 🔍 Verify Block Explorer is up and running
-
-To verify front-end `App` is running open http://localhost:3010 in your browser. `API` should be available at http://localhost:3020, `Worker` at http://localhost:3001 and `Data Fetcher` at http://localhost:3040.
-
-## 🕵️‍♂️ Testing
+## Testing
 Run unit tests for all packages:
 ```bash
 npm run test
 ```
-Run e2e tests for all packages:
+
+Run the BattleChain smoke test (requires Docker stack running):
 ```bash
-npm run test:e2e
+./scripts/smoke-test-battlechain.sh
 ```
+
 Run tests for a specific package:
 ```bash
 npm run test -w {package}
 ```
-For more details on testing please check individual packages `README`.
 
-## 💻 Conventional Commits
-We follow the Conventional Commits [specification](https://www.conventionalcommits.org/en/v1.0.0/#specification).
+## Environment Variables (BattleChain-specific)
 
-## 📘 License
-ZKsync Block Explorer is distributed under the terms of either
+| Variable | Service | Description |
+|----------|---------|-------------|
+| `BATTLECHAIN_RPC_URL` | API | RPC URL for fetching on-chain agreement details |
+| `DEPLOYER_PRIVATE_KEY` | Deployer | Private key for deploying BattleChain contracts (local dev only; defaults to the ZKsync rich wallet key) |
+| `SEED_BATTLECHAIN_DATA` | Deployer | Set to `true` to seed dev data on startup |
+| `CREATE_TEST_AGREEMENT` | Deployer | Set to `true` to create a test agreement on startup |
+| `ATTACK_REGISTRY_ADDRESS` | Indexer | Manual override for AttackRegistry address |
+| `AGREEMENT_FACTORY_ADDRESS` | Indexer | Manual override for AgreementFactory address |
+| `SAFE_HARBOR_REGISTRY_ADDRESS` | Indexer | Manual override for SafeHarborRegistry address |
+| `BATTLECHAIN_START_BLOCK` | Indexer | Block number to start indexing from |
 
-- Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+## License
+Distributed under the terms of either:
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
 - MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
-
-## 🔗 Production links
-- Testnet Sepolia API: https://block-explorer-api.sepolia.zksync.dev
-- Mainnet API: https://block-explorer-api.mainnet.zksync.io
-- Testnet Sepolia App: https://sepolia.explorer.zksync.io
-- Mainnet App: https://explorer.zksync.io

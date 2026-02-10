@@ -1,7 +1,9 @@
-# ZKsync Era Block Explorer Worker
+# Block Explorer Worker
 ## Overview
 
-`ZKsync Era Block Explorer Worker` is an indexer service for ZKsync Era blockchain data. It retrieves aggregated data from the [Data Fetcher](/packages/data-fetcher) via HTTP and also directly from the blockchain using [ZKsync Era JSON-RPC API](https://docs.zksync.io/build/api-reference/ethereum-rpc), processes it and saves into the database in a way that makes it easy to read by the [Block Explorer API](/packages/api).
+Indexer service for general blockchain data (transactions, blocks, tokens, transfers). Retrieves aggregated data from the [Data Fetcher](/packages/data-fetcher) via HTTP and also directly from the blockchain JSON-RPC API, processes it and saves into the database in a way that makes it easy to read by the [Block Explorer API](/packages/api).
+
+> **Note:** BattleChain-specific contract events (agreements, state changes, etc.) are indexed separately by the [BattleChain Indexer](/packages/battlechain-indexer), not by this Worker service.
 
 ## Installation
 

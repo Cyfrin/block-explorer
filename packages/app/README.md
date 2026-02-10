@@ -1,6 +1,6 @@
-# ZKsync Era Block Explorer App
+# BattleChain Block Explorer App
 ## Overview
-`ZKsync Era Block Explorer App` is a front-end app providing an easy-to-use interface for users to view and inspect transactions, blocks, contracts and more on [ZKsync Era](https://zksync.io) blockchain.
+Front-end app for the BattleChain block explorer, forked from the ZKsync Era Block Explorer App. Provides an interface for users to view and inspect transactions, blocks, contracts and more. Includes a **Safe Harbor Agreements** page (`/agreements`) for browsing agreements created via the AgreementFactory contract, with real-time loading placeholders for details being fetched from the chain.
 
 ## Recommended IDE Setup
 
@@ -77,16 +77,3 @@ npm run test:e2e
 npm run lint
 ```
 
-## Production links
- - [Web Application](https://explorer.zksync.io)
- - [Storybook](https://storybook-scan-v2.zksync.dev)
-
-
-## Verify Block Explorer UI test results in GitHub Actions
-GitHub Actions test results are available in:
-
-- `GitHub Actions` --> `Summary` page at the very end of a page.
-- Inside of each test run in the log: `Feature on Mainnet + Sepolia` --> `@search` --> `Upload test results to Allure reporter` --> `https://raw.githack.com/matter-labs/block-explorer/gh-pages/_github.run_number_/index.html`
-- Directly via a link `https://raw.githack.com/matter-labs/block-explorer/gh-pages/_github.run_number_/index.html` after each PR running. The history of test runs for public view locates in `gh-pages` branch.
-
-In case of 404 page, make sure that the folder with its `github.run_number` exists in the `gh-pages`. If the folder exist, try again in a few minutes as `https://raw.githack.com` needs to update the data. Public report link will be available when the 'Allure Report' job will be succesfully executed.

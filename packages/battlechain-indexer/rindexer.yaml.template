@@ -18,7 +18,7 @@ contracts:
     details:
       - network: battlechain
         address: "${ATTACK_REGISTRY_ADDRESS}"
-        start_block: "${START_BLOCK}"
+        start_block: "${BATTLECHAIN_START_BLOCK}"
     abi: ./abis/AttackRegistry.abi.json
     include_events:
       - AgreementStateChanged
@@ -31,7 +31,7 @@ contracts:
     details:
       - network: battlechain
         address: "${AGREEMENT_FACTORY_ADDRESS}"
-        start_block: "${START_BLOCK}"
+        start_block: "${BATTLECHAIN_START_BLOCK}"
     abi: ./abis/AgreementFactory.abi.json
     include_events:
       - AgreementCreated
@@ -41,7 +41,7 @@ contracts:
     details:
       - network: battlechain
         address: "${SAFE_HARBOR_REGISTRY_ADDRESS}"
-        start_block: "${START_BLOCK}"
+        start_block: "${BATTLECHAIN_START_BLOCK}"
     abi: ./abis/BattleChainSafeHarborRegistry.abi.json
     include_events:
       - BattleChainSafeHarborAdoption
@@ -52,7 +52,7 @@ contracts:
   - name: Agreement
     details:
       - network: battlechain
-        start_block: "${START_BLOCK}"
+        start_block: "${BATTLECHAIN_START_BLOCK}"
         factory:
           name: AgreementFactory
           address: "${AGREEMENT_FACTORY_ADDRESS}"

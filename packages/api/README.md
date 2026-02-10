@@ -1,10 +1,14 @@
-# ZKsync Era Block Explorer API
+# BattleChain Block Explorer API
 ## Overview
 
-`ZKsync Era Block Explorer API` is a block explorer API for ZKsync Era blockchain.
-The service provides API for retrieving structured ZKsync Era blockchain data. It must be connected to the [Block explorer Worker](/packages/worker) database.
+Block explorer API for the BattleChain network, forked from the ZKsync Era Block Explorer API.
 
-There are 2 sets of endpoints the service provides. All the endpoints under `/api/*` are designed for external direct usage. These endpoints are similar to [Etherscan API](https://docs.etherscan.io) endpoints. The development of these endpoints is in progress, so more of them will be added soon. The other set of endpoints (other than `/api/*`) is designed to be used by the front-end [App](/packages/app) only and is not meant to be used externally. Once all the new `/api/*` endpoints are developed all the other endpoints (other than `/api/*`) will be deprecated and removed.
+The service provides three sets of endpoints:
+1. **`/api/*`** - External API endpoints similar to [Etherscan API](https://docs.etherscan.io), designed for direct external usage.
+2. **`/battlechain/*`** - BattleChain-specific endpoints for querying Safe Harbor agreement data, contract states, authorized owners, and attack moderators. See the [root README](/README.md#battlechain-api) for a full endpoint list.
+3. **Other endpoints** - Designed to be used by the front-end [App](/packages/app) only.
+
+The service must be connected to the [Block explorer Worker](/packages/worker) database. BattleChain data is indexed into the `battlechain` schema by the [BattleChain Indexer](/packages/battlechain-indexer).
 
 ## Installation
 
@@ -24,8 +28,9 @@ You need to have a running Worker database, for instructions on how to run the w
   - `DATABASE_REPLICA_URL_<<replica_index>>`
   - `DATABASE_CONNECTION_IDLE_TIMEOUT_MS`
   - `DATABASE_CONNECTION_POOL_SIZE`
-- Set `CONTRACT_VERIFICATION_API_URL` to your verification API URL. For ZKsync Era testnet use `https://zksync2-testnet-explorer.zksync.dev`. For ZKsync Era mainnet - `https://zksync2-mainnet-explorer.zksync.io`.
+- Set `CONTRACT_VERIFICATION_API_URL` to your verification API URL.
 - Set `CHAIN_ID` to your chain id.
+- Set `BATTLECHAIN_RPC_URL` to your chain's JSON-RPC URL (e.g. `http://localhost:3050`). This enables on-chain fetching of agreement details (protocol name, bounty terms, etc.) via a polling job that runs every 10 seconds. If not set, agreement details will only contain data captured by the indexer.
 
 ## Custom base token configuration
 For networks with a custom base token, there are a number of environment variables used to configure custom base and ETH tokens:
@@ -115,7 +120,7 @@ $ npm run test:cov
 ```
 
 ## Docs
-Locally Swagger docs are available at http://localhost:3020/docs. JSON version - http://localhost:3020/docs-json.
+Locally Swagger docs are available at http://localhost:3020/docs. JSON version - http://localhost:3020/docs-json. BattleChain endpoints are grouped under the "BattleChain" tag.
 
 ## Development
 
@@ -144,8 +149,3 @@ artillery run ./performance/load-test.yaml -e testnet -o ./performance/29-06/tes
 ```
 
 for more command options check [official artillery docs](https://www.artillery.io/docs).
-
-
-## Production links
- - [Testnet](https://block-explorer-api.testnets.zksync.dev)
- - [Mainnet](https://block-explorer-api.mainnet.zksync.io)
