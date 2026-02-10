@@ -377,7 +377,7 @@ CREATE TRIGGER trg_account_removed
 
 -- ============================================
 -- Trigger: Insert/update accounts from ChainAddedOrSet
--- Note: With forked rindexer, accounts is stored as JSONB array
+-- Note: rindexer stores tuple[] (accounts) as JSONB array
 -- Each element has: accountAddress, childContractScope
 -- ============================================
 CREATE OR REPLACE FUNCTION upsert_chain_accounts()

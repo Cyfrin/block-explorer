@@ -1,7 +1,4 @@
-# Using forked rindexer with tuple[] JSONB support
-# Fork: https://github.com/cyfrin/rindexer
-# Fix: tuple[] (array of structs) now stored as JSONB instead of panicking
-FROM ghcr.io/cyfrin/rindexer:sha-06846d2
+FROM ghcr.io/joshstevens19/rindexer:latest
 
 WORKDIR /app
 
