@@ -144,7 +144,7 @@ npm run test -w {package}
 
 | Variable | Service | Description |
 |----------|---------|-------------|
-| `BATTLECHAIN_RPC_URL` | API | RPC URL for fetching on-chain agreement details |
+| `BATTLECHAIN_RPC_URL` | API | RPC URL for fetching on-chain agreement details (falls back to `BLOCKCHAIN_RPC_URL` if not set) |
 | `DEPLOYER_PRIVATE_KEY` | Deployer | Private key for deploying BattleChain contracts (local dev only; defaults to the ZKsync rich wallet key) |
 | `SEED_BATTLECHAIN_DATA` | Deployer | Set to `true` to seed dev data on startup |
 | `CREATE_TEST_AGREEMENT` | Deployer | Set to `true` to create a test agreement on startup |

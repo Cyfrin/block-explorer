@@ -30,7 +30,7 @@ You need to have a running Worker database, for instructions on how to run the w
   - `DATABASE_CONNECTION_POOL_SIZE`
 - Set `CONTRACT_VERIFICATION_API_URL` to your verification API URL.
 - Set `CHAIN_ID` to your chain id.
-- Set `BATTLECHAIN_RPC_URL` to your chain's JSON-RPC URL (e.g. `http://localhost:3050`). This enables on-chain fetching of agreement details (protocol name, bounty terms, etc.) via a polling job that runs every 10 seconds. If not set, agreement details will only contain data captured by the indexer.
+- Set `BATTLECHAIN_RPC_URL` to your chain's JSON-RPC URL (e.g. `http://localhost:3050`). This enables on-chain fetching of agreement details (protocol name, bounty terms, etc.) via a polling job that runs every 10 seconds. Falls back to `BLOCKCHAIN_RPC_URL` if not set. If neither is set, agreement details will only contain data captured by the indexer.
 
 ## Custom base token configuration
 For networks with a custom base token, there are a number of environment variables used to configure custom base and ETH tokens:
