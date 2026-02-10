@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -28,13 +28,16 @@ const AGREEMENT_ABI = [
 const RPC_FETCH_TIMEOUT_MS = 5000;
 
 @Injectable()
-export class BattlechainService {
+export class BattlechainService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(BattlechainService.name);
 
   private readonly identityMap: IdentityRequirement[] = ["Anonymous", "Pseudonymous", "Named"];
 
   private readonly rpcProvider: JsonRpcProvider | null = null;
   private readonly inFlightFetches = new Map<string, Promise<void>>();
+  private rpcFetchTimer: NodeJS.Timer = null;
+  private static readonly RPC_POLL_INTERVAL_MS = 10_000;
+  private static readonly RPC_POLL_BATCH_SIZE = 10;
 
   constructor(
     private readonly configService: ConfigService,
@@ -55,6 +58,71 @@ export class BattlechainService {
     if (rpcUrl) {
       this.rpcProvider = new JsonRpcProvider(rpcUrl, undefined, { staticNetwork: true });
       this.logger.log(`RPC provider configured: ${rpcUrl}`);
+    }
+  }
+
+  onModuleInit() {
+    if (this.rpcProvider) {
+      this.rpcFetchTimer = setInterval(
+        () => this.fetchPendingAgreementDetails(),
+        BattlechainService.RPC_POLL_INTERVAL_MS
+      );
+      this.logger.log(`RPC polling started (every ${BattlechainService.RPC_POLL_INTERVAL_MS}ms)`);
+    }
+  }
+
+  onModuleDestroy() {
+    if (this.rpcFetchTimer) {
+      clearInterval(this.rpcFetchTimer);
+    }
+  }
+
+  /**
+   * Proactively fetch agreement details for agreements that haven't been RPC-fetched yet.
+   * Runs on a timer to fill in details shortly after new agreements are indexed.
+   */
+  private async fetchPendingAgreementDetails(): Promise<void> {
+    try {
+      const pending = await this.agreementStateRepository
+        .createQueryBuilder("state")
+        .where("state.rpcFetchedAt IS NULL")
+        .take(BattlechainService.RPC_POLL_BATCH_SIZE)
+        .getMany();
+
+      if (pending.length === 0) {
+        return;
+      }
+
+      this.logger.debug(`Fetching RPC details for ${pending.length} pending agreement(s)`);
+
+      for (const state of pending) {
+        const address = state.agreementAddress.trim();
+
+        // Skip if already being fetched (e.g. by a concurrent lazy-fetch)
+        if (this.inFlightFetches.has(address)) {
+          continue;
+        }
+
+        const fetchPromise = this.fetchAndStoreDetails(address);
+        this.inFlightFetches.set(address, fetchPromise);
+
+        try {
+          await fetchPromise;
+        } catch (error) {
+          this.logger.error({
+            message: "Polling: failed to fetch agreement details via RPC",
+            stack: (error as Error)?.stack,
+            data: { agreementAddress: address },
+          });
+        } finally {
+          this.inFlightFetches.delete(address);
+        }
+      }
+    } catch (error) {
+      this.logger.error({
+        message: "Polling: failed to query pending agreements",
+        stack: (error as Error)?.stack,
+      });
     }
   }
 

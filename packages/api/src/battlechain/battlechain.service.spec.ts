@@ -491,4 +491,104 @@ describe("BattlechainService", () => {
       });
     });
   });
+
+  describe("polling / onModuleInit", () => {
+    it("does not start polling when no RPC URL is configured", () => {
+      jest.useFakeTimers();
+      // configService.get returns null — default in this suite
+      // Reset call counts after beforeEach setup
+      (agreementStateRepository.createQueryBuilder as jest.Mock).mockClear();
+
+      service.onModuleInit();
+
+      // Advance time well past the interval
+      jest.advanceTimersByTime(30_000);
+
+      // createQueryBuilder should not have been called for polling
+      expect(agreementStateRepository.createQueryBuilder).not.toHaveBeenCalled();
+
+      service.onModuleDestroy();
+      jest.useRealTimers();
+    });
+  });
+
+  describe("fetchPendingAgreementDetails", () => {
+    let rpcService: BattlechainService;
+    let rpcAgreementStateRepository: Repository<AgreementCurrentState>;
+    let rpcAgreementAccountRepository: Repository<AgreementAccount>;
+
+    beforeEach(async () => {
+      rpcAgreementStateRepository = mock<Repository<AgreementCurrentState>>();
+      rpcAgreementAccountRepository = mock<Repository<AgreementAccount>>();
+      const rpcConfigService = mock<ConfigService>();
+
+      // Configure with an RPC URL so rpcProvider is created
+      (rpcConfigService.get as jest.Mock).mockReturnValue("http://localhost:3050");
+
+      const mockQb = mock<SelectQueryBuilder<AgreementCurrentState>>();
+      mockQb.where.mockReturnValue(mockQb);
+      mockQb.take.mockReturnValue(mockQb);
+      mockQb.getOne.mockResolvedValue(null);
+      mockQb.getMany.mockResolvedValue([]);
+      (rpcAgreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQb);
+
+      (rpcAgreementAccountRepository.find as jest.Mock).mockResolvedValue([]);
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          BattlechainService,
+          { provide: ConfigService, useValue: rpcConfigService },
+          { provide: getRepositoryToken(AgreementStateChange), useValue: mock<Repository<AgreementStateChange>>() },
+          { provide: getRepositoryToken(AgreementCreated), useValue: mock<Repository<AgreementCreated>>() },
+          { provide: getRepositoryToken(AgreementCurrentState), useValue: rpcAgreementStateRepository },
+          { provide: getRepositoryToken(AgreementAccount), useValue: rpcAgreementAccountRepository },
+          { provide: getRepositoryToken(AgreementOwnerAuthorized), useValue: mock<Repository<AgreementOwnerAuthorized>>() },
+          { provide: getRepositoryToken(AttackModeratorTransferred), useValue: mock<Repository<AttackModeratorTransferred>>() },
+        ],
+      }).compile();
+
+      rpcService = module.get<BattlechainService>(BattlechainService);
+    });
+
+    afterEach(() => {
+      rpcService.onModuleDestroy();
+    });
+
+    it("queries for agreements with rpcFetchedAt IS NULL", async () => {
+      const mockQb = mock<SelectQueryBuilder<AgreementCurrentState>>();
+      mockQb.where.mockReturnValue(mockQb);
+      mockQb.take.mockReturnValue(mockQb);
+      mockQb.getMany.mockResolvedValue([]);
+      (rpcAgreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQb);
+
+      await rpcService["fetchPendingAgreementDetails"]();
+
+      expect(mockQb.where).toHaveBeenCalledWith("state.rpcFetchedAt IS NULL");
+      expect(mockQb.take).toHaveBeenCalledWith(10);
+    });
+
+    it("does nothing when no pending agreements found", async () => {
+      const mockQb = mock<SelectQueryBuilder<AgreementCurrentState>>();
+      mockQb.where.mockReturnValue(mockQb);
+      mockQb.take.mockReturnValue(mockQb);
+      mockQb.getMany.mockResolvedValue([]);
+      (rpcAgreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQb);
+
+      await rpcService["fetchPendingAgreementDetails"]();
+
+      // update should not be called since no pending agreements
+      expect(rpcAgreementStateRepository.update).not.toHaveBeenCalled();
+    });
+
+    it("handles errors gracefully without throwing", async () => {
+      const mockQb = mock<SelectQueryBuilder<AgreementCurrentState>>();
+      mockQb.where.mockReturnValue(mockQb);
+      mockQb.take.mockReturnValue(mockQb);
+      mockQb.getMany.mockRejectedValue(new Error("DB connection failed"));
+      (rpcAgreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQb);
+
+      // Should not throw
+      await expect(rpcService["fetchPendingAgreementDetails"]()).resolves.toBeUndefined();
+    });
+  });
 });

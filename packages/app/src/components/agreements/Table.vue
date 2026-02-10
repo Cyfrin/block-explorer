@@ -63,7 +63,8 @@
           <ChevronRightIcon v-else class="expand-icon" />
         </TableBodyColumn>
         <TableBodyColumn :data-heading="t('agreementsView.table.protocolName')">
-          <span class="protocol-name">{{ item.protocolName || "-" }}</span>
+          <ContentLoader v-if="isDetailsPending(item)" class="h-4 w-24" />
+          <span v-else class="protocol-name">{{ item.protocolName || "-" }}</span>
         </TableBodyColumn>
         <TableBodyColumn :data-heading="t('agreementsView.table.state')">
           <Badge :color="getStateColor(item.state)" :tooltip="getStateTooltip(item.state)">
@@ -71,10 +72,12 @@
           </Badge>
         </TableBodyColumn>
         <TableBodyColumn :data-heading="t('agreementsView.table.bountyPercentage')" class="text-right tabular-nums">
-          {{ item.bountyPercentage != null ? `${item.bountyPercentage}%` : "-" }}
+          <ContentLoader v-if="isDetailsPending(item)" class="h-4 w-12" />
+          <span v-else>{{ item.bountyPercentage != null ? `${item.bountyPercentage}%` : "-" }}</span>
         </TableBodyColumn>
         <TableBodyColumn :data-heading="t('agreementsView.table.bountyCapUsd')" class="text-right tabular-nums">
-          {{ formatBountyCap(item.bountyCapUsd) }}
+          <ContentLoader v-if="isDetailsPending(item)" class="h-4 w-16" />
+          <span v-else>{{ formatBountyCap(item.bountyCapUsd) }}</span>
         </TableBodyColumn>
         <TableBodyColumn :data-heading="t('agreementsView.table.createdAt')" class="created-column">
           <CopyButton v-if="item.createdAt" :value="new Date(item.createdAt).toISOString()" @click.stop>
@@ -251,6 +254,10 @@ function getStateTooltip(state?: ContractState): string | undefined {
     default:
       return undefined;
   }
+}
+
+function isDetailsPending(item: AgreementListItem): boolean {
+  return item.protocolName == null && item.bountyPercentage == null;
 }
 
 function formatBountyCap(bountyCapUsd?: string): string {
