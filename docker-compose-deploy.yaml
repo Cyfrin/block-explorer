@@ -37,6 +37,7 @@ services:
       - DATABASE_USER=${DATABASE_USER:-postgres}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
       - DATABASE_NAME=${DATABASE_NAME:-block-explorer}
+      - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL:-http://zksync:3050}
     depends_on:
       - worker
     restart: unless-stopped
