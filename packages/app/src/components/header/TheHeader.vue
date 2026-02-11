@@ -150,11 +150,10 @@ const { currentNetwork } = useContext();
 const runtimeConfig = useRuntimeConfig();
 
 const navigation = reactive([
-  // TODO: Update to BattleChain documentation URL when available
-  // {
-  //   label: computed(() => t("header.nav.documentation")),
-  //   url: "https://docs.battlechain.io",
-  // },
+  {
+    label: computed(() => t("header.nav.documentation")),
+    url: "https://docs.battlechain.com/",
+  },
 ]);
 
 const blockExplorerLinks = reactive([
