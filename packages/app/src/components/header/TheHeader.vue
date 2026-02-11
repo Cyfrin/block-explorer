@@ -5,7 +5,8 @@
         <!-- Logo -->
         <div class="header-logo">
           <router-link :to="{ name: 'home' }" class="logo-link">
-            <LogomarkIcon class="logo-image" />
+            <img :src="LogomarkColorDark" class="logo-image logo-light" alt="BattleChain" />
+            <img :src="LogomarkColor" class="logo-image logo-dark" alt="BattleChain" />
           </router-link>
         </div>
 
@@ -69,7 +70,7 @@
         <div class="mobile-menu-inner">
           <div class="mobile-menu-header">
             <div class="mobile-logo">
-              <LogoIcon class="logo-icon" />
+              <img :src="LogoColor" class="logo-icon" alt="BattleChain" />
             </div>
             <PopoverButton class="mobile-close-btn">
               <span class="sr-only">Close menu</span>
@@ -133,14 +134,16 @@ import WalletButton from "../prividium/WalletButton.vue";
 
 import NetworkSwitch from "@/components/NetworkSwitch.vue";
 import ThemeToggle from "@/components/ThemeToggle.vue";
-import LogoIcon from "@/components/icons/LogoIcon.vue";
-import LogomarkIcon from "@/components/icons/LogomarkIcon.vue";
 
 import useContext from "@/composables/useContext";
 import useRuntimeConfig from "@/composables/useRuntimeConfig";
 
 import type DiscordIcon from "@/components/icons/DiscordIcon.vue";
 import type TwitterIcon from "@/components/icons/TwitterIcon.vue";
+
+import LogoColor from "@/assets/Logo-color.svg";
+import LogomarkColorDark from "@/assets/Logomark-color-dark.svg";
+import LogomarkColor from "@/assets/Logomark-color.svg";
 
 const { t } = useI18n({ useScope: "global" });
 const { currentNetwork } = useContext();
@@ -225,12 +228,7 @@ const socials: { url: string; component: typeof DiscordIcon | typeof TwitterIcon
 
   .logo-image {
     height: 28px;
-    width: 183px; /* Maintains 1370:210 aspect ratio */
-    color: #004dff;
-
-    [data-theme="dark"] & {
-      color: #ffffff;
-    }
+    width: auto;
   }
 }
 
@@ -368,12 +366,7 @@ const socials: { url: string; component: typeof DiscordIcon | typeof TwitterIcon
 .mobile-logo {
   .logo-icon {
     height: 32px;
-    width: 32px;
-    color: #004dff;
-
-    [data-theme="dark"] & {
-      color: #ffffff;
-    }
+    width: auto;
   }
 }
 
@@ -424,6 +417,23 @@ const socials: { url: string; component: typeof DiscordIcon | typeof TwitterIcon
 .mobile-controls {
   @apply flex flex-wrap gap-3 py-4;
   border-top: 1px solid var(--border-default);
+}
+
+// Theme-aware logo visibility
+.logo-light {
+  display: block;
+
+  [data-theme="dark"] & {
+    display: none;
+  }
+}
+
+.logo-dark {
+  display: none;
+
+  [data-theme="dark"] & {
+    display: block;
+  }
 }
 
 .mobile-socials {
