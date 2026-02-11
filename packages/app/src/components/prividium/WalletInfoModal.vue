@@ -131,7 +131,7 @@ const formattedAddress = computed(() => {
   }
 
   .your-wallet-title {
-    @apply font-sans font-medium text-lg leading-6 tracking-tight text-neutral-500 text-center;
+    @apply font-sans font-medium text-lg leading-6 text-neutral-500 text-center;
     margin-bottom: 0.5rem;
   }
 
@@ -142,7 +142,7 @@ const formattedAddress = computed(() => {
       @apply inline-flex items-baseline gap-x-1.5;
       .address-display {
         :deep(span.displayed-string) {
-          @apply font-sans text-3xl leading-8 tracking-tight text-black;
+          @apply font-sans text-3xl leading-8 text-black;
         }
         :deep(span.actual-string) {
           @apply hidden;

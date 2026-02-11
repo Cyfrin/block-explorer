@@ -133,7 +133,6 @@ getBlocks(1, new Date());
 .hero-title {
   @apply text-3xl font-bold m-0 sm:text-[40px];
   color: var(--text-primary);
-  letter-spacing: -0.02em;
 }
 
 .hero-subtitle {

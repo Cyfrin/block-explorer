@@ -143,7 +143,6 @@ const subtitle = computed(() =>
 .stat-number {
   @apply font-mono text-xl font-semibold tabular-nums lg:text-2xl;
   color: var(--text-primary);
-  letter-spacing: -0.01em;
 }
 
 .stat-loader {
