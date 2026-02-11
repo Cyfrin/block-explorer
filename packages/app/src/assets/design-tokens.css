@@ -58,9 +58,10 @@
 }
 
 [data-theme="dark"] {
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #334155;
+  /* Backgrounds (slate palette) */
+  --bg-primary: #020617; /* slate-950 */
+  --bg-secondary: #0f172a; /* slate-900 */
+  --bg-tertiary: #1e293b; /* slate-800 */
   --bg-hover: rgba(248, 250, 252, 0.04);
   --bg-active: rgba(248, 250, 252, 0.06);
 
