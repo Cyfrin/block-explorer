@@ -2,7 +2,7 @@ FROM node:18.17.1-alpine AS base-stage
 ENV NODE_ENV=production
 
 WORKDIR /usr/src/app
-RUN apk add --update python3 make g++ && rm -rf /var/cache/apk/*
+RUN apk add --update python3 make g++ curl && rm -rf /var/cache/apk/*
 
 COPY --chown=node:node .npmrc .npmrc
 COPY --chown=node:node lerna.json ./
