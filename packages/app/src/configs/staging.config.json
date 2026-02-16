@@ -2,8 +2,8 @@
   "networks": [
     {
       "groupId": "battlechain",
-      "apiUrl": "https://ls0g88kk8c8ckwk0kogkwocs.cyfrin-bookworm-us-east-prod-01.cyfrin.dev",
-      "verificationApiUrl": "https://ls0g88kk8c8ckwk0kogkwocs.cyfrin-bookworm-us-east-prod-01.cyfrin.dev/api",
+      "apiUrl": "https://block-explorer-api.testnet.battlechain.com",
+      "verificationApiUrl": "https://block-explorer-api.testnet.battlechain.com/api",
       "bridgeUrl": "https://portal.battlechain.com/bridge/?network=sepolia",
       "hostnames": ["https://block-explorer.testnet.battlechain.com"],
       "icon": "/images/icons/zksync-arrows.svg",
