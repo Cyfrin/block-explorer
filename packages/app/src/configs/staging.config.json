@@ -15,12 +15,12 @@
         "name": "Ethereum",
         "chainId": 11155111
       }],
-      "l2ChainId": 625,
+      "l2ChainId": 627,
       "l2NetworkName": "Battle Chain Testnet",
       "maintenance": false,
       "name": "testnet",
       "published": true,
-      "rpcUrl": "http://testnet.battlechain.com",
+      "rpcUrl": "http://testnet.battlechain.com:3051",
       "baseTokenAddress": "0x000000000000000000000000000000000000800a",
       "excludedFromBattlechain": [
         "0x0000000000000000000000000000000000008001",
