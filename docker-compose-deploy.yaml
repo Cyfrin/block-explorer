@@ -40,23 +40,6 @@ services:
       retries: '3'
       start_period: '40s'
       test: [ 'CMD', 'curl', '-f', 'http://localhost:3020' ]
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.middlewares.gzip.compress=true'
-      - 'traefik.http.middlewares.redirect-to-https-${TRAEFIK_ID}-api.redirectscheme.scheme=https'
-      - 'traefik.http.routers.http-${TRAEFIK_ID}-api.entryPoints=http'
-      - 'traefik.http.routers.http-${TRAEFIK_ID}-api.middlewares=redirect-to-https-${TRAEFIK_ID}-api'
-      - 'traefik.http.routers.http-${TRAEFIK_ID}-api.rule=Host(`${SERVICE_FQDN_API}`) && PathPrefix(`/`)'
-      - 'traefik.http.routers.http-${TRAEFIK_ID}-api.service=http-${TRAEFIK_ID}-api'
-      - 'traefik.http.routers.https-${TRAEFIK_ID}-api.entryPoints=https'
-      - 'traefik.http.routers.https-${TRAEFIK_ID}-api.middlewares=gzip'
-      - 'traefik.http.routers.https-${TRAEFIK_ID}-api.rule=Host(`${SERVICE_FQDN_API}`) && PathPrefix(`/`)'
-      - 'traefik.http.routers.https-${TRAEFIK_ID}-api.service=https-${TRAEFIK_ID}-api'
-      - 'traefik.http.routers.https-${TRAEFIK_ID}-api.tls.certresolver=letsencrypt'
-      - 'traefik.http.routers.https-${TRAEFIK_ID}-api.tls=true'
-      - 'traefik.http.services.http-${TRAEFIK_ID}-api.loadbalancer.server.port=3020'
-      - 'traefik.http.services.https-${TRAEFIK_ID}-api.loadbalancer.server.port=3020'
-      - 'traefik.docker.network=${COOLIFY_RESOURCE_UUID}'
 
   battlechain-indexer:
     build:
