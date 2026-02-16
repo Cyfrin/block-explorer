@@ -5,22 +5,22 @@
       "apiUrl": "https://block-explorer-api.testnet.battlechain.com",
       "verificationApiUrl": "https://block-explorer-api.testnet.battlechain.com/api",
       "bridgeUrl": "https://portal.battlechain.com/bridge/?network=sepolia",
-      "hostnames": [
-        "https://block-explorer.testnet.battlechain.com"
-      ],
+      "hostnames": ["https://block-explorer.testnet.battlechain.com"],
       "icon": "/images/icons/zksync-arrows.svg",
       "l1ExplorerUrl": "https://sepolia.etherscan.io",
-      "settlementChains": [{
-        "explorerUrl": "https://sepolia.etherscan.io",
-        "name": "Ethereum",
-        "chainId": 11155111
-      }],
+      "settlementChains": [
+        {
+          "explorerUrl": "https://sepolia.etherscan.io",
+          "name": "Ethereum",
+          "chainId": 11155111
+        }
+      ],
       "l2ChainId": 625,
-      "l2NetworkName": "Battle Chain Testnet",
+      "l2NetworkName": "BattleChain Testnet",
       "maintenance": false,
       "name": "testnet",
       "published": true,
-      "rpcUrl": "http://testnet.battlechain.com",
+      "rpcUrl": "http://testnet.battlechain.com:3051",
       "baseTokenAddress": "0x000000000000000000000000000000000000800a",
       "excludedFromBattlechain": [
         "0x0000000000000000000000000000000000008001",
