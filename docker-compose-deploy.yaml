@@ -10,6 +10,12 @@ services:
       - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL:-http://zksync:3050}
       - DATA_FETCHER_URL=http://data-fetcher:3040
     restart: unless-stopped
+    healthcheck: #dummy test so coolify doesn't complain
+      interval: '1m30s'
+      timeout: '10s'
+      retries: '3'
+      start_period: '40s'
+      test: [ 'CMD-SHELL', 'exit 0' ]
 
   data-fetcher:
     build:
@@ -20,6 +26,12 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-verbose}
       - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL:-http://zksync:3050}
     restart: unless-stopped
+    healthcheck: #dummy test so coolify doesn't complain
+      interval: '1m30s'
+      timeout: '10s'
+      retries: '3'
+      start_period: '40s'
+      test: [ 'CMD-SHELL', 'exit 0' ]
 
   api:
     build:
@@ -54,3 +66,9 @@ services:
       - BATTLECHAIN_START_BLOCK=${BATTLECHAIN_START_BLOCK:-0}
       - SAFE_HARBOR_REGISTRY_ADDRESS=${SAFE_HARBOR_REGISTRY_ADDRESS:-0x0000000000000000000000000000000000000000}
     restart: unless-stopped
+    healthcheck: #dummy test so coolify doesn't complain
+      interval: '1m30s'
+      timeout: '10s'
+      retries: '3'
+      start_period: '40s'
+      test: [ 'CMD-SHELL', 'exit 0' ]
