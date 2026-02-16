@@ -10,6 +10,8 @@ services:
       - DATABASE_USER=${DATABASE_USER:-postgres}
       - DATABASE_PORT=${DATABASE_PORT:-5432}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
+      - DATABASE_ENABLE_SSL=true
+      - DATABASE_SSL_REJECT_UNAUTHORIZED=false
       - DATABASE_NAME=${DATABASE_NAME:-block-explorer}
       - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL:-http://zksync:3050}
       - DATA_FETCHER_URL=http://data-fetcher:3040
@@ -37,6 +39,8 @@ services:
       - DATABASE_USER=${DATABASE_USER:-postgres}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
       - DATABASE_NAME=${DATABASE_NAME:-block-explorer}
+      - DATABASE_ENABLE_SSL=true
+      - DATABASE_SSL_REJECT_UNAUTHORIZED=false
       - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL:-http://zksync:3050}
     depends_on:
       - worker
@@ -70,7 +74,7 @@ services:
       context: ./packages/battlechain-indexer
       dockerfile: Dockerfile
     environment:
-      - DATABASE_URL=postgres://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD:-postgres}@${DATABASE_HOST:-postgres}:${DATABASE_PORT:-5432}/${DATABASE_NAME:-block-explorer}?options=-c%20search_path%3Dbattlechain
+      - DATABASE_URL=postgres://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD:-postgres}@${DATABASE_HOST:-postgres}:${DATABASE_PORT:-5432}/${DATABASE_NAME:-block-explorer}?options=-c%20search_path%3Dbattlechain%26sslmode%3Drequire
       - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL}
       - CHAIN_ID=${CHAIN_ID:-270}
       - ATTACK_REGISTRY_ADDRESS=${ATTACK_REGISTRY_ADDRESS:-0x0000000000000000000000000000000000000000}
