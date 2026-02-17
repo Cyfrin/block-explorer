@@ -6,9 +6,9 @@
           {{ item.label }}
         </a>
       </div>
-      <div class="version-text-container">
+      <!-- <div class="version-text-container">
         <p>{{ config.version }}</p>
-      </div>
+      </div> -->
     </div>
   </footer>
 </template>
@@ -23,10 +23,10 @@ const config = useRuntimeConfig();
 
 // TODO: Update to BattleChain URLs when available
 const navigation = reactive([
-  // {
-  //   label: computed(() => t("footer.nav.docs")),
-  //   url: "https://docs.battlechain.io",
-  // },
+  {
+    label: computed(() => t("footer.nav.docs")),
+    url: "https://docs.battlechain.com/",
+  },
   // {
   //   label: computed(() => t("footer.nav.terms")),
   //   url: "https://battlechain.io/terms",
