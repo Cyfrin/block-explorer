@@ -45,7 +45,8 @@ defineProps({
     }
   }
   .form-item-underline {
-    @apply mt-1 text-sm text-neutral-400;
+    @apply mt-1 text-sm;
+    color: var(--text-muted);
   }
 }
 .label-inline-block {

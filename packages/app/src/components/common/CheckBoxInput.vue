@@ -43,12 +43,14 @@ const inputted = computed({
     @apply opacity-50 cursor-default;
 
     input {
-      @apply hover:border-neutral-200 cursor-default;
+      @apply cursor-default;
+      border-color: var(--border-default);
     }
   }
 
   input {
-    @apply rounded me-1 text-primary-600 cursor-pointer border-neutral-200 checked:border-primary-600 disabled:opacity-50 hover:border-primary-600 ring-transparent;
+    @apply rounded me-1 text-primary-600 cursor-pointer checked:border-primary-600 disabled:opacity-50 hover:border-primary-600 ring-transparent;
+    border-color: var(--border-default);
   }
 }
 </style>

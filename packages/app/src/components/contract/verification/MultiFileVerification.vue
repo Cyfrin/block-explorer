@@ -131,13 +131,14 @@ watch([filesToUpload, selectedMainFileName], ([files, mainFileName]) => {
   @apply grid gap-4 md:grid-cols-4;
 
   .title {
-    @apply text-neutral-600;
+    color: var(--text-secondary);
   }
   .upload-files-container {
     @apply mt-2 inline-block border-0 p-0;
 
     .upload-files-label {
-      @apply block w-max cursor-pointer rounded-md bg-neutral-200 px-4 py-2.5 text-primary-600 hover:text-primary-700;
+      @apply block w-max cursor-pointer rounded-md px-4 py-2.5 text-primary-600 hover:text-primary-700;
+      background-color: var(--bg-tertiary);
     }
   }
   .options-list-container {
@@ -150,7 +151,7 @@ watch([filesToUpload, selectedMainFileName], ([files, mainFileName]) => {
   }
   .empty {
     .toggle-button {
-      @apply text-neutral-400;
+      color: var(--text-muted);
     }
   }
 

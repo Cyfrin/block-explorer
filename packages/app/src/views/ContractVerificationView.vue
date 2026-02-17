@@ -13,16 +13,6 @@
       autocomplete="off"
       @submit.prevent="submitForm"
     >
-      <Alert type="notification" class="full-grid-width">
-        <i18n-t scope="global" keypath="contractVerification.resources.title" tag="span">
-          <template #hardhat>
-            <a href="https://docs.zksync.io/build/tooling/hardhat/hardhat-zksync-verify.html" target="_blank">
-              {{ t("contractVerification.resources.links.hardhat") }}
-            </a>
-          </template>
-        </i18n-t>
-      </Alert>
-
       <div v-if="compilationErrors.length" class="compilation-error-container">
         <div class="compilation-error">
           <ExclamationIcon class="compilation-error-icon" aria-hidden="true" />
@@ -580,7 +570,8 @@ async function submitForm() {
   }
 
   .form-subheading {
-    @apply text-xl text-neutral-700;
+    @apply text-xl;
+    color: var(--text-primary);
   }
   .compilation-error-container {
     @apply font-mono;
@@ -601,7 +592,8 @@ async function submitForm() {
     }
   }
   .flattener-info {
-    @apply mt-1 text-sm text-neutral-400;
+    @apply mt-1 text-sm;
+    color: var(--text-muted);
 
     a {
       @apply rounded-md px-0.5 focus:outline-none focus:ring-2 focus:ring-primary-600;
