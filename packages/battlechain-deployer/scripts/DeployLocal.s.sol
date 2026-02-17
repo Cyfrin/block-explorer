@@ -32,7 +32,7 @@ contract DeployLocal is Script {
         // Set up valid chains
         validChains = new string[](3);
         validChains[0] = "eip155:626"; // BattleChain Mainnet
-        validChains[1] = "eip155:625"; // BattleChain Testnet
+        validChains[1] = "eip155:627"; // BattleChain Testnet
         validChains[2] = "eip155:624"; // BattleChain Devnet
 
         console.log("Deploying BattleChain Safe Harbor (Local Mode)...");

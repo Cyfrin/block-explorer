@@ -7,6 +7,7 @@ services:
       - PORT=${WORKER_PORT:-3001}
       - LOG_LEVEL=${LOG_LEVEL:-verbose}
       - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_CONNECTION_POOL_SIZE=100
       - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL:-http://zksync:3050}
       - DATA_FETCHER_URL=http://data-fetcher:3040
     restart: unless-stopped
@@ -42,6 +43,7 @@ services:
       - METRICS_PORT=${METRICS_PORT:-3005}
       - LOG_LEVEL=${LOG_LEVEL:-verbose}
       - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_CONNECTION_POOL_SIZE=200
       - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL:-http://zksync:3050}
     depends_on:
       - worker
