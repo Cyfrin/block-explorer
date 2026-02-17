@@ -22,6 +22,9 @@
       "published": true,
       "rpcUrl": "http://testnet.battlechain.com:3051",
       "baseTokenAddress": "0x000000000000000000000000000000000000800a",
+      "attackRegistryAddress": "0x2BF89b31857Ed5Eb3Eb2117CA53B2b579556C44b",
+      "agreementFactoryAddress": "0xCd3f17fa87353853E287830AD62855151D3D830A",
+      "safeHarborRegistryAddress": "0x712c9441f95d97f69337d403Ce4f5bf182393B54",
       "excludedFromBattlechain": [
         "0x0000000000000000000000000000000000008001",
         "0x0000000000000000000000000000000000008002",
