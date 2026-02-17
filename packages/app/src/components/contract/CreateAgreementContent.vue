@@ -191,7 +191,7 @@
             </template>
           </FormItem>
 
-          <FormItem :label="t('safeHarbor.createAgreement.coveredContracts')" :error="errors.firstContract">
+          <FormItem :label="t('safeHarbor.createAgreement.coveredContracts')" :error="errors.firstContract" required>
             <!-- Primary contract - locked when contractAddress prop provided, editable in standalone mode -->
             <div class="contract-row">
               <div class="contract-address">
