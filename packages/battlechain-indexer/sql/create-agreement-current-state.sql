@@ -141,12 +141,12 @@ BEGIN
   )
   VALUES (
     NEW.contract_address,
-    NEW.new_bounty_terms_bounty_percentage,
-    NEW.new_bounty_terms_bounty_cap_usd,
+    NEW.new_bounty_terms_bounty_percentage::NUMERIC,
+    NEW.new_bounty_terms_bounty_cap_usd::NUMERIC,
     NEW.new_bounty_terms_retainable,
     NEW.new_bounty_terms_identity,
     NEW.new_bounty_terms_diligence_requirements,
-    NEW.new_bounty_terms_aggregate_bounty_cap_usd,
+    NEW.new_bounty_terms_aggregate_bounty_cap_usd::NUMERIC,
     NEW.block_timestamp,
     NOW()
   )
@@ -200,7 +200,7 @@ BEGIN
   INSERT INTO battlechainindexer_agreement.agreement_current_state (
     agreement_address, commitment_deadline, commitment_deadline_updated_at, last_updated_at
   )
-  VALUES (NEW.contract_address, NEW.new_cant_change_until, NEW.block_timestamp, NOW())
+  VALUES (NEW.contract_address, NEW.new_cant_change_until::NUMERIC, NEW.block_timestamp, NOW())
   ON CONFLICT (agreement_address) DO UPDATE SET
     commitment_deadline = EXCLUDED.commitment_deadline,
     commitment_deadline_updated_at = EXCLUDED.commitment_deadline_updated_at,
