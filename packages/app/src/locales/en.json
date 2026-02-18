@@ -1166,7 +1166,14 @@
       "existingOnly": "+ existing child contracts",
       "all": "+ all child contracts",
       "futureOnly": "+ future child contracts"
-    }
+    },
+    "commitmentRequired": "Commitment window must be extended",
+    "commitmentDescription": "The agreement's commitment window must extend at least 7 days into the future before requesting attackable mode.",
+    "commitmentDeadlineLabel": "Commitment deadline",
+    "extendCommitment": "Extend Commitment Window",
+    "extendingCommitment": "Extending...",
+    "commitmentExtended": "Commitment window extended successfully",
+    "checkingCommitment": "Checking commitment window..."
   },
   "contractState": {
     "registered": "Registered",

@@ -161,6 +161,46 @@
             </ul>
           </div>
 
+          <!-- Commitment deadline check -->
+          <div v-if="isCheckingCommitment" class="commitment-check">
+            <span class="loading-spinner" />
+            <span>{{ t("requestUnderAttackModal.checkingCommitment") }}</span>
+          </div>
+          <div v-else-if="!isCommitmentSufficient" class="commitment-warning">
+            <ExclamationCircleIcon class="warning-icon" />
+            <div class="commitment-content">
+              <p class="commitment-title">{{ t("requestUnderAttackModal.commitmentRequired") }}</p>
+              <p class="commitment-description">{{ t("requestUnderAttackModal.commitmentDescription") }}</p>
+              <div class="commitment-form">
+                <label class="commitment-label">
+                  {{ t("requestUnderAttackModal.commitmentDeadlineLabel") }}
+                  <input v-model="commitmentDeadlineInput" type="date" class="commitment-input" />
+                </label>
+                <button
+                  type="button"
+                  class="btn-primary commitment-btn"
+                  :disabled="request.isExtending.value || !isWalletConnected || !commitmentDeadlineInput"
+                  @click="handleExtendCommitment"
+                >
+                  <span v-if="request.isExtending.value" class="loading-spinner" />
+                  {{
+                    request.isExtending.value
+                      ? t("requestUnderAttackModal.extendingCommitment")
+                      : t("requestUnderAttackModal.extendCommitment")
+                  }}
+                </button>
+              </div>
+              <div v-if="extendError" class="error-message">
+                <ExclamationCircleIcon class="error-icon" />
+                <span>{{ extendError }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-else-if="showCommitmentExtendedSuccess" class="commitment-success">
+            <CheckCircleIcon class="success-icon" />
+            <span>{{ t("requestUnderAttackModal.commitmentExtended") }}</span>
+          </div>
+
           <!-- Not connected state -->
           <div v-if="!isWalletConnected" class="wallet-prompt">
             <p>{{ t("requestUnderAttackModal.connectWalletPrompt") }}</p>
@@ -224,7 +264,7 @@
         v-else-if="currentStep === 2"
         type="button"
         class="btn-primary"
-        :disabled="isRequesting || !isWalletConnected"
+        :disabled="isRequesting || !isWalletConnected || !isCommitmentSufficient"
         @click="handleSubmit"
       >
         <span v-if="isRequesting" class="loading-spinner" />
@@ -308,6 +348,22 @@ const props = defineProps({
     type: String as PropType<string | null>,
     default: undefined,
   },
+  overrideCommitmentSufficient: {
+    type: Boolean,
+    default: undefined,
+  },
+  overrideCheckingCommitment: {
+    type: Boolean,
+    default: undefined,
+  },
+  overrideExtendError: {
+    type: String as PropType<string | null>,
+    default: undefined,
+  },
+  overrideCommitmentExtendedSuccess: {
+    type: Boolean,
+    default: undefined,
+  },
 });
 
 const emit = defineEmits<{
@@ -355,6 +411,20 @@ const isWalletConnected = computed(() =>
 );
 const waitingForDetection = computed(() => props.overrideWaitingForDetection ?? waitingForDetectionState.value);
 const createdTxHash = computed(() => props.overrideCreatedTxHash ?? createdTxHashState.value);
+const isCommitmentSufficient = computed(() =>
+  props.overrideCommitmentSufficient !== undefined
+    ? props.overrideCommitmentSufficient
+    : request.isCommitmentSufficient.value
+);
+const isCheckingCommitment = computed(() =>
+  props.overrideCheckingCommitment !== undefined ? props.overrideCheckingCommitment : request.isCheckingCommitment.value
+);
+const extendError = computed(() => props.overrideExtendError ?? request.extendError.value);
+const showCommitmentExtendedSuccess = computed(() =>
+  props.overrideCommitmentExtendedSuccess !== undefined
+    ? props.overrideCommitmentExtendedSuccess
+    : commitmentExtendedSuccess.value
+);
 
 const isMetamaskInstalled = computed(() => request.isMetamaskInstalled.value);
 const isConnectPending = computed(() => request.isConnectPending.value);
@@ -453,11 +523,35 @@ const txLink = (hash: string) => {
   return `/tx/${hash}`;
 };
 
+// Commitment deadline state
+const commitmentDeadlineInput = ref("");
+const commitmentExtendedSuccess = ref(false);
+
+const defaultCommitmentDate = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 30);
+  return d.toISOString().split("T")[0];
+};
+
+const handleExtendCommitment = async () => {
+  if (!selectedAgreement.value || !commitmentDeadlineInput.value) return;
+  const deadlineSeconds = Math.floor(new Date(commitmentDeadlineInput.value).getTime() / 1000);
+  const success = await request.extendCommitmentWindow(selectedAgreement.value, deadlineSeconds);
+  if (success) {
+    commitmentExtendedSuccess.value = true;
+  }
+};
+
 // Actions
 const proceedToStep2 = () => {
   if (canProceedToStep2.value) {
     step.value = 2;
     agreementList.stopPolling();
+    commitmentExtendedSuccess.value = false;
+    commitmentDeadlineInput.value = defaultCommitmentDate();
+    if (selectedAgreement.value) {
+      request.checkCommitmentDeadline(selectedAgreement.value);
+    }
   }
 };
 
@@ -838,6 +932,68 @@ defineExpose({ reset });
   .child-scope {
     @apply text-xs;
     color: var(--text-muted);
+  }
+}
+
+.commitment-check {
+  @apply flex items-center gap-2 text-sm;
+  color: var(--text-muted);
+}
+
+.commitment-warning {
+  @apply flex items-start gap-3 rounded-lg border p-4;
+  border-color: var(--warning-border, var(--border-default));
+  background-color: var(--warning-bg, var(--bg-secondary));
+
+  .warning-icon {
+    @apply h-5 w-5 shrink-0;
+    color: var(--warning, var(--text-muted));
+  }
+
+  .commitment-content {
+    @apply flex flex-1 flex-col gap-2;
+  }
+
+  .commitment-title {
+    @apply text-sm font-medium;
+    color: var(--text-primary);
+  }
+
+  .commitment-description {
+    @apply text-sm;
+    color: var(--text-muted);
+  }
+
+  .commitment-form {
+    @apply mt-1 flex items-end gap-3;
+  }
+
+  .commitment-label {
+    @apply flex flex-1 flex-col gap-1 text-xs font-medium;
+    color: var(--text-muted);
+  }
+
+  .commitment-input {
+    @apply mt-1 rounded-md border px-3 py-1.5 text-sm;
+    border-color: var(--border-default);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    color-scheme: dark;
+  }
+
+  .commitment-btn {
+    @apply shrink-0 whitespace-nowrap;
+  }
+}
+
+.commitment-success {
+  @apply flex items-center gap-2 rounded-lg p-3 text-sm;
+  background-color: var(--success-muted);
+  color: var(--success-text);
+
+  .success-icon {
+    @apply h-5 w-5 shrink-0;
+    color: var(--success);
   }
 }
 
