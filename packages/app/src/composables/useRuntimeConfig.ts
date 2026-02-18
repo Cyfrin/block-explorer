@@ -15,7 +15,7 @@ export const DEFAULT_NETWORK: NetworkConfig = {
   maintenance: false,
   name: "testnet",
   published: true,
-  rpcUrl: "https://testnet.battlechain.com:3051",
+  rpcUrl: "http://testnet.battlechain.com:3051",
   baseTokenAddress: checksumAddress("0x000000000000000000000000000000000000800A"),
   excludedFromBattlechain: [
     checksumAddress("0x0000000000000000000000000000000000008001"),
