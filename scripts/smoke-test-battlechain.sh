@@ -76,7 +76,7 @@ assert() {
 start_docker_stack() {
   log_info "Starting Docker stack..."
   cd "$PROJECT_ROOT"
-  docker compose up -d
+  CREATE_TEST_AGREEMENT=true docker compose up -d
   log_info "Waiting for services to initialize..."
 }
 
@@ -435,6 +435,72 @@ test_agreement_indexed() {
   assert "Test agreement appears in agreements list" '[ "$found_in_list" -ge 1 ]'
 }
 
+test_commitment_window_indexed() {
+  echo ""
+  log_info "=== Test: CommitmentWindowExtended Event Indexing ==="
+
+  if [ -z "$TEST_AGREEMENT_ADDRESS" ]; then
+    log_info "No test agreement deployed (CREATE_TEST_AGREEMENT not set) — skipping"
+    return 0
+  fi
+
+  # The deployer (deploy.sh) already calls extendCommitmentWindow on the test
+  # agreement with a deadline ~30 days from now. Verify that the indexer picked
+  # up the CommitmentWindowExtended event and the API exposes it.
+
+  log_info "Test agreement address: $TEST_AGREEMENT_ADDRESS"
+  log_info "Waiting for commitment deadline to be indexed..."
+
+  local elapsed=0
+  local max_wait=30
+  local indexed=false
+
+  while [ $elapsed -lt $max_wait ]; do
+    local response=$(curl -s "$API_URL/battlechain/agreement/$TEST_AGREEMENT_ADDRESS")
+    local commitment=$(echo "$response" | jq -r '.commitmentDeadline // empty')
+
+    if [ -n "$commitment" ] && [ "$commitment" != "null" ]; then
+      indexed=true
+      break
+    fi
+
+    sleep 2
+    elapsed=$((elapsed + 2))
+    echo -n "."
+  done
+  echo ""
+
+  assert "CommitmentWindowExtended event indexed within ${max_wait}s" '[ "$indexed" = true ]'
+
+  if [ "$indexed" = true ]; then
+    local response=$(curl -s "$API_URL/battlechain/agreement/$TEST_AGREEMENT_ADDRESS")
+    local commitment_ms=$(echo "$response" | jq -r '.commitmentDeadline')
+
+    # The API returns commitmentDeadline in milliseconds. The deployer sets it
+    # to ~30 days from deploy time. Verify it's a reasonable future timestamp.
+    local now_ms=$(( $(date +%s) * 1000 ))
+    # Should be at least 7 days in the future (7 * 86400 * 1000 ms)
+    local min_future_ms=$(( now_ms + 7 * 86400 * 1000 ))
+
+    assert "commitmentDeadline is a number > 0" '[ "$commitment_ms" -gt 0 ] 2>/dev/null'
+    assert "commitmentDeadline is in the future (>7 days from now)" '[ "$commitment_ms" -gt "$min_future_ms" ] 2>/dev/null'
+
+    log_info "commitmentDeadline: $commitment_ms ($(date -r $((commitment_ms / 1000)) 2>/dev/null || echo 'N/A'))"
+
+    # Also verify via RPC that on-chain value matches
+    # cast returns values like "1774020182 [1.774e9]" — strip the annotation
+    local onchain_deadline=$(cast call --rpc-url "$RPC_URL" "$TEST_AGREEMENT_ADDRESS" \
+      "getCantChangeUntil()(uint256)" 2>/dev/null | awk '{print $1}' || echo "")
+
+    if [ -n "$onchain_deadline" ] && [ "$onchain_deadline" != "0" ]; then
+      local onchain_ms=$(( onchain_deadline * 1000 ))
+      assert "API commitmentDeadline matches on-chain value" '[ "$commitment_ms" = "$onchain_ms" ]'
+    else
+      log_warn "Could not read getCantChangeUntil() from chain — skipping on-chain comparison"
+    fi
+  fi
+}
+
 # =============================================================================
 # Main
 # =============================================================================
@@ -472,6 +538,7 @@ main() {
   test_agreement_api_response
   test_contract_state_endpoint
   test_agreement_indexed
+  test_commitment_window_indexed
 
   # Cleanup
   if [ "$SKIP_CLEANUP" = false ]; then
