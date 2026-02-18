@@ -475,7 +475,7 @@ const connect = () => {
 
 const handleSubmit = async () => {
   if (!selectedAgreement.value) return;
-  await request.requestUnderAttack(props.contractAddress, selectedAgreement.value);
+  await request.requestUnderAttack(selectedAgreement.value, props.contractAddress);
   if (request.requestTxHash.value) {
     step.value = 3;
     emit("success");
