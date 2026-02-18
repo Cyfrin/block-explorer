@@ -49,11 +49,11 @@ export default function useAgreementList(context = useContext()) {
 
     try {
       error.value = null;
-      const response = await FetchInstance.api(context)<AgreementDto[]>("/battlechain/agreements");
+      const response = await FetchInstance.api(context)<{ items: AgreementDto[] }>("/battlechain/agreements");
 
       // Filter to agreements that cover the target contract
       const normalizedTarget = targetContract.toLowerCase();
-      agreements.value = (response || [])
+      agreements.value = (response?.items || [])
         .filter((a) => a.coveredContracts?.some((c) => c.toLowerCase() === normalizedTarget))
         .map((a) => ({
           agreementAddress: a.agreementAddress as Address,
