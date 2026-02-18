@@ -6,6 +6,7 @@ prividium-e2e-junit.xml
 # compiled output
 yarn.lock
 node_modules
+*.tsbuildinfo
 .DS_Store
 dist
 dist-ssr
