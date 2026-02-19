@@ -95,6 +95,19 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
     }
   };
 
+  // Poll until the state changes from the current value (e.g. after a transaction).
+  // Retries every `intervalMs` for up to `maxMs`, then does a final fetch regardless.
+  const pollUntilStateChanges = async (intervalMs = 3000, maxMs = 30000) => {
+    const previousState = stateInfo.value?.state ?? null;
+    let elapsed = 0;
+    while (elapsed < maxMs) {
+      await new Promise((r) => setTimeout(r, intervalMs));
+      elapsed += intervalMs;
+      await fetch();
+      if (stateInfo.value?.state !== previousState) return;
+    }
+  };
+
   return {
     stateInfo,
     isLoading,
@@ -126,5 +139,6 @@ export default (contractAddress: Ref<string> | ComputedRef<string>, context = us
     isNewDeployment,
     hasRequestedAttack,
     fetch,
+    pollUntilStateChanges,
   };
 };

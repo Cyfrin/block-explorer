@@ -291,6 +291,7 @@ const {
   hasStateInfo,
   hasRequestedAttack,
   fetch: fetchContractState,
+  pollUntilStateChanges,
 } = useBattlechainContractState(contractAddress);
 
 const { isExcluded: isBattlechainExcluded } = useIsBattlechainExcluded(contractAddress);
@@ -333,7 +334,8 @@ const closeRequestUnderAttackModal = () => {
 const handleRequestUnderAttackSuccess = () => {
   // Don't close the modal — let the user see the success step (step 3).
   // The modal closes when they click "Done", which triggers close.
-  fetchContractState();
+  // Poll until the indexer picks up the state change, then refresh agreement state too.
+  pollUntilStateChanges().then(() => fetchAgreement());
 };
 
 // Go To Production modal state
@@ -349,8 +351,7 @@ const closeGoToProductionModal = () => {
 
 const handleGoToProductionSuccess = () => {
   showGoToProductionModal.value = false;
-  // Refetch contract state after successful transition to production
-  fetchContractState();
+  pollUntilStateChanges().then(() => fetchAgreement());
 };
 
 // Request Promotion modal state
@@ -366,8 +367,7 @@ const closeRequestPromotionModal = () => {
 
 const handleRequestPromotionSuccess = () => {
   showRequestPromotionModal.value = false;
-  // Refetch contract state after successful promotion request
-  fetchContractState();
+  pollUntilStateChanges().then(() => fetchAgreement());
 };
 
 // Cancel Promotion modal state
@@ -383,8 +383,7 @@ const closeCancelPromotionModal = () => {
 
 const handleCancelPromotionSuccess = () => {
   showCancelPromotionModal.value = false;
-  // Refetch contract state after canceling promotion (returns to UNDER_ATTACK)
-  fetchContractState();
+  pollUntilStateChanges().then(() => fetchAgreement());
 };
 
 const handleAgreementCreated = () => {
