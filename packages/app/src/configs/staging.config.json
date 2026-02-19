@@ -20,7 +20,7 @@
       "maintenance": false,
       "name": "testnet",
       "published": true,
-      "rpcUrl": "http://testnet.battlechain.com:3051",
+      "rpcUrl": "https://testnet.battlechain.com:3051",
       "baseTokenAddress": "0x000000000000000000000000000000000000800a",
       "attackRegistryAddress": "0x9E62988ccA776ff6613Fa68D34c9AB5431Ce57e1",
       "agreementFactoryAddress": "0x0EbBEeB3aBeF51801a53Fdd1fb263Ac0f2E3Ed36",
