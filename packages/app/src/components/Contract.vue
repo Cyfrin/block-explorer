@@ -326,11 +326,13 @@ const openRequestUnderAttackModal = () => {
 
 const closeRequestUnderAttackModal = () => {
   showRequestUnderAttackModal.value = false;
+  // Refetch contract state in case a request was submitted
+  fetchContractState();
 };
 
 const handleRequestUnderAttackSuccess = () => {
-  showRequestUnderAttackModal.value = false;
-  // Refetch contract state after successful request
+  // Don't close the modal — let the user see the success step (step 3).
+  // The modal closes when they click "Done", which triggers close.
   fetchContractState();
 };
 
