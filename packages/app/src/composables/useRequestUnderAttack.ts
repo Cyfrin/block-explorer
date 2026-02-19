@@ -109,12 +109,16 @@ export default function useRequestUnderAttack(context = useContext()) {
       isRequesting.value = true;
       requestError.value = null;
 
-      const signer = await getL2Signer();
-      const contract = new Contract(registryAddress, AttackRegistryABI, signer);
+      // Use provider for read-only call (signer may be on a different chain)
+      const provider = context.getL2Provider();
+      const readOnlyContract = new Contract(registryAddress, AttackRegistryABI, provider);
 
       // Check if contract was deployed via BattleChainDeployer
-      const authorizedOwner = await contract.getAuthorizedOwner(contractAddress);
+      const authorizedOwner = await readOnlyContract.getAuthorizedOwner(contractAddress);
       const isDeployedViaBattleChain = authorizedOwner !== "0x0000000000000000000000000000000000000000";
+
+      const signer = await getL2Signer();
+      const contract = new Contract(registryAddress, AttackRegistryABI, signer);
 
       let tx;
       if (isDeployedViaBattleChain) {
