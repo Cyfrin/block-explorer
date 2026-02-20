@@ -57,6 +57,8 @@ services:
       - DATABASE_PASSWORD=postgres
       - DATABASE_NAME=block-explorer
       - BATTLECHAIN_RPC_URL=http://zksync:3050
+      - CONTRACT_VERIFICATION_API_URL=${CONTRACT_VERIFICATION_API_URL:-http://host.docker.internal:5555}
+      - CHAIN_ID=270
     ports:
       - '3020:3020'
       - '3005:3005'

@@ -45,6 +45,8 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - DATABASE_CONNECTION_POOL_SIZE=200
       - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL:-http://zksync:3050}
+      - CONTRACT_VERIFICATION_API_URL=${CONTRACT_VERIFICATION_API_URL}
+      - CHAIN_ID=${CHAIN_ID:-270}
     depends_on:
       - worker
     restart: unless-stopped
