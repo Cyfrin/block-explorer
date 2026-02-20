@@ -78,11 +78,9 @@ services:
       test: [ 'CMD-SHELL', 'exit 0' ]
 
   battlechain-sourcify:
-    image: "ghcr.io/argotorg/sourcify/server:latest"
-    volumes:
-      - "./sourcify/sourcify-chains-${CHAIN_ENV:-testnet}.json:/home/app/services/server/dist/sourcify-chains.json:ro"
-      - "./sourcify/config.js:/home/app/services/server/dist/config/local.js:ro"
-      - "./sourcify/migrations.sh:/migrations.sh"
+    build:
+      context: ./sourcify
+      dockerfile: Dockerfile
     environment:
       - DATABASE_URL=${SOURCIFY_DATABASE_URL}
       - SESSION_SECRET=${SOURCIFY_SESSION_SECRET}
