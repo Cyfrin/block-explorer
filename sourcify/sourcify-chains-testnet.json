@@ -1,0 +1,7 @@
+{
+  "627": {
+    "sourcifyName": "Battlechain Testnet",
+    "supported": true,
+    "rpc": ["https://testnet.battlechain.com:3051"]
+  }
+}

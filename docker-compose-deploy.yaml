@@ -45,7 +45,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - DATABASE_CONNECTION_POOL_SIZE=200
       - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL:-http://zksync:3050}
-      - CONTRACT_VERIFICATION_API_URL=${CONTRACT_VERIFICATION_API_URL}
+      - CONTRACT_VERIFICATION_API_URL=http://battlechain-sourcify:5555
       - CHAIN_ID=${CHAIN_ID:-270}
     depends_on:
       - worker
@@ -76,3 +76,20 @@ services:
       retries: '3'
       start_period: '40s'
       test: [ 'CMD-SHELL', 'exit 0' ]
+
+  battlechain-sourcify:
+    image: "ghcr.io/argotorg/sourcify/server:latest"
+    volumes:
+      - "./sourcify/sourcify-chains-${CHAIN_ENV:-testnet}.json:/home/app/services/server/dist/sourcify-chains.json:ro"
+      - "./sourcify/config.js:/home/app/services/server/dist/config/local.js:ro"
+      - "./sourcify/migrations.sh:/migrations.sh"
+    environment:
+      - DATABASE_URL=${SOURCIFY_DATABASE_URL}
+      - SESSION_SECRET=${SOURCIFY_SESSION_SECRET}
+    restart: unless-stopped
+    healthcheck:
+      interval: '1m30s'
+      timeout: '10s'
+      retries: '3'
+      start_period: '40s'
+      test: 'wget --no-verbose --tries=1 --spider http://localhost:5555/health || exit 1'
