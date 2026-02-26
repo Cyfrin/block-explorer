@@ -100,7 +100,6 @@ const abiJson = computed<undefined | string>(() => {
 
 <style scoped lang="scss">
 .contract-bytecode-container {
-  @apply rounded-b-lg py-4;
   background-color: var(--bg-primary);
 
   .verified-contract-container {
@@ -121,13 +120,13 @@ const abiJson = computed<undefined | string>(() => {
     }
   }
   .functions-contract-container {
-    @apply mb-6 md:mb-10;
+    @apply mb-6;
     .functions-grid {
       @apply sm:grid-cols-2;
     }
   }
   .source-blocks-container {
-    @apply grid gap-4;
+    @apply grid gap-6;
 
     .info-field-label {
       @apply text-sm font-bold;

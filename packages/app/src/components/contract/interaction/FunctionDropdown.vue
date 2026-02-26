@@ -111,8 +111,9 @@ const submit = async (form: Record<string, string | string[] | boolean | boolean
 
 <style scoped lang="scss">
 .function-disclosure-btn {
-  @apply sticky top-0 z-[1] flex w-full items-center justify-between rounded-lg border p-3 text-left text-base font-medium;
+  @apply sticky top-0 z-[1] flex w-full items-center justify-between rounded-lg p-3 text-left text-base font-medium;
   background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
   color: var(--text-secondary);
   &.opened {
     @apply rounded-bl-none rounded-br-none;
@@ -141,7 +142,9 @@ const submit = async (form: Record<string, string | string[] | boolean | boolean
   color: var(--text-primary);
 }
 .function-disclosure-panel {
-  @apply hidden space-y-3 rounded-bl-lg rounded-br-lg border border-t-0 px-4 py-3 text-sm;
+  @apply hidden space-y-3 rounded-bl-lg rounded-br-lg px-4 py-3 text-sm;
+  border: 1px solid var(--border-default);
+  border-top: none;
   color: var(--text-muted);
   &.opened {
     @apply block;

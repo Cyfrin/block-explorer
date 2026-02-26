@@ -1,7 +1,7 @@
 <template>
   <div class="alert-container" :class="type">
     <QuestionMarkCircleIcon v-if="type === 'notification'" class="info-tooltip-icon" aria-hidden="true" />
-    <IconError v-else class="icon" :color="iconColor" />
+    <IconError v-else class="alert-icon" color="currentColor" />
     <div class="alert-body">
       <slot />
     </div>
@@ -9,23 +9,17 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-
 import { QuestionMarkCircleIcon } from "@heroicons/vue/outline";
 
 import IconError from "@/components/icons/IconError.vue";
 
 import type { PropType } from "vue";
 
-const props = defineProps({
+defineProps({
   type: {
     type: String as PropType<"warning" | "error" | "notification">,
     default: "warning",
   },
-});
-
-const iconColor = computed(() => {
-  return props.type === "warning" ? "#E69900" : "#f87171";
 });
 </script>
 
@@ -33,16 +27,27 @@ const iconColor = computed(() => {
 .alert-container {
   @apply flex items-center rounded-lg p-4;
 
-  .info-tooltip-icon {
-    @apply h-5 w-5;
+  .info-tooltip-icon,
+  .alert-icon {
+    @apply h-5 w-5 shrink-0;
     color: var(--text-muted);
   }
 
   &.warning {
-    @apply bg-warning-400/50;
+    background-color: var(--warning-muted);
+    color: var(--warning-text);
+
+    .alert-icon {
+      color: var(--warning);
+    }
   }
   &.error {
-    @apply bg-error-100/50 text-error-500;
+    background-color: var(--error-muted);
+    color: var(--error-text);
+
+    .alert-icon {
+      color: var(--error);
+    }
   }
 
   &.notification {

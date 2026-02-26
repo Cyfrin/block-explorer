@@ -140,6 +140,6 @@ watchEffect(() => {
 }
 
 .tabs-content {
-  // Content takes up remaining space
+  // Padding handled by parent components per-use
 }
 </style>

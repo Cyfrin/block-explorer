@@ -14,7 +14,7 @@
     </Alert>
   </div>
 
-  <div v-if="partialVerification || autoVerified">
+  <div v-if="partialVerification || autoVerified" class="verification-button-container">
     <VerificationButton :address="contract.address" />
   </div>
   <div class="label-container">
@@ -105,12 +105,17 @@ const PARTIAL_VERIFICATION_DETAILS_URL =
   @apply flex flex-col gap-4 sm:flex-row;
 }
 .label {
-  @apply font-bold text-neutral-600;
+  @apply font-bold;
+  color: var(--text-muted);
 }
 .text {
   @apply max-w-[16rem] break-all;
+  color: var(--text-primary);
 }
 .verification-alert-container {
-  @apply w-full mb-2;
+  @apply w-full mb-4;
+}
+.verification-button-container {
+  @apply mb-4;
 }
 </style>

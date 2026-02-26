@@ -257,14 +257,8 @@ const tabs = computed(() => {
 .contract-info-tabs-container {
   @apply m-4;
   .contract-info-tabs {
-    .tab-head {
-      @apply gap-x-4 border-none;
-      .active {
-        @apply border-neutral-200 bg-neutral-200;
-      }
-      .tab-btn {
-        @apply rounded-md border p-3 font-normal text-neutral-700;
-      }
+    .tabs-content {
+      @apply p-4;
     }
   }
 }
@@ -272,7 +266,6 @@ const tabs = computed(() => {
 
 <style lang="scss" scoped>
 .functions-contract-container {
-  @apply mt-4;
   .functions-dropdown-container {
     @apply grid grid-cols-1 gap-4 md:mb-10;
     .function-dropdown-spacer {
@@ -281,7 +274,8 @@ const tabs = computed(() => {
         @apply flex flex-col justify-between sm:flex-row;
       }
       .function-type-title {
-        @apply text-xl leading-8 text-neutral-700;
+        @apply text-xl leading-8;
+        color: var(--text-primary);
       }
     }
   }

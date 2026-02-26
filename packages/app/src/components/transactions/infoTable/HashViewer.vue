@@ -88,7 +88,10 @@ function hexStringToUTF8(hexString: string): string {
 .convert-dropdown-container {
   @apply relative block h-max;
   .option-list {
-    @apply absolute left-0 top-full z-10 mb-1 max-h-56 overflow-auto rounded-md bg-white py-1 text-base shadow-lg focus:outline-none sm:text-sm;
+    @apply absolute left-0 top-full z-10 mb-1 max-h-56 overflow-auto rounded-md py-1 text-base focus:outline-none sm:text-sm;
+    background-color: var(--bg-secondary);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-default);
     &.opens-up {
       @apply bottom-full top-auto;
     }
@@ -96,13 +99,15 @@ function hexStringToUTF8(hexString: string): string {
       @apply bottom-[calc(100%-32px)] left-[calc(100%+0.25rem)] top-auto;
     }
     .option-list-item {
-      @apply px-3 py-2 text-neutral-900 lg:py-1;
+      @apply px-3 py-2 lg:py-1;
+      color: var(--text-primary);
       &.selected {
-        @apply bg-neutral-200;
+        background-color: var(--bg-tertiary);
       }
       &:not(.selected).active,
       &:hover {
-        @apply cursor-pointer bg-neutral-200;
+        @apply cursor-pointer;
+        background-color: var(--bg-hover);
       }
       .check-icon {
         @apply ml-4 inline-block h-4 w-4;
@@ -111,13 +116,16 @@ function hexStringToUTF8(hexString: string): string {
   }
 
   .toggle-button {
-    @apply flex h-7 w-max items-center rounded bg-neutral-200 px-2 leading-6 text-neutral-700 hover:cursor-pointer focus:outline-none focus:ring-2;
+    @apply flex h-7 w-max items-center rounded px-2 leading-6 hover:cursor-pointer focus:outline-none focus:ring-2;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
 
     .selected-option-label {
       @apply mr-5 block truncate text-sm leading-6;
     }
     .toggle-button-icon {
-      @apply ml-2 h-5 w-5 text-neutral-700;
+      @apply ml-2 h-5 w-5;
+      color: var(--text-muted);
     }
   }
 }
