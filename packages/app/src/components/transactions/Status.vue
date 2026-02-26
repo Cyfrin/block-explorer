@@ -1,92 +1,120 @@
 <template>
   <div class="transaction-status">
-    <template v-for="(item, index) in badges" :key="index">
-      <Badge
-        size="md"
-        :data-testid="item.testId"
-        :color="item.color"
-        :tooltip="item.tooltip"
-        :class="{ 'only-desktop': item.withDetailedPopup }"
-      >
-        <template #precontent v-if="item.finishedStatuses?.length">
-          <ol v-for="(finishedStatus, index) in item.finishedStatuses" :key="index">
-            <li>
-              <span class="badge-status-link">
-                <span class="badge-status-link-text"><CheckIcon />{{ finishedStatus.text }}</span>
-              </span>
-            </li>
-          </ol>
+    <!-- Failed -->
+    <template v-if="status === 'failed'">
+      <Badge size="md" data-testid="failed" color="error">
+        <template #icon>
+          <ExclamationCircleIcon size="xs" />
         </template>
-        <template #icon v-if="item.icon">
-          <component :is="item.icon" size="xs" :color="item.iconColor" />
-        </template>
-        <template #default v-if="item.text">
-          <span>{{ item.text }}</span>
-        </template>
-        <template #postcontent v-if="item.remainingStatuses?.length">
-          <ol v-for="(remainingStatus, index) in item.remainingStatuses" :key="index">
-            <li>
-              <div class="badge-status-text">
-                {{ remainingStatus.text }}
+        <span>{{ t("transactions.statusComponent.failed") }}</span>
+      </Badge>
+    </template>
+
+    <template v-else>
+      <!-- Execution (L2) -->
+      <div class="status-group">
+        <span class="status-label" data-testid="l2-badge-title">{{ t("general.execution") }}</span>
+        <Badge size="md" data-testid="l2-badge-value" color="success">
+          <template #icon>
+            <CheckIcon size="xs" />
+          </template>
+          <span>{{ t("transactions.statusComponent.processed") }}</span>
+        </Badge>
+      </div>
+
+      <!-- Indexing -->
+      <template v-if="status === 'indexing'">
+        <Badge size="md" data-testid="indexing" color="neutral">
+          <template #icon>
+            <Spinner size="xs" />
+          </template>
+          <span>{{ t("transactions.statusComponent.indexing") }}</span>
+        </Badge>
+      </template>
+
+      <!-- Finality (L1) -->
+      <template v-if="status !== 'indexing'">
+        <div class="status-group">
+          <span class="status-label" data-testid="l1-badge-title">{{ t("general.finality") }}</span>
+          <Badge
+            size="md"
+            :data-testid="finalityBadge.testId"
+            :color="finalityBadge.color"
+            :class="{ 'only-desktop': finalityBadge.withDetailedPopup }"
+          >
+            <template #precontent v-if="finalityBadge.finishedStatuses?.length">
+              <ol v-for="(finishedStatus, index) in finalityBadge.finishedStatuses" :key="index">
+                <li>
+                  <span class="badge-status-link">
+                    <span class="badge-status-link-text"><CheckIcon />{{ finishedStatus.text }}</span>
+                  </span>
+                </li>
+              </ol>
+            </template>
+            <template #icon v-if="finalityBadge.icon">
+              <component :is="finalityBadge.icon" size="xs" />
+            </template>
+            <span>{{ finalityBadge.text }}</span>
+            <template #postcontent v-if="finalityBadge.remainingStatuses?.length">
+              <ol v-for="(remainingStatus, index) in finalityBadge.remainingStatuses" :key="index">
+                <li>
+                  <div class="badge-status-text">
+                    {{ remainingStatus.text }}
+                  </div>
+                </li>
+              </ol>
+            </template>
+          </Badge>
+          <Badge
+            v-if="finalityBadge.withDetailedPopup"
+            size="md"
+            :data-testid="finalityBadge.testId"
+            :color="finalityBadge.color"
+            class="badge-with-content only-mobile"
+            @click="showStatusPopup"
+          >
+            <template #icon v-if="finalityBadge.icon">
+              <component :is="finalityBadge.icon" size="xs" />
+            </template>
+            <span>{{ finalityBadge.text }}</span>
+          </Badge>
+          <Popup :opened="statusPopupOpened" class="status-popup" v-if="finalityBadge.withDetailedPopup">
+            <OnClickOutside @trigger="closeStatusPopup">
+              <div class="badge-status-popup">
+                <div class="badge-status-popup-header">
+                  <h3 class="badge-status-popup-title">
+                    {{ t("transactions.statusComponent.ethereumNetwork") }}
+                  </h3>
+
+                  <button @click="closeStatusPopup" class="badge-status-popup-close"><XIcon /></button>
+                </div>
+
+                <div
+                  class="badge-status-popup-button status-active"
+                  v-for="(finishedStatus, index) in finalityBadge.finishedStatuses"
+                  :key="index"
+                >
+                  <span class="badge-status-link">
+                    <span class="badge-status-link-text"><CheckIcon />{{ finishedStatus.text }}</span>
+                  </span>
+                </div>
+
+                <div class="badge-status-popup-button status-current">
+                  <span class="badge-status-link-text"><Spinner></Spinner>{{ finalityBadge.text }}</span>
+                </div>
+
+                <div
+                  class="badge-status-popup-button status-next"
+                  v-for="(remainingStatus, index) in finalityBadge.remainingStatuses"
+                  :key="index"
+                >
+                  {{ remainingStatus.text }}
+                </div>
               </div>
-            </li>
-          </ol>
-        </template>
-      </Badge>
-      <Badge
-        v-if="item.withDetailedPopup"
-        size="md"
-        :data-testid="item.testId"
-        :color="item.color"
-        :tooltip="item.tooltip"
-        class="badge-with-content only-mobile"
-        @click="showStatusPopup"
-      >
-        <template #icon v-if="item.icon">
-          <component :is="item.icon" size="xs" :color="item.iconColor" />
-        </template>
-        <template #default v-if="item.text">
-          <span>{{ item.text }}</span>
-        </template>
-      </Badge>
-      <InfoTooltip v-if="item.infoTooltip" class="info-tooltip">
-        {{ item.infoTooltip }}
-      </InfoTooltip>
-      <Popup :opened="statusPopupOpened" class="status-popup" v-if="item.withDetailedPopup">
-        <OnClickOutside @trigger="closeStatusPopup">
-          <div class="badge-status-popup">
-            <div class="badge-status-popup-header">
-              <h3 class="badge-status-popup-title">
-                {{ t("transactions.statusComponent.ethereumNetwork") }}
-              </h3>
-
-              <button @click="closeStatusPopup" class="badge-status-popup-close"><XIcon /></button>
-            </div>
-
-            <div
-              class="badge-status-popup-button status-active"
-              v-for="(finishedStatus, index) in item.finishedStatuses"
-              :key="index"
-            >
-              <span class="badge-status-link">
-                <span class="badge-status-link-text"><CheckIcon />{{ finishedStatus.text }}</span>
-              </span>
-            </div>
-
-            <div class="badge-status-popup-button status-current">
-              <span class="badge-status-link-text"><Spinner></Spinner>{{ item.text }}</span>
-            </div>
-
-            <div
-              class="badge-status-popup-button status-next"
-              v-for="(remainingStatus, index) in item.remainingStatuses"
-              :key="index"
-            >
-              {{ remainingStatus.text }}
-            </div>
-          </div>
-        </OnClickOutside>
-      </Popup>
+            </OnClickOutside>
+          </Popup>
+        </div>
+      </template>
     </template>
   </div>
 </template>
@@ -99,7 +127,6 @@ import { CheckIcon, ExclamationCircleIcon, XIcon } from "@heroicons/vue/outline"
 import { OnClickOutside } from "@vueuse/components";
 
 import Badge from "@/components/common/Badge.vue";
-import InfoTooltip from "@/components/common/InfoTooltip.vue";
 import Popup from "@/components/common/Popup.vue";
 import Spinner from "@/components/common/Spinner.vue";
 
@@ -149,94 +176,45 @@ const remainingTxStatuses: TxStatus[] = [
   },
 ];
 
-const badges = computed(() => {
-  const badgesArr: {
-    color: "neutral" | "success" | "warning" | "error" | "accent";
-    text?: string;
-    tooltip?: string;
-    infoTooltip?: string;
-    icon?: unknown;
-    testId: string;
-    finishedStatuses?: TxStatus[];
-    remainingStatuses?: TxStatus[];
-    withDetailedPopup?: boolean;
-  }[] = [];
-  if (props.status === "failed") {
-    badgesArr.push({
-      testId: "failed",
-      color: "error",
-      text: t("transactions.statusComponent.failed"),
-      icon: ExclamationCircleIcon,
-    });
-    return badgesArr;
-  }
-
-  badgesArr.push({
-    testId: "l2-badge-title",
-    color: "success",
-    text: t("general.execution"),
-  });
-  badgesArr.push({
-    testId: "l2-badge-value",
-    color: "success",
-    text: t("transactions.statusComponent.processed"),
-    icon: CheckIcon,
-  });
-
-  if (props.status === "indexing") {
-    badgesArr.push({
-      testId: "indexing",
-      color: "neutral",
-      text: t("transactions.statusComponent.indexing"),
-      icon: Spinner,
-    });
-    return badgesArr;
-  }
-
-  badgesArr.push({
-    testId: "l1-badge-title",
-    color: props.status === "verified" ? "success" : "neutral",
-    text: t("general.finality"),
-  });
+const finalityBadge = computed(() => {
   if (props.status === "verified") {
-    badgesArr.push({
+    return {
       testId: "verified",
-      color: "success",
+      color: "success" as const,
       text: t("transactions.statusComponent.executed"),
       finishedStatuses: [finishedTxStatuses[0], finishedTxStatuses[1]],
       withDetailedPopup: true,
       icon: CheckIcon,
-    });
-  } else {
-    let textKey;
-    const finishedStatuses: TxStatus[] = [];
-    const remainingStatuses: TxStatus[] = [];
-
-    if (props.status === "committed") {
-      textKey = "validating";
-      finishedStatuses.push(finishedTxStatuses[0]);
-      remainingStatuses.push(remainingTxStatuses[1]);
-    } else if (props.status === "proved") {
-      textKey = "executing";
-      finishedStatuses.push(finishedTxStatuses[0]);
-      finishedStatuses.push(finishedTxStatuses[1]);
-    } else {
-      textKey = "sending";
-      remainingStatuses.push(remainingTxStatuses[0]);
-      remainingStatuses.push(remainingTxStatuses[1]);
-    }
-
-    badgesArr.push({
-      testId: "l1-badge-value",
-      color: "neutral",
-      text: t(`transactions.statusComponent.${textKey}`),
-      icon: Spinner,
-      finishedStatuses,
-      remainingStatuses,
-      withDetailedPopup: true,
-    });
+    };
   }
-  return badgesArr;
+
+  let textKey;
+  const finishedStatuses: TxStatus[] = [];
+  const remainingStatuses: TxStatus[] = [];
+
+  if (props.status === "committed") {
+    textKey = "validating";
+    finishedStatuses.push(finishedTxStatuses[0]);
+    remainingStatuses.push(remainingTxStatuses[1]);
+  } else if (props.status === "proved") {
+    textKey = "executing";
+    finishedStatuses.push(finishedTxStatuses[0]);
+    finishedStatuses.push(finishedTxStatuses[1]);
+  } else {
+    textKey = "sending";
+    remainingStatuses.push(remainingTxStatuses[0]);
+    remainingStatuses.push(remainingTxStatuses[1]);
+  }
+
+  return {
+    testId: "l1-badge-value",
+    color: "neutral" as const,
+    text: t(`transactions.statusComponent.${textKey}`),
+    icon: Spinner,
+    finishedStatuses,
+    remainingStatuses,
+    withDetailedPopup: true,
+  };
 });
 </script>
 
@@ -310,11 +288,16 @@ const badges = computed(() => {
 }
 
 .transaction-status {
-  @apply flex flex-wrap items-center gap-1;
+  @apply flex flex-wrap items-center gap-4;
+}
 
-  .info-tooltip {
-    @apply ml-1;
-  }
+.status-group {
+  @apply flex items-center gap-1;
+}
+
+.status-label {
+  @apply text-sm font-medium;
+  color: var(--text-muted);
 }
 
 .badge-additional-content {
