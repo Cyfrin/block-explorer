@@ -172,7 +172,9 @@ const getParameterHexValues = () => {
     @apply overflow-auto;
   }
   .show-as-dropdown .toggle-button {
-    @apply h-10 border-gray-200 bg-neutral-100 py-2;
+    @apply h-10 py-2;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
   }
   .decoding-loading {
     @apply flex h-10 items-center;
@@ -182,12 +184,15 @@ const getParameterHexValues = () => {
     }
   }
   .decoding-data-error {
-    @apply self-center whitespace-pre-line leading-tight text-red-600;
+    @apply self-center whitespace-pre-line leading-tight;
+    color: var(--error);
   }
   .decoded-data-box {
-    @apply rounded-md border bg-neutral-100 px-4 py-3 font-mono text-sm leading-relaxed;
+    @apply rounded-md px-4 py-3 font-mono text-sm leading-relaxed;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
     .data-line {
-      @apply text-neutral-700;
+      color: var(--text-secondary);
       font-weight: 400;
     }
     .parameters-section {
@@ -195,17 +200,24 @@ const getParameterHexValues = () => {
     }
   }
   .method-interface {
-    @apply flex h-max flex-col justify-center rounded-md border bg-neutral-100 px-4 py-[0.56rem] font-mono text-neutral-700;
-    @apply whitespace-pre-line text-black;
+    @apply flex h-max flex-col justify-center rounded-md px-4 py-[0.56rem] font-mono;
+    @apply whitespace-pre-line;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
+    color: var(--text-primary);
   }
   .encoded-data-container {
-    @apply min-h-[40px] overflow-auto whitespace-nowrap rounded-md border bg-neutral-100 px-4 py-3 font-mono text-xs text-neutral-700;
+    @apply min-h-10 overflow-auto whitespace-nowrap rounded-md px-4 py-3 font-mono text-xs;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
   }
   .transaction-data-inputs {
     @apply overflow-auto;
 
     .method-parameters-table {
-      @apply overflow-auto border shadow-none;
+      @apply overflow-auto shadow-none;
+      border: 1px solid var(--border-default);
 
       .table-body {
         table {
@@ -227,9 +239,11 @@ const getParameterHexValues = () => {
           @apply py-2;
         }
         .table-body-col {
-          @apply relative m-0 flex flex-col items-end whitespace-normal py-1.5 text-right font-mono text-black first:font-normal md:table-cell md:text-left;
+          @apply relative m-0 flex flex-col items-end whitespace-normal py-1.5 text-right font-mono first:font-normal md:table-cell md:text-left;
+          color: var(--text-primary);
           &:before {
-            @apply absolute left-4 top-2 whitespace-nowrap pr-5 text-left text-xs uppercase text-neutral-400 content-[attr(data-heading)] md:content-none;
+            @apply absolute left-4 top-2 whitespace-nowrap pr-5 text-left text-xs uppercase content-[attr(data-heading)] md:content-none;
+            color: var(--text-muted);
           }
 
           .argument-value {

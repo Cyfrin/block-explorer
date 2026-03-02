@@ -102,11 +102,9 @@ watchEffect(() => {
 .tables-container {
   @apply mt-8 grid grid-cols-1 gap-4;
 
-  h2 {
-    @apply mb-4 text-gray-200;
-  }
   .table-transaction-title {
-    @apply text-gray-700;
+    @apply mb-4;
+    color: var(--text-primary);
   }
   .block-table {
     @apply mb-8;
