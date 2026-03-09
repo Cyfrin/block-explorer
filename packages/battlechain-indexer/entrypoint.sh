@@ -6,8 +6,9 @@ set -e
 
 ADDRESSES_FILE="${ADDRESSES_FILE:-/shared/addresses.json}"
 WAIT_TIMEOUT="${WAIT_TIMEOUT:-300}"
-CONFIG_TEMPLATE="/app/rindexer.yaml.template"
-CONFIG_OUTPUT="/app/rindexer.yaml"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_TEMPLATE="${SCRIPT_DIR}/rindexer.yaml.template"
+CONFIG_OUTPUT="${SCRIPT_DIR}/rindexer.yaml"
 
 echo "========================================"
 echo "BattleChain Indexer Starting"
@@ -136,9 +137,9 @@ run_sql_setup() {
     fi
 
     # Run the agreement_current_state setup script
-    if [ -f "/app/sql/create-agreement-current-state.sql" ]; then
+    if [ -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql" ]; then
         echo "Running create-agreement-current-state.sql..."
-        if psql "$DATABASE_URL" -f /app/sql/create-agreement-current-state.sql; then
+        if psql "$DATABASE_URL" -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql"; then
             echo "SQL setup completed successfully!"
         else
             echo "WARNING: SQL setup script had errors (non-fatal)"
@@ -160,4 +161,5 @@ echo ""
 # Run SQL setup in background after a delay (rindexer needs to create tables first)
 run_sql_setup &
 
-exec /app/rindexer "$@"
+cd "${SCRIPT_DIR}"
+exec rindexer "$@"
