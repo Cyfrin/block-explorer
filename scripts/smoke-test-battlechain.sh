@@ -501,6 +501,138 @@ test_commitment_window_indexed() {
   fi
 }
 
+test_child_contract_scope() {
+  echo ""
+  log_info "=== Test: Child Contract Scope Resolution (Factory Pattern) ==="
+
+  if [ -z "$TEST_AGREEMENT_ADDRESS" ]; then
+    log_info "No test agreement deployed — skipping"
+    return 0
+  fi
+
+  # The AgreementFactory was added as an in-scope account with childContractScope=All
+  # on the local chain. The child resolution polling job queries the `logs` table for
+  # ContractDeployed events where topics[2] (deployerAddress) matches the factory.
+  #
+  # The worker (block indexer) populates the `logs` table, but it doesn't sync in
+  # the local docker environment. To make this test deterministic, we seed a mock
+  # ContractDeployed log entry directly via SQL.
+  #
+  # This tests the real factory→child pattern: the AgreementFactory deployed the
+  # BattleChainDeployer contract, so BattleChainDeployer should appear as a child.
+
+  log_info "Test agreement:  $TEST_AGREEMENT_ADDRESS"
+  log_info "Factory:         $AGREEMENT_FACTORY (in-scope with childContractScope=All)"
+  log_info "Expected child:  $BATTLECHAIN_DEPLOYER (deployed by factory)"
+
+  # Seed a mock ContractDeployed log into the logs table.
+  # The logs table has a FK on blockNumber → blocks, so we insert a mock block first.
+  #
+  # ContractDeployed event topics layout (bytea[]):
+  #   topics[1] = event signature (0x290afdae...)
+  #   topics[2] = deployerAddress (factory), zero-padded to 32 bytes
+  #   topics[3] = bytecodeHash (arbitrary)
+  #   topics[4] = contractAddress (child), zero-padded to 32 bytes
+  log_info "Seeding mock ContractDeployed log for child resolution test..."
+  local factory_hex=$(echo "$AGREEMENT_FACTORY" | sed 's/0x//' | tr '[:upper:]' '[:lower:]')
+  local child_hex=$(echo "$BATTLECHAIN_DEPLOYER" | sed 's/0x//' | tr '[:upper:]' '[:lower:]')
+
+  docker compose exec -T postgres psql -U postgres block-explorer -q <<EOSQL
+    -- Insert a mock block if none exists yet (worker hasn't synced)
+    INSERT INTO blocks (number, hash, "parentHash", "timestamp", nonce, difficulty,
+                        "gasLimit", "gasUsed", "baseFeePerGas", "l1TxCount", "l2TxCount",
+                        miner, "extraData")
+    VALUES (1,
+            '\\x0000000000000000000000000000000000000000000000000000000000000001',
+            '\\x0000000000000000000000000000000000000000000000000000000000000000',
+            '2026-01-01 00:00:00', '0', 0, '0', '0', '0', 0, 0,
+            '\\x0000000000000000000000000000000000000000',
+            '\\x00')
+    ON CONFLICT DO NOTHING;
+
+    -- Insert a mock ContractDeployed log entry
+    INSERT INTO logs ("blockNumber", "transactionIndex", "logIndex", "timestamp",
+                      address, data, topics)
+    VALUES (
+      1,
+      0,
+      0,
+      '2026-01-01 00:00:00',
+      '\\x0000000000000000000000000000000000008006',
+      '\\x',
+      ARRAY[
+        '\\x290afdae231a3fc0bbae8b1af63698b0a1d79b21ad17df0342dfb952fe74f8e5',
+        '\\x000000000000000000000000${factory_hex}',
+        '\\x0000000000000000000000000000000000000000000000000000000000000000',
+        '\\x000000000000000000000000${child_hex}'
+      ]::bytea[]
+    );
+EOSQL
+
+  if [ $? -eq 0 ]; then
+    log_info "Mock ContractDeployed log seeded successfully"
+  else
+    log_warn "Failed to seed mock log data — child resolution test may fail"
+  fi
+
+  # Re-enqueue the agreement for child reindex, since the initial queue entry
+  # may have been consumed before the log data existed.
+  docker compose exec -T postgres psql -U postgres block-explorer -q <<EOSQL
+    INSERT INTO battlechainindexer_agreement.child_scope_reindex_queue (agreement_address)
+    SELECT DISTINCT agreement_address
+    FROM battlechainindexer_agreement.agreement_accounts
+    WHERE child_contract_scope != 0
+    ON CONFLICT DO NOTHING;
+EOSQL
+
+  # The child resolution polling job runs every 15 seconds in the API service.
+  log_info "Waiting for child contract scope resolution..."
+
+  local elapsed=0
+  local max_wait=90
+  local resolved=false
+  local expected_child_lower=$(echo "$BATTLECHAIN_DEPLOYER" | tr '[:upper:]' '[:lower:]')
+
+  while [ $elapsed -lt $max_wait ]; do
+    # Check if the BattleChainDeployer contract appears in covered_contracts
+    local response=$(curl -s "$API_URL/battlechain/agreement/$TEST_AGREEMENT_ADDRESS")
+    local covered=$(echo "$response" | jq -r '.coveredContracts // [] | .[]' 2>/dev/null)
+
+    if echo "$covered" | tr '[:upper:]' '[:lower:]' | grep -q "$expected_child_lower"; then
+      resolved=true
+      break
+    fi
+
+    sleep 5
+    elapsed=$((elapsed + 5))
+    echo -n "."
+  done
+  echo ""
+
+  assert "Child contract resolved into covered_contracts within ${max_wait}s" '[ "$resolved" = true ]'
+
+  if [ "$resolved" = true ]; then
+    log_success "BattleChainDeployer ($BATTLECHAIN_DEPLOYER) found in agreement's covered_contracts (factory pattern)"
+
+    # Count total covered contracts
+    local covered_count=$(echo "$response" | jq '.coveredContracts | length' 2>/dev/null)
+    log_info "Total covered_contracts: $covered_count"
+
+    # Verify the by-contract lookup also works for the child
+    local by_contract_response=$(curl -s "$API_URL/battlechain/agreement/by-contract/$BATTLECHAIN_DEPLOYER")
+    local has_coverage=$(echo "$by_contract_response" | jq -r '.hasCoverage // false')
+
+    assert "GET /battlechain/agreement/by-contract/:childAddress returns hasCoverage=true" \
+      '[ "$has_coverage" = "true" ]'
+
+    local returned_agreement=$(echo "$by_contract_response" | jq -r '.agreements[0].agreementAddress // empty')
+    local agreement_lower=$(echo "$TEST_AGREEMENT_ADDRESS" | tr '[:upper:]' '[:lower:]')
+    local returned_lower=$(echo "$returned_agreement" | tr '[:upper:]' '[:lower:]')
+    assert "by-contract lookup returns the correct parent agreement" \
+      '[ "$returned_lower" = "$agreement_lower" ]'
+  fi
+}
+
 # =============================================================================
 # Main
 # =============================================================================
@@ -539,6 +671,7 @@ main() {
   test_contract_state_endpoint
   test_agreement_indexed
   test_commitment_window_indexed
+  test_child_contract_scope
 
   # Cleanup
   if [ "$SKIP_CLEANUP" = false ]; then

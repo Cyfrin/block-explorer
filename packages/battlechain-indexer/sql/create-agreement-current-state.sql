@@ -44,7 +44,11 @@ CREATE TABLE IF NOT EXISTS battlechainindexer_agreement.agreement_current_state 
   commitment_deadline NUMERIC,  -- Unix timestamp
   commitment_deadline_updated_at TIMESTAMPTZ,
 
-  -- From scope events (computed)
+  -- From scope events (manually-specified via BattleChainScopeAddress* events)
+  covered_scope_contracts TEXT[] DEFAULT ARRAY[]::TEXT[],
+  -- From child contract resolution (computed by API polling job)
+  covered_child_contracts TEXT[] DEFAULT ARRAY[]::TEXT[],
+  -- Union of covered_scope_contracts and covered_child_contracts (used for lookups)
   covered_contracts TEXT[],  -- Array of addresses
   scope_updated_at TIMESTAMPTZ,
 
@@ -57,6 +61,34 @@ CREATE TABLE IF NOT EXISTS battlechainindexer_agreement.agreement_current_state 
 CREATE INDEX IF NOT EXISTS idx_agreement_covered_contracts
   ON battlechainindexer_agreement.agreement_current_state
   USING GIN (covered_contracts);
+
+-- Index for reverse lookup on child contracts
+CREATE INDEX IF NOT EXISTS idx_agreement_covered_child_contracts
+  ON battlechainindexer_agreement.agreement_current_state
+  USING GIN (covered_child_contracts);
+
+-- ============================================
+-- Child contract scope reindex queue
+-- ============================================
+-- When agreement scope changes (account added/removed/chain changes),
+-- the triggers enqueue the agreement for child contract reindexing.
+-- PRIMARY KEY deduplicates multiple rapid changes for the same agreement.
+CREATE TABLE IF NOT EXISTS battlechainindexer_agreement.child_scope_reindex_queue (
+  agreement_address CHAR(42) PRIMARY KEY,
+  queued_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================
+-- Child contract scope cursor (high-water mark)
+-- ============================================
+-- Tracks the last block number processed by the child contract resolution job.
+-- Singleton row (id=1) so the job only processes new contract deployments each cycle.
+CREATE TABLE IF NOT EXISTS battlechainindexer_agreement.child_scope_cursor (
+  id INT PRIMARY KEY DEFAULT 1,
+  last_processed_block BIGINT DEFAULT 0
+);
+INSERT INTO battlechainindexer_agreement.child_scope_cursor (id, last_processed_block)
+VALUES (1, 0) ON CONFLICT DO NOTHING;
 
 -- ============================================
 -- Trigger: Initialize state on AgreementCreated
@@ -221,14 +253,18 @@ CREATE OR REPLACE FUNCTION update_agreement_scope_add()
 RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO battlechainindexer_agreement.agreement_current_state (
-    agreement_address, covered_contracts, scope_updated_at, last_updated_at
+    agreement_address, covered_scope_contracts, covered_contracts, scope_updated_at, last_updated_at
   )
-  VALUES (NEW.contract_address, ARRAY[NEW.addr], NEW.block_timestamp, NOW())
+  VALUES (NEW.contract_address, ARRAY[NEW.addr], ARRAY[NEW.addr], NEW.block_timestamp, NOW())
   ON CONFLICT (agreement_address) DO UPDATE SET
-    covered_contracts = array_append(
-      COALESCE(battlechainindexer_agreement.agreement_current_state.covered_contracts, ARRAY[]::TEXT[]),
+    covered_scope_contracts = array_append(
+      COALESCE(battlechainindexer_agreement.agreement_current_state.covered_scope_contracts, ARRAY[]::TEXT[]),
       NEW.addr
     ),
+    covered_contracts = array_append(
+      COALESCE(battlechainindexer_agreement.agreement_current_state.covered_scope_contracts, ARRAY[]::TEXT[]),
+      NEW.addr
+    ) || COALESCE(battlechainindexer_agreement.agreement_current_state.covered_child_contracts, ARRAY[]::TEXT[]),
     scope_updated_at = NEW.block_timestamp,
     last_updated_at = NOW();
   RETURN NEW;
@@ -247,7 +283,12 @@ CREATE OR REPLACE FUNCTION update_agreement_scope_remove()
 RETURNS TRIGGER AS $$
 BEGIN
   UPDATE battlechainindexer_agreement.agreement_current_state SET
-    covered_contracts = array_remove(covered_contracts, NEW.addr),
+    covered_scope_contracts = array_remove(
+      COALESCE(covered_scope_contracts, ARRAY[]::TEXT[]), NEW.addr
+    ),
+    covered_contracts = array_remove(
+      COALESCE(covered_scope_contracts, ARRAY[]::TEXT[]), NEW.addr
+    ) || COALESCE(covered_child_contracts, ARRAY[]::TEXT[]),
     scope_updated_at = NEW.block_timestamp,
     last_updated_at = NOW()
   WHERE agreement_address = NEW.contract_address;
@@ -267,7 +308,8 @@ CREATE OR REPLACE FUNCTION update_agreement_scope_clear()
 RETURNS TRIGGER AS $$
 BEGIN
   UPDATE battlechainindexer_agreement.agreement_current_state SET
-    covered_contracts = ARRAY[]::TEXT[],
+    covered_scope_contracts = ARRAY[]::TEXT[],
+    covered_contracts = COALESCE(covered_child_contracts, ARRAY[]::TEXT[]),
     scope_updated_at = NEW.block_timestamp,
     last_updated_at = NOW()
   WHERE agreement_address = NEW.contract_address;
@@ -347,6 +389,12 @@ BEGIN
   ON CONFLICT (agreement_address, caip2_chain_id, account_address) DO UPDATE SET
     child_contract_scope = EXCLUDED.child_contract_scope,
     updated_at = NOW();
+
+  -- Enqueue child contract reindex for this agreement
+  INSERT INTO battlechainindexer_agreement.child_scope_reindex_queue (agreement_address)
+  VALUES (NEW.contract_address)
+  ON CONFLICT DO NOTHING;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -366,6 +414,12 @@ BEGIN
   WHERE agreement_address = NEW.contract_address
     AND caip2_chain_id = NEW.caip_2_chain_id
     AND account_address = NEW.account_address;
+
+  -- Enqueue child contract reindex for this agreement
+  INSERT INTO battlechainindexer_agreement.child_scope_reindex_queue (agreement_address)
+  VALUES (NEW.contract_address)
+  ON CONFLICT DO NOTHING;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -377,17 +431,13 @@ CREATE TRIGGER trg_account_removed
 
 -- ============================================
 -- Trigger: Insert/update accounts from ChainAddedOrSet
--- Note: rindexer stores tuple[] (accounts) as JSONB array
--- Each element has: accountAddress, childContractScope
+-- rindexer flattens tuple[] into one row per account with
+-- accounts_account_address and accounts_child_contract_scope columns
 -- ============================================
 CREATE OR REPLACE FUNCTION upsert_chain_accounts()
 RETURNS TRIGGER AS $$
-DECLARE
-  account JSONB;
 BEGIN
-  -- Iterate through the JSONB array of accounts
-  FOR account IN SELECT * FROM jsonb_array_elements(NEW.accounts)
-  LOOP
+  IF NEW.accounts_account_address IS NOT NULL THEN
     INSERT INTO battlechainindexer_agreement.agreement_accounts (
       agreement_address, caip2_chain_id, account_address,
       child_contract_scope, created_at, updated_at
@@ -395,15 +445,21 @@ BEGIN
     VALUES (
       NEW.contract_address,
       NEW.caip_2_chain_id,
-      account->>'accountAddress',
-      (account->>'childContractScope')::SMALLINT,
+      NEW.accounts_account_address,
+      NEW.accounts_child_contract_scope,
       NEW.block_timestamp,
       NEW.block_timestamp
     )
     ON CONFLICT (agreement_address, caip2_chain_id, account_address) DO UPDATE SET
       child_contract_scope = EXCLUDED.child_contract_scope,
       updated_at = NOW();
-  END LOOP;
+  END IF;
+
+  -- Enqueue child contract reindex for this agreement
+  INSERT INTO battlechainindexer_agreement.child_scope_reindex_queue (agreement_address)
+  VALUES (NEW.contract_address)
+  ON CONFLICT DO NOTHING;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -422,6 +478,12 @@ BEGIN
   DELETE FROM battlechainindexer_agreement.agreement_accounts
   WHERE agreement_address = NEW.contract_address
     AND caip2_chain_id = NEW.caip_2_chain_id;
+
+  -- Enqueue child contract reindex for this agreement
+  INSERT INTO battlechainindexer_agreement.child_scope_reindex_queue (agreement_address)
+  VALUES (NEW.contract_address)
+  ON CONFLICT DO NOTHING;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -450,20 +512,41 @@ SELECT
 FROM battlechainindexer_agreement.account_added
 ON CONFLICT (agreement_address, caip2_chain_id, account_address) DO NOTHING;
 
--- Backfill from chain_added_or_set events (accounts stored as JSONB array)
+-- Backfill from chain_added_or_set events (rindexer flattens tuple[] into rows)
 INSERT INTO battlechainindexer_agreement.agreement_accounts (
   agreement_address, caip2_chain_id, account_address,
   child_contract_scope, created_at, updated_at
 )
 SELECT
-  c.contract_address,
-  c.caip_2_chain_id,
-  account->>'accountAddress',
-  (account->>'childContractScope')::SMALLINT,
-  c.block_timestamp,
-  c.block_timestamp
-FROM battlechainindexer_agreement.chain_added_or_set c,
-     jsonb_array_elements(c.accounts) AS account
+  contract_address,
+  caip_2_chain_id,
+  accounts_account_address,
+  accounts_child_contract_scope,
+  block_timestamp,
+  block_timestamp
+FROM battlechainindexer_agreement.chain_added_or_set
+WHERE accounts_account_address IS NOT NULL
 ON CONFLICT (agreement_address, caip2_chain_id, account_address) DO NOTHING;
+
+-- ============================================
+-- Backfill covered_scope_contracts from existing covered_contracts
+-- ============================================
+-- On first run with these new columns, existing covered_contracts values
+-- were set by the scope triggers (which wrote to covered_contracts directly).
+-- Copy them into covered_scope_contracts so the new trigger logic works correctly.
+UPDATE battlechainindexer_agreement.agreement_current_state
+SET covered_scope_contracts = COALESCE(covered_contracts, ARRAY[]::TEXT[])
+WHERE covered_scope_contracts IS NULL OR covered_scope_contracts = ARRAY[]::TEXT[];
+
+-- ============================================
+-- Enqueue all agreements with child-scope accounts for initial reindex
+-- ============================================
+-- On first run, any agreements that already have accounts with child_contract_scope != 0
+-- need to have their child contracts resolved.
+INSERT INTO battlechainindexer_agreement.child_scope_reindex_queue (agreement_address)
+SELECT DISTINCT agreement_address
+FROM battlechainindexer_agreement.agreement_accounts
+WHERE child_contract_scope != 0
+ON CONFLICT DO NOTHING;
 
 SELECT 'Agreement current state and accounts tables created successfully!' AS status;
