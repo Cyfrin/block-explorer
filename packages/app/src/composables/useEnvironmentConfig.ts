@@ -30,6 +30,12 @@ export async function loadEnvironmentConfig(runtimeConfig: RuntimeConfig): Promi
 
   envConfig.networks?.forEach((networkConfig) => {
     networkConfig.baseTokenAddress = checksumAddress(networkConfig.baseTokenAddress || BASE_TOKEN_L2_ADDRESS);
+    if (import.meta.env?.VITE_API_URL) {
+      networkConfig.apiUrl = import.meta.env.VITE_API_URL;
+    }
+    if (import.meta.env?.VITE_VERIFICATION_API_URL) {
+      networkConfig.verificationApiUrl = import.meta.env.VITE_VERIFICATION_API_URL;
+    }
   });
 
   config.value = envConfig;
