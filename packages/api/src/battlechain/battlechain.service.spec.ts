@@ -2,7 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { mock } from "jest-mock-extended";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { Repository, SelectQueryBuilder } from "typeorm";
+import { Repository, SelectQueryBuilder, DataSource } from "typeorm";
 import { BattlechainService } from "./battlechain.service";
 import { AgreementStateChange } from "./agreementState.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
@@ -18,6 +18,7 @@ describe("BattlechainService", () => {
   let agreementAccountRepository: Repository<AgreementAccount>;
   let agreementOwnerAuthorizedRepository: Repository<AgreementOwnerAuthorized>;
   let attackModeratorTransferredRepository: Repository<AttackModeratorTransferred>;
+  let dataSource: DataSource;
   let configService: ConfigService;
 
   beforeEach(async () => {
@@ -26,6 +27,7 @@ describe("BattlechainService", () => {
     agreementAccountRepository = mock<Repository<AgreementAccount>>();
     agreementOwnerAuthorizedRepository = mock<Repository<AgreementOwnerAuthorized>>();
     attackModeratorTransferredRepository = mock<Repository<AttackModeratorTransferred>>();
+    dataSource = mock<DataSource>();
     configService = mock<ConfigService>();
 
     // Default: no RPC URL configured (preserves existing test behavior)
@@ -46,6 +48,10 @@ describe("BattlechainService", () => {
         {
           provide: ConfigService,
           useValue: configService,
+        },
+        {
+          provide: DataSource,
+          useValue: dataSource,
         },
         {
           provide: getRepositoryToken(AgreementStateChange),
@@ -108,6 +114,8 @@ describe("BattlechainService", () => {
       mockQueryBuilder.getOne.mockResolvedValue({
         agreementAddress: agreementAddress.toLowerCase(),
         owner: "0xowner",
+        coveredScopeContracts: [contractAddress.toLowerCase()],
+        coveredChildContracts: [],
         coveredContracts: [contractAddress.toLowerCase()],
         createdAtBlock: 100,
         createdAt: timestamp,
@@ -164,6 +172,8 @@ describe("BattlechainService", () => {
       mockQueryBuilder.getOne.mockResolvedValue({
         agreementAddress: agreementAddress.toLowerCase(),
         owner: "0xowner",
+        coveredScopeContracts: [contractAddress.toLowerCase()],
+        coveredChildContracts: [],
         coveredContracts: [contractAddress.toLowerCase()],
         createdAtBlock: 100,
         createdAt: registeredTime,
@@ -225,6 +235,8 @@ describe("BattlechainService", () => {
       mockQueryBuilder.getOne.mockResolvedValue({
         agreementAddress: agreementAddress.toLowerCase(),
         owner: "0xowner",
+        coveredScopeContracts: [contractAddress.toLowerCase()],
+        coveredChildContracts: [],
         coveredContracts: [contractAddress.toLowerCase()],
         createdAtBlock: 100,
         createdAt: registeredTime,
@@ -432,6 +444,8 @@ describe("BattlechainService", () => {
       (agreementStateRepository.findOne as jest.Mock).mockResolvedValue({
         agreementAddress: agreementAddress.toLowerCase(),
         owner: ownerAddress.toLowerCase(),
+        coveredScopeContracts: [],
+        coveredChildContracts: [],
         coveredContracts: [],
         createdAtBlock: 100,
         createdAt: new Date(),
@@ -466,18 +480,18 @@ describe("BattlechainService", () => {
     });
   });
 
-  describe("getAgreementByContract", () => {
+  describe("getAgreementsByContract", () => {
     const contractAddress = "0xcontract12345678901234567890123456789012";
 
-    it("returns null when no agreement covers the contract", async () => {
+    it("returns empty array when no agreement covers the contract", async () => {
       const mockQueryBuilder = mock<SelectQueryBuilder<AgreementCurrentState>>();
       mockQueryBuilder.where.mockReturnValue(mockQueryBuilder);
-      mockQueryBuilder.getOne.mockResolvedValue(null);
+      mockQueryBuilder.getMany.mockResolvedValue([]);
       (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
-      const result = await service.getAgreementByContract(contractAddress);
+      const result = await service.getAgreementsByContract(contractAddress);
 
-      expect(result).toBeNull();
+      expect(result).toEqual([]);
       expect(agreementStateRepository.createQueryBuilder).toHaveBeenCalledWith("state");
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(":address = ANY(state.covered_contracts)", {
         address: contractAddress.toLowerCase(),
@@ -531,6 +545,7 @@ describe("BattlechainService", () => {
         providers: [
           BattlechainService,
           { provide: ConfigService, useValue: rpcConfigService },
+          { provide: DataSource, useValue: mock<DataSource>() },
           { provide: getRepositoryToken(AgreementStateChange), useValue: mock<Repository<AgreementStateChange>>() },
           { provide: getRepositoryToken(AgreementCurrentState), useValue: rpcAgreementStateRepository },
           { provide: getRepositoryToken(AgreementAccount), useValue: rpcAgreementAccountRepository },

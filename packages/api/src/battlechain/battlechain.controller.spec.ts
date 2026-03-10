@@ -128,7 +128,7 @@ describe("BattlechainController", () => {
 
     it("calls service with correct address", async () => {
       (serviceMock.getAgreementInfoForContract as jest.Mock).mockResolvedValue({
-        agreement: null,
+        agreements: [],
         isAgreementContract: false,
       });
 
@@ -138,7 +138,7 @@ describe("BattlechainController", () => {
       expect(serviceMock.getAgreementInfoForContract).toHaveBeenCalledWith(contractAddress);
     });
 
-    it("returns agreement info with hasCoverage true when covered", async () => {
+    it("returns agreements array with hasCoverage true when covered", async () => {
       const agreement: AgreementDto = {
         agreementAddress: "0xagreement1234567890123456789012345678901",
         owner: "0xowner12345678901234567890123456789012345",
@@ -147,29 +147,29 @@ describe("BattlechainController", () => {
         createdAt: 1704067200000,
       };
       (serviceMock.getAgreementInfoForContract as jest.Mock).mockResolvedValue({
-        agreement,
+        agreements: [agreement],
         isAgreementContract: false,
       });
 
       const result = await controller.getAgreementByContract(contractAddress);
 
       expect(result).toEqual({
-        agreement,
+        agreements: [agreement],
         hasCoverage: true,
         isAgreementContract: false,
       });
     });
 
-    it("returns null agreement with hasCoverage false when not covered", async () => {
+    it("returns empty agreements with hasCoverage false when not covered", async () => {
       (serviceMock.getAgreementInfoForContract as jest.Mock).mockResolvedValue({
-        agreement: null,
+        agreements: [],
         isAgreementContract: false,
       });
 
       const result = await controller.getAgreementByContract(contractAddress);
 
       expect(result).toEqual({
-        agreement: null,
+        agreements: [],
         hasCoverage: false,
         isAgreementContract: false,
       });

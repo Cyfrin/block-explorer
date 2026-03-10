@@ -72,11 +72,11 @@ export class BattlechainController {
   async getAgreementByContract(
     @Param("contractAddress", new ParseAddressPipe()) contractAddress: string
   ): Promise<AgreementByContractDto> {
-    const { agreement, isAgreementContract } =
+    const { agreements, isAgreementContract } =
       await this.battlechainService.getAgreementInfoForContract(contractAddress);
     return {
-      agreement,
-      hasCoverage: agreement !== null,
+      agreements,
+      hasCoverage: agreements.length > 0,
       isAgreementContract,
     };
   }
