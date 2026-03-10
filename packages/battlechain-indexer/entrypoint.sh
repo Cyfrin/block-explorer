@@ -162,4 +162,4 @@ echo ""
 run_sql_setup &
 
 cd "${SCRIPT_DIR}"
-exec rindexer "$@"
+exec /app/rindexer "$@"
