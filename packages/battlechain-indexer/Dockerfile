@@ -1,4 +1,4 @@
-FROM ghcr.io/joshstevens19/rindexer:latest
+FROM --platform=linux/amd64 ghcr.io/joshstevens19/rindexer:latest
 
 WORKDIR /app
 
