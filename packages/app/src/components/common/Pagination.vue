@@ -28,7 +28,10 @@
           v-if="item.type === 'page'"
           :use-route="useQuery"
           :to="{
-            query: item.number > 1 ? { page: item.number, pageSize: computedPageSize } : { pageSize: computedPageSize },
+            query:
+              item.number > 1
+                ? { ...route.query, page: item.number, pageSize: computedPageSize }
+                : { ...route.query, page: undefined, pageSize: computedPageSize },
             hash: currentHash,
           }"
           :aria-current="activePage === item.number ? 'page' : 'false'"
@@ -81,11 +84,10 @@ const computedPageSize = computed({
   set(newValue) {
     const parsedValue = parseInt(newValue, 10);
     if (parsedValue !== currentPageSize.value) {
-      currentPageSize.value = parsedValue;
-
       router.push({
         query: {
-          page: currentPage.value,
+          ...route.query,
+          page: 1,
           pageSize: parsedValue,
         },
         hash: currentHash.value,
@@ -169,10 +171,11 @@ const pagesData = computed(() => {
 
 const backButtonQuery = computed(() =>
   currentPage.value > 2
-    ? { page: currentPage.value - 1, pageSize: computedPageSize.value }
-    : { pageSize: computedPageSize.value }
+    ? { ...route.query, page: currentPage.value - 1, pageSize: computedPageSize.value }
+    : { ...route.query, page: undefined, pageSize: computedPageSize.value }
 );
 const nextButtonQuery = computed(() => ({
+  ...route.query,
   page: Math.min(currentPage.value + 1, pageCount.value),
   pageSize: computedPageSize.value,
 }));

@@ -42,7 +42,9 @@ const { t } = useI18n();
 const context = useContext();
 const route = useRoute();
 
-const { load, pending, failed, page, pageSize, data, total } = useBlocks(context);
+const { load, pending, failed, page, data, total } = useBlocks(context);
+
+const pageSize = computed(() => parseInt(route.query.pageSize as string) || 10);
 
 const breadcrumbItems = computed((): BreadcrumbItem[] => [
   {
@@ -55,10 +57,10 @@ const breadcrumbItems = computed((): BreadcrumbItem[] => [
 ]);
 
 watch(
-  () => route.query.page,
-  (page) => {
+  [() => route.query.page, pageSize],
+  ([page, currentPageSize]) => {
     const currentPage = page ? parseInt(page as string) : 1;
-    load(currentPage, currentPage === 1 ? new Date() : undefined);
+    load(currentPage, currentPage === 1 ? new Date() : undefined, currentPageSize);
   },
   { immediate: true }
 );
