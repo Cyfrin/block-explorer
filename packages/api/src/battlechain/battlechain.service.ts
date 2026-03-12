@@ -157,10 +157,8 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
    */
   private async resolveChildContracts(): Promise<void> {
     try {
-      this.logger.log("Child contract resolution: starting cycle");
       await this.resolveChildContractsPartA();
       await this.resolveChildContractsPartB();
-      this.logger.log("Child contract resolution: cycle complete");
     } catch (error) {
       this.logger.error({
         message: "Child contract resolution: unexpected error",
@@ -189,8 +187,6 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       .where("acc.child_contract_scope != :none", { none: BattlechainService.CHILD_SCOPE_NONE })
       .getMany();
 
-    this.logger.log(`Part A: found ${scopedAccounts.length} scoped account(s), cursor at block ${lastProcessedBlock}`);
-
     if (scopedAccounts.length === 0) {
       // No accounts with child scope — just advance the cursor to avoid unbounded growth
       await this.advanceChildScopeCursor(lastProcessedBlock);
@@ -199,7 +195,6 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
 
     // Collect unique in-scope addresses as hex bytea buffers for matching transactions.to
     const inScopeAddresses = [...new Set(scopedAccounts.map((a) => a.accountAddress.toLowerCase()))];
-    this.logger.log(`Part A: in-scope addresses: ${inScopeAddresses.join(", ")}`);
     const inScopeBuffers = inScopeAddresses.map((a) => Buffer.from(a.replace("0x", ""), "hex"));
 
     // Join addresses + transactions to find contracts created by in-scope factories.
@@ -263,14 +258,13 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
    */
   private async reindexChildContractsForAgreement(agreementAddress: string): Promise<void> {
     const normalizedAddress = agreementAddress.toLowerCase().trim();
-    this.logger.log(`Part B: reindexing agreement ${normalizedAddress}`);
 
     // Get the agreement's creation block for temporal filtering
     const state = await this.agreementStateRepository.findOne({
       where: { agreementAddress: normalizedAddress },
     });
     if (!state || state.createdAtBlock == null) {
-      this.logger.log(`Part B: skipping ${normalizedAddress} — no state or createdAtBlock is null (createdAtBlock=${state?.createdAtBlock})`);
+      this.logger.warn(`Part B: skipping ${normalizedAddress} — createdAtBlock is null`);
       return;
     }
 
@@ -281,8 +275,6 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
     const scopedAccounts = accounts.filter(
       (a) => a.childContractScope !== BattlechainService.CHILD_SCOPE_NONE
     );
-
-    this.logger.log(`Part B: agreement ${normalizedAddress} has ${accounts.length} accounts, ${scopedAccounts.length} with child scope`);
 
     if (scopedAccounts.length === 0) {
       // No child scope — clear child contracts
@@ -314,7 +306,9 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
     }
 
     const uniqueChildren = [...new Set(allChildAddresses)];
-    this.logger.log(`Part B: agreement ${normalizedAddress} found ${uniqueChildren.length} child contract(s)`);
+    if (uniqueChildren.length > 0) {
+      this.logger.log(`Part B: agreement ${normalizedAddress} — ${uniqueChildren.length} child contract(s)`);
+    }
     await this.replaceChildContracts(normalizedAddress, uniqueChildren);
   }
 
