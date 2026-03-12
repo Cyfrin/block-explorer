@@ -103,12 +103,21 @@
         </table-body-column>
         <table-body-column class="contract-info-field-value safe-harbor-cell">
           <ContentLoader v-if="isAgreementLoading" />
-          <AgreementSummaryBadge
-            v-else-if="isAgreementFetched"
-            :agreement="agreement"
-            :has-agreement="hasAgreement"
-            :contract-state="contractState"
-          />
+          <template v-else-if="isAgreementFetched">
+            <AgreementSummaryBadge
+              v-for="item in agreements"
+              :key="item.agreement.agreementAddress"
+              :agreement="item.agreement"
+              :has-agreement="true"
+              :contract-state="item.state ?? contractState"
+            />
+            <AgreementSummaryBadge
+              v-if="!hasAgreement"
+              :agreement="null"
+              :has-agreement="false"
+              :contract-state="contractState"
+            />
+          </template>
           <span v-else class="fetch-error">Unable to load</span>
         </table-body-column>
       </tr>
@@ -180,6 +189,7 @@ const { t } = useI18n();
 
 const contractAddress = computed(() => props.contract?.address || "");
 const {
+  agreements,
   agreement,
   hasAgreement,
   isLoading: isAgreementLoading,

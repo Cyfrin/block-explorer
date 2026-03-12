@@ -510,30 +510,19 @@ test_child_contract_scope() {
     return 0
   fi
 
-  # The AgreementFactory was added as an in-scope account with childContractScope=All
-  # on the local chain. The child resolution polling job queries the `logs` table for
-  # ContractDeployed events where topics[2] (deployerAddress) matches the factory.
+  # The AgreementFactory was added as an in-scope account with childContractScope=All.
+  # The child resolution job detects factory→child relationships by joining the
+  # `addresses` and `transactions` tables: when a factory is called, transactions.to
+  # = factory, and any contracts created in that tx have creatorTxHash = tx.hash.
   #
-  # The worker (block indexer) populates the `logs` table, but it doesn't sync in
-  # the local docker environment. To make this test deterministic, we seed a mock
-  # ContractDeployed log entry directly via SQL.
-  #
-  # This tests the real factory→child pattern: the AgreementFactory deployed the
-  # BattleChainDeployer contract, so BattleChainDeployer should appear as a child.
+  # The worker doesn't sync in local docker, so we seed mock addresses + transactions
+  # rows to simulate a factory deploying a child contract.
 
   log_info "Test agreement:  $TEST_AGREEMENT_ADDRESS"
   log_info "Factory:         $AGREEMENT_FACTORY (in-scope with childContractScope=All)"
   log_info "Expected child:  $BATTLECHAIN_DEPLOYER (deployed by factory)"
 
-  # Seed a mock ContractDeployed log into the logs table.
-  # The logs table has a FK on blockNumber → blocks, so we insert a mock block first.
-  #
-  # ContractDeployed event topics layout (bytea[]):
-  #   topics[1] = event signature (0x290afdae...)
-  #   topics[2] = deployerAddress (factory), zero-padded to 32 bytes
-  #   topics[3] = bytecodeHash (arbitrary)
-  #   topics[4] = contractAddress (child), zero-padded to 32 bytes
-  log_info "Seeding mock ContractDeployed log for child resolution test..."
+  log_info "Seeding mock addresses + transactions data for child resolution test..."
   local factory_hex=$(echo "$AGREEMENT_FACTORY" | sed 's/0x//' | tr '[:upper:]' '[:lower:]')
   local child_hex=$(echo "$BATTLECHAIN_DEPLOYER" | sed 's/0x//' | tr '[:upper:]' '[:lower:]')
 
@@ -550,33 +539,54 @@ test_child_contract_scope() {
             '\\x00')
     ON CONFLICT DO NOTHING;
 
-    -- Insert a mock ContractDeployed log entry
-    INSERT INTO logs ("blockNumber", "transactionIndex", "logIndex", "timestamp",
-                      address, data, topics)
+    -- Insert a mock transaction where the factory was the target (transactions.to = factory)
+    INSERT INTO transactions (hash, "blockNumber", "transactionIndex", "from", "to",
+                              nonce, data, value, "gasLimit", "gasPrice", "gasUsed",
+                              "maxFeePerGas", "maxPriorityFeePerGas", "isL1Originated",
+                              fee, "receivedAt", type)
     VALUES (
+      '\\x0000000000000000000000000000000000000000000000000000000000000099',
       1,
       0,
+      '\\x0000000000000000000000000000000000000001',
+      '\\x${factory_hex}',
       0,
-      '2026-01-01 00:00:00',
-      '\\x0000000000000000000000000000000000008006',
       '\\x',
-      ARRAY[
-        '\\x290afdae231a3fc0bbae8b1af63698b0a1d79b21ad17df0342dfb952fe74f8e5',
-        '\\x000000000000000000000000${factory_hex}',
-        '\\x0000000000000000000000000000000000000000000000000000000000000000',
-        '\\x000000000000000000000000${child_hex}'
-      ]::bytea[]
-    );
+      '0',
+      '0',
+      '0',
+      '0',
+      '0',
+      '0',
+      false,
+      '0',
+      '2026-01-01 00:00:00',
+      0
+    )
+    ON CONFLICT DO NOTHING;
+
+    -- Insert the child contract address with creatorTxHash pointing to the factory call
+    INSERT INTO addresses (address, bytecode, "createdInBlockNumber", "creatorTxHash",
+                           "creatorAddress", "isEvmLike")
+    VALUES (
+      '\\x${child_hex}',
+      '\\x00',
+      1,
+      '\\x0000000000000000000000000000000000000000000000000000000000000099',
+      '\\x0000000000000000000000000000000000000001',
+      true
+    )
+    ON CONFLICT DO NOTHING;
 EOSQL
 
   if [ $? -eq 0 ]; then
-    log_info "Mock ContractDeployed log seeded successfully"
+    log_info "Mock addresses + transactions data seeded successfully"
   else
-    log_warn "Failed to seed mock log data — child resolution test may fail"
+    log_warn "Failed to seed mock data — child resolution test may fail"
   fi
 
   # Re-enqueue the agreement for child reindex, since the initial queue entry
-  # may have been consumed before the log data existed.
+  # may have been consumed before the mock data existed.
   docker compose exec -T postgres psql -U postgres block-explorer -q <<EOSQL
     INSERT INTO battlechainindexer_agreement.child_scope_reindex_queue (agreement_address)
     SELECT DISTINCT agreement_address

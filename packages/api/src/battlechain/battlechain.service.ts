@@ -143,25 +143,24 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
   private static readonly CHILD_SCOPE_ALL = 2;
   private static readonly CHILD_SCOPE_FUTURE_ONLY = 3;
 
-  // ContractDeployed event signature from the system ContractDeployer (0x8006).
-  // event ContractDeployed(address indexed deployerAddress, bytes32 indexed bytecodeHash, address indexed contractAddress)
-  // topics[1] = event sig, topics[2] = deployerAddress (actual deployer, e.g. factory), topics[3] = bytecodeHash, topics[4] = contractAddress
-  private static readonly CONTRACT_DEPLOYED_TOPIC = "290afdae231a3fc0bbae8b1af63698b0a1d79b21ad17df0342dfb952fe74f8e5";
-
   /**
    * Incrementally resolve child contracts for agreements that have accounts
    * with childContractScope != None. Two-part process:
    *
    * Part A: Check for newly deployed contracts whose creator is an in-scope address.
    *         Uses a high-water mark (last_processed_block) to only scan new blocks.
+   *         Detects factory→child relationships by joining addresses + transactions:
+   *         a contract's creatorTxHash links to the transaction whose `to` is the factory.
    *
    * Part B: Process the reindex queue for agreements whose scope has changed.
    *         Does a full recomputation for those specific agreements.
    */
   private async resolveChildContracts(): Promise<void> {
     try {
+      this.logger.log("Child contract resolution: starting cycle");
       await this.resolveChildContractsPartA();
       await this.resolveChildContractsPartB();
+      this.logger.log("Child contract resolution: cycle complete");
     } catch (error) {
       this.logger.error({
         message: "Child contract resolution: unexpected error",
@@ -172,9 +171,10 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Part A: Process newly deployed contracts since last_processed_block.
-   * Queries ContractDeployed events from the logs table where the deployerAddress
-   * (topics[2]) matches an in-scope account address. This captures the actual deploying
-   * contract (e.g. a factory), not just the EOA that initiated the transaction.
+   * Detects factory→child relationships by joining addresses + transactions:
+   * when a factory (in-scope address) is called, the transaction's `to` field
+   * points to the factory, and any contracts created in that tx have their
+   * `creatorTxHash` linking back to it. Works on any EVM-compatible chain.
    */
   private async resolveChildContractsPartA(): Promise<void> {
     // Read the high-water mark
@@ -189,39 +189,37 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       .where("acc.child_contract_scope != :none", { none: BattlechainService.CHILD_SCOPE_NONE })
       .getMany();
 
+    this.logger.log(`Part A: found ${scopedAccounts.length} scoped account(s), cursor at block ${lastProcessedBlock}`);
+
     if (scopedAccounts.length === 0) {
       // No accounts with child scope — just advance the cursor to avoid unbounded growth
       await this.advanceChildScopeCursor(lastProcessedBlock);
       return;
     }
 
-    // Collect unique in-scope addresses as 32-byte zero-padded buffers for topic matching.
-    // ContractDeployed topics are 32-byte values with the address in the last 20 bytes.
+    // Collect unique in-scope addresses as hex bytea buffers for matching transactions.to
     const inScopeAddresses = [...new Set(scopedAccounts.map((a) => a.accountAddress.toLowerCase()))];
-    const inScopeTopicBuffers = inScopeAddresses.map((a) => this.addressToTopicBuffer(a));
+    this.logger.log(`Part A: in-scope addresses: ${inScopeAddresses.join(", ")}`);
+    const inScopeBuffers = inScopeAddresses.map((a) => Buffer.from(a.replace("0x", ""), "hex"));
 
-    // Query ContractDeployed events from the logs table.
-    // topics[1] = event signature, topics[2] = deployerAddress (the actual deployer/factory)
+    // Join addresses + transactions to find contracts created by in-scope factories.
+    // addresses.creatorTxHash = transactions.hash, and transactions.to = the factory.
     const newDeployments: { deployer_address: string; child_address: string; block_number: number }[] =
       await this.dataSource.query(
         `SELECT
-          encode(topics[2], 'hex') AS deployer_address,
-          encode(topics[4], 'hex') AS child_address,
-          "blockNumber" AS block_number
-        FROM logs
-        WHERE topics[1] = $1
-          AND "blockNumber" > $2
-          AND topics[2] = ANY($3)`,
-        [
-          Buffer.from(BattlechainService.CONTRACT_DEPLOYED_TOPIC, "hex"),
-          lastProcessedBlock,
-          inScopeTopicBuffers,
-        ]
+          encode(t."to", 'hex') AS deployer_address,
+          encode(a.address, 'hex') AS child_address,
+          a."createdInBlockNumber" AS block_number
+        FROM addresses a
+        JOIN transactions t ON a."creatorTxHash" = t.hash
+        WHERE a."createdInBlockNumber" > $1
+          AND t."to" = ANY($2)`,
+        [lastProcessedBlock, inScopeBuffers]
       );
 
     if (newDeployments.length > 0) {
       // Group by agreement and apply temporal filtering
-      const agreementUpdates = await this.computeChildUpdatesFromLogs(newDeployments, scopedAccounts);
+      const agreementUpdates = await this.computeChildUpdates(newDeployments, scopedAccounts);
 
       for (const [agreementAddress, childAddresses] of agreementUpdates) {
         await this.appendChildContracts(agreementAddress, childAddresses);
@@ -261,16 +259,18 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Full recomputation of child contracts for a single agreement.
-   * Queries all ContractDeployed events (no block limit) for all in-scope accounts.
+   * Joins addresses + transactions to find all contracts deployed by in-scope factories.
    */
   private async reindexChildContractsForAgreement(agreementAddress: string): Promise<void> {
     const normalizedAddress = agreementAddress.toLowerCase().trim();
+    this.logger.log(`Part B: reindexing agreement ${normalizedAddress}`);
 
     // Get the agreement's creation block for temporal filtering
     const state = await this.agreementStateRepository.findOne({
       where: { agreementAddress: normalizedAddress },
     });
     if (!state || state.createdAtBlock == null) {
+      this.logger.log(`Part B: skipping ${normalizedAddress} — no state or createdAtBlock is null (createdAtBlock=${state?.createdAtBlock})`);
       return;
     }
 
@@ -282,29 +282,28 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       (a) => a.childContractScope !== BattlechainService.CHILD_SCOPE_NONE
     );
 
+    this.logger.log(`Part B: agreement ${normalizedAddress} has ${accounts.length} accounts, ${scopedAccounts.length} with child scope`);
+
     if (scopedAccounts.length === 0) {
       // No child scope — clear child contracts
       await this.replaceChildContracts(normalizedAddress, []);
       return;
     }
 
-    // For each scoped account, find all child contracts via ContractDeployed events
+    // For each scoped account, find all child contracts via addresses + transactions join
     const allChildAddresses: string[] = [];
 
     for (const account of scopedAccounts) {
-      const deployerTopicBuffer = this.addressToTopicBuffer(account.accountAddress);
+      const deployerBuffer = Buffer.from(account.accountAddress.toLowerCase().replace("0x", ""), "hex");
 
       const deployments: { child_address: string; block_number: number }[] = await this.dataSource.query(
         `SELECT
-          encode(topics[4], 'hex') AS child_address,
-          "blockNumber" AS block_number
-        FROM logs
-        WHERE topics[1] = $1
-          AND topics[2] = $2`,
-        [
-          Buffer.from(BattlechainService.CONTRACT_DEPLOYED_TOPIC, "hex"),
-          deployerTopicBuffer,
-        ]
+          encode(a.address, 'hex') AS child_address,
+          a."createdInBlockNumber" AS block_number
+        FROM addresses a
+        JOIN transactions t ON a."creatorTxHash" = t.hash
+        WHERE t."to" = $1`,
+        [deployerBuffer]
       );
 
       for (const dep of deployments) {
@@ -315,18 +314,19 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
     }
 
     const uniqueChildren = [...new Set(allChildAddresses)];
+    this.logger.log(`Part B: agreement ${normalizedAddress} found ${uniqueChildren.length} child contract(s)`);
     await this.replaceChildContracts(normalizedAddress, uniqueChildren);
   }
 
   /**
-   * Given a list of newly discovered ContractDeployed log entries and the scoped accounts,
+   * Given a list of newly discovered child deployments and the scoped accounts,
    * compute which agreements need updating and which child addresses to add.
    */
-  private async computeChildUpdatesFromLogs(
+  private async computeChildUpdates(
     newDeployments: { deployer_address: string; child_address: string; block_number: number }[],
     scopedAccounts: AgreementAccount[]
   ): Promise<Map<string, string[]>> {
-    // Build a map: deployerAddress (lowercase, no 0x, last 40 chars) → agreements
+    // Build a map: deployerAddress (lowercase, no 0x) → agreements
     const deployerToAgreements = new Map<string, AgreementAccount[]>();
     for (const account of scopedAccounts) {
       const key = account.accountAddress.toLowerCase().replace("0x", "");
@@ -342,7 +342,7 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
     const result = new Map<string, string[]>();
 
     for (const dep of newDeployments) {
-      // deployer_address is a 64-char hex string (32 bytes) — extract the last 40 chars (20 bytes = address)
+      // deployer_address is a 40-char hex string (20 bytes) from encode(t."to", 'hex')
       const deployerAddr = dep.deployer_address.slice(-40);
       const childAddr = "0x" + dep.child_address.slice(-40);
 
@@ -443,14 +443,12 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Advance the child scope cursor to the current max block in the logs table
-   * (for ContractDeployed events). Only advances forward to handle reorgs gracefully.
+   * Advance the child scope cursor to the current max createdInBlockNumber in the
+   * addresses table. Only advances forward to handle reorgs gracefully.
    */
   private async advanceChildScopeCursor(currentCursor: number): Promise<void> {
     const result = await this.dataSource.query(
-      `SELECT MAX("blockNumber") AS "maxBlock" FROM logs
-       WHERE topics[1] = $1`,
-      [Buffer.from(BattlechainService.CONTRACT_DEPLOYED_TOPIC, "hex")]
+      `SELECT MAX("createdInBlockNumber") AS "maxBlock" FROM addresses`
     );
 
     const maxBlock = result?.[0]?.maxBlock ?? currentCursor;
@@ -462,15 +460,6 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
         [maxBlock]
       );
     }
-  }
-
-  /**
-   * Convert a 20-byte address (hex string) to a 32-byte zero-padded Buffer
-   * for matching against indexed event topics in the logs table.
-   */
-  private addressToTopicBuffer(address: string): Buffer {
-    const clean = address.toLowerCase().replace("0x", "");
-    return Buffer.from(clean.padStart(64, "0"), "hex");
   }
 
   /**
