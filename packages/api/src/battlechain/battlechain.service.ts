@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Repository, DataSource } from "typeorm";
 import { JsonRpcProvider, Contract } from "ethers";
 import { AgreementStateChange } from "./agreementState.entity";
 import { AgreementCurrentState } from "./agreementCurrentState.entity";
@@ -35,11 +35,14 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
   private readonly rpcProvider: JsonRpcProvider | null = null;
   private readonly inFlightFetches = new Map<string, Promise<void>>();
   private rpcFetchTimer: NodeJS.Timer = null;
+  private childResolutionTimer: NodeJS.Timer = null;
   private static readonly RPC_POLL_INTERVAL_MS = 10_000;
   private static readonly RPC_POLL_BATCH_SIZE = 10;
+  private static readonly CHILD_RESOLUTION_INTERVAL_MS = 15_000;
 
   constructor(
     private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
     @InjectRepository(AgreementStateChange)
     private readonly agreementStateChangeRepository: Repository<AgreementStateChange>,
     @InjectRepository(AgreementCurrentState)
@@ -66,11 +69,22 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       );
       this.logger.log(`RPC polling started (every ${BattlechainService.RPC_POLL_INTERVAL_MS}ms)`);
     }
+
+    this.childResolutionTimer = setInterval(
+      () => this.resolveChildContracts(),
+      BattlechainService.CHILD_RESOLUTION_INTERVAL_MS
+    );
+    this.logger.log(
+      `Child contract resolution polling started (every ${BattlechainService.CHILD_RESOLUTION_INTERVAL_MS}ms)`
+    );
   }
 
   onModuleDestroy() {
     if (this.rpcFetchTimer) {
       clearInterval(this.rpcFetchTimer);
+    }
+    if (this.childResolutionTimer) {
+      clearInterval(this.childResolutionTimer);
     }
   }
 
@@ -120,6 +134,325 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
         message: "Polling: failed to query pending agreements",
         stack: (error as Error)?.stack,
       });
+    }
+  }
+
+  // ChildContractScope enum values (from AgreementTypes.sol)
+  private static readonly CHILD_SCOPE_NONE = 0;
+  private static readonly CHILD_SCOPE_EXISTING_ONLY = 1;
+  private static readonly CHILD_SCOPE_ALL = 2;
+  private static readonly CHILD_SCOPE_FUTURE_ONLY = 3;
+
+  /**
+   * Incrementally resolve child contracts for agreements that have accounts
+   * with childContractScope != None. Two-part process:
+   *
+   * Part A: Check for newly deployed contracts whose creator is an in-scope address.
+   *         Uses a high-water mark (last_processed_block) to only scan new blocks.
+   *         Detects factory→child relationships by joining addresses + transactions:
+   *         a contract's creatorTxHash links to the transaction whose `to` is the factory.
+   *
+   * Part B: Process the reindex queue for agreements whose scope has changed.
+   *         Does a full recomputation for those specific agreements.
+   */
+  private async resolveChildContracts(): Promise<void> {
+    try {
+      await this.resolveChildContractsPartA();
+      await this.resolveChildContractsPartB();
+    } catch (error) {
+      this.logger.error({
+        message: "Child contract resolution: unexpected error",
+        stack: (error as Error)?.stack,
+      });
+    }
+  }
+
+  /**
+   * Part A: Process newly deployed contracts since last_processed_block.
+   * Detects factory→child relationships by joining addresses + transactions:
+   * when a factory (in-scope address) is called, the transaction's `to` field
+   * points to the factory, and any contracts created in that tx have their
+   * `creatorTxHash` linking back to it. Works on any EVM-compatible chain.
+   */
+  private async resolveChildContractsPartA(): Promise<void> {
+    // Read the high-water mark
+    const cursorResult = await this.dataSource.query(
+      `SELECT last_processed_block FROM battlechainindexer_agreement.child_scope_cursor WHERE id = 1`
+    );
+    const lastProcessedBlock: number = cursorResult?.[0]?.last_processed_block ?? 0;
+
+    // Get all in-scope addresses with child contract scope != None
+    const scopedAccounts = await this.agreementAccountRepository
+      .createQueryBuilder("acc")
+      .where("acc.child_contract_scope != :none", { none: BattlechainService.CHILD_SCOPE_NONE })
+      .getMany();
+
+    if (scopedAccounts.length === 0) {
+      // No accounts with child scope — just advance the cursor to avoid unbounded growth
+      await this.advanceChildScopeCursor(lastProcessedBlock);
+      return;
+    }
+
+    // Collect unique in-scope addresses as hex bytea buffers for matching transactions.to
+    const inScopeAddresses = [...new Set(scopedAccounts.map((a) => a.accountAddress.toLowerCase()))];
+    const inScopeBuffers = inScopeAddresses.map((a) => Buffer.from(a.replace("0x", ""), "hex"));
+
+    // Join addresses + transactions to find contracts created by in-scope factories.
+    // addresses.creatorTxHash = transactions.hash, and transactions.to = the factory.
+    const newDeployments: { deployer_address: string; child_address: string; block_number: number }[] =
+      await this.dataSource.query(
+        `SELECT
+          encode(t."to", 'hex') AS deployer_address,
+          encode(a.address, 'hex') AS child_address,
+          a."createdInBlockNumber" AS block_number
+        FROM addresses a
+        JOIN transactions t ON a."creatorTxHash" = t.hash
+        WHERE a."createdInBlockNumber" > $1
+          AND t."to" = ANY($2)`,
+        [lastProcessedBlock, inScopeBuffers]
+      );
+
+    if (newDeployments.length > 0) {
+      // Group by agreement and apply temporal filtering
+      const agreementUpdates = await this.computeChildUpdates(newDeployments, scopedAccounts);
+
+      for (const [agreementAddress, childAddresses] of agreementUpdates) {
+        await this.appendChildContracts(agreementAddress, childAddresses);
+      }
+
+      this.logger.log(`Part A: resolved ${newDeployments.length} new child contract(s)`);
+    }
+
+    // Advance the cursor
+    await this.advanceChildScopeCursor(lastProcessedBlock);
+  }
+
+  /**
+   * Part B: Process the reindex queue — full recomputation for agreements
+   * whose scope has changed (account added/removed, chain changes).
+   */
+  private async resolveChildContractsPartB(): Promise<void> {
+    // Atomically dequeue entries: DELETE...RETURNING reads and removes in one step,
+    // preventing two polling cycles from processing the same agreement concurrently.
+    // Note: dataSource.query() returns [rows[], rowCount] for DELETE...RETURNING.
+    const rawResult = await this.dataSource.query(
+      `DELETE FROM battlechainindexer_agreement.child_scope_reindex_queue RETURNING agreement_address`
+    );
+    const queueEntries: { agreement_address: string }[] = Array.isArray(rawResult?.[0]) ? rawResult[0] : rawResult;
+
+    if (!queueEntries || queueEntries.length === 0) {
+      return;
+    }
+
+    const agreementAddresses = queueEntries.map((e) => e.agreement_address.trim());
+    this.logger.log(`Part B: reindexing child contracts for ${agreementAddresses.length} agreement(s)`);
+
+    for (const agreementAddress of agreementAddresses) {
+      await this.reindexChildContractsForAgreement(agreementAddress);
+    }
+  }
+
+  /**
+   * Full recomputation of child contracts for a single agreement.
+   * Joins addresses + transactions to find all contracts deployed by in-scope factories.
+   */
+  private async reindexChildContractsForAgreement(agreementAddress: string): Promise<void> {
+    const normalizedAddress = agreementAddress.toLowerCase().trim();
+
+    // Get the agreement's creation block for temporal filtering
+    const state = await this.agreementStateRepository.findOne({
+      where: { agreementAddress: normalizedAddress },
+    });
+    if (!state || state.createdAtBlock == null) {
+      this.logger.warn(`Part B: skipping ${normalizedAddress} — createdAtBlock is null`);
+      return;
+    }
+
+    // Get all accounts with child scope for this agreement
+    const accounts = await this.agreementAccountRepository.find({
+      where: { agreementAddress: normalizedAddress },
+    });
+    const scopedAccounts = accounts.filter(
+      (a) => a.childContractScope !== BattlechainService.CHILD_SCOPE_NONE
+    );
+
+    if (scopedAccounts.length === 0) {
+      // No child scope — clear child contracts
+      await this.replaceChildContracts(normalizedAddress, []);
+      return;
+    }
+
+    // For each scoped account, find all child contracts via addresses + transactions join
+    const allChildAddresses: string[] = [];
+
+    for (const account of scopedAccounts) {
+      const deployerBuffer = Buffer.from(account.accountAddress.toLowerCase().replace("0x", ""), "hex");
+
+      const deployments: { child_address: string; block_number: number }[] = await this.dataSource.query(
+        `SELECT
+          encode(a.address, 'hex') AS child_address,
+          a."createdInBlockNumber" AS block_number
+        FROM addresses a
+        JOIN transactions t ON a."creatorTxHash" = t.hash
+        WHERE t."to" = $1`,
+        [deployerBuffer]
+      );
+
+      for (const dep of deployments) {
+        if (this.isChildInScope(dep.block_number, state.createdAtBlock, account.childContractScope)) {
+          allChildAddresses.push("0x" + dep.child_address.slice(-40));
+        }
+      }
+    }
+
+    const uniqueChildren = [...new Set(allChildAddresses)];
+    if (uniqueChildren.length > 0) {
+      this.logger.log(`Part B: agreement ${normalizedAddress} — ${uniqueChildren.length} child contract(s)`);
+    }
+    await this.replaceChildContracts(normalizedAddress, uniqueChildren);
+  }
+
+  /**
+   * Given a list of newly discovered child deployments and the scoped accounts,
+   * compute which agreements need updating and which child addresses to add.
+   */
+  private async computeChildUpdates(
+    newDeployments: { deployer_address: string; child_address: string; block_number: number }[],
+    scopedAccounts: AgreementAccount[]
+  ): Promise<Map<string, string[]>> {
+    // Build a map: deployerAddress (lowercase, no 0x) → agreements
+    const deployerToAgreements = new Map<string, AgreementAccount[]>();
+    for (const account of scopedAccounts) {
+      const key = account.accountAddress.toLowerCase().replace("0x", "");
+      if (!deployerToAgreements.has(key)) {
+        deployerToAgreements.set(key, []);
+      }
+      deployerToAgreements.get(key).push(account);
+    }
+
+    // Cache agreement creation blocks
+    const agreementBlockCache = new Map<string, number>();
+
+    const result = new Map<string, string[]>();
+
+    for (const dep of newDeployments) {
+      // deployer_address is a 40-char hex string (20 bytes) from encode(t."to", 'hex')
+      const deployerAddr = dep.deployer_address.slice(-40);
+      const childAddr = "0x" + dep.child_address.slice(-40);
+
+      const accounts = deployerToAgreements.get(deployerAddr);
+      if (!accounts) continue;
+
+      for (const account of accounts) {
+        const agreementAddr = account.agreementAddress.trim().toLowerCase();
+
+        // Look up agreement creation block (cached)
+        if (!agreementBlockCache.has(agreementAddr)) {
+          const state = await this.agreementStateRepository.findOne({
+            where: { agreementAddress: agreementAddr },
+          });
+          agreementBlockCache.set(agreementAddr, state?.createdAtBlock ?? 0);
+        }
+
+        const createdAtBlock = agreementBlockCache.get(agreementAddr);
+        if (this.isChildInScope(dep.block_number, createdAtBlock, account.childContractScope)) {
+          if (!result.has(agreementAddr)) {
+            result.set(agreementAddr, []);
+          }
+          result.get(agreementAddr).push(childAddr);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Check if a child contract's deployment block qualifies for the given scope.
+   */
+  private isChildInScope(
+    childBlockNumber: number,
+    agreementCreatedAtBlock: number,
+    childContractScope: number
+  ): boolean {
+    switch (childContractScope) {
+      case BattlechainService.CHILD_SCOPE_EXISTING_ONLY:
+        return childBlockNumber < agreementCreatedAtBlock;
+      case BattlechainService.CHILD_SCOPE_ALL:
+        return true;
+      case BattlechainService.CHILD_SCOPE_FUTURE_ONLY:
+        return childBlockNumber > agreementCreatedAtBlock;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Append child contract addresses to an agreement's covered_child_contracts
+   * and recompute covered_contracts as the union.
+   */
+  private async appendChildContracts(agreementAddress: string, childAddresses: string[]): Promise<void> {
+    if (childAddresses.length === 0) return;
+
+    // Use a single query to append new addresses (avoiding duplicates) and recompute the union
+    await this.dataSource.query(
+      `UPDATE battlechainindexer_agreement.agreement_current_state SET
+        covered_child_contracts = (
+          SELECT ARRAY(SELECT DISTINCT unnest(
+            COALESCE(covered_child_contracts, ARRAY[]::TEXT[]) || $2::TEXT[]
+          ))
+        ),
+        covered_contracts = (
+          SELECT ARRAY(SELECT DISTINCT unnest(
+            COALESCE(covered_scope_contracts, ARRAY[]::TEXT[])
+            || COALESCE(covered_child_contracts, ARRAY[]::TEXT[])
+            || $2::TEXT[]
+          ))
+        ),
+        scope_updated_at = NOW(),
+        last_updated_at = NOW()
+      WHERE agreement_address = $1`,
+      [agreementAddress, childAddresses]
+    );
+  }
+
+  /**
+   * Replace an agreement's covered_child_contracts entirely and recompute covered_contracts.
+   * Used by Part B (full reindex).
+   */
+  private async replaceChildContracts(agreementAddress: string, childAddresses: string[]): Promise<void> {
+    await this.dataSource.query(
+      `UPDATE battlechainindexer_agreement.agreement_current_state SET
+        covered_child_contracts = $2::TEXT[],
+        covered_contracts = (
+          SELECT ARRAY(SELECT DISTINCT unnest(
+            COALESCE(covered_scope_contracts, ARRAY[]::TEXT[]) || $2::TEXT[]
+          ))
+        ),
+        scope_updated_at = NOW(),
+        last_updated_at = NOW()
+      WHERE agreement_address = $1`,
+      [agreementAddress, childAddresses]
+    );
+  }
+
+  /**
+   * Advance the child scope cursor to the current max createdInBlockNumber in the
+   * addresses table. Only advances forward to handle reorgs gracefully.
+   */
+  private async advanceChildScopeCursor(currentCursor: number): Promise<void> {
+    const result = await this.dataSource.query(
+      `SELECT MAX("createdInBlockNumber") AS "maxBlock" FROM addresses`
+    );
+
+    const maxBlock = result?.[0]?.maxBlock ?? currentCursor;
+    if (maxBlock > currentCursor) {
+      await this.dataSource.query(
+        `UPDATE battlechainindexer_agreement.child_scope_cursor
+         SET last_processed_block = $1
+         WHERE id = 1 AND last_processed_block < $1`,
+        [maxBlock]
+      );
     }
   }
 
@@ -485,35 +818,39 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Get the agreement covering a specific contract address.
+   * Get all agreements covering a specific contract address.
    * Uses the GIN index on covered_contracts for efficient array contains query.
    */
-  async getAgreementByContract(contractAddress: string): Promise<AgreementDto | null> {
+  async getAgreementsByContract(contractAddress: string): Promise<AgreementDto[]> {
     const normalizedAddress = contractAddress.toLowerCase();
 
     // Use GIN index for array contains query
-    let state = await this.agreementStateRepository
+    const states = await this.agreementStateRepository
       .createQueryBuilder("state")
       .where(":address = ANY(state.covered_contracts)", { address: normalizedAddress })
-      .getOne();
+      .getMany();
 
-    if (!state) {
-      return null;
+    if (states.length === 0) {
+      return [];
     }
 
-    state = await this.ensureAgreementDetails(state);
-    const coveredAccounts = await this.getCoveredAccounts(state.agreementAddress);
-    return this.mapStateToDto(state, coveredAccounts);
+    const results: AgreementDto[] = [];
+    for (const state of states) {
+      const enriched = await this.ensureAgreementDetails(state);
+      const coveredAccounts = await this.getCoveredAccounts(state.agreementAddress);
+      results.push(this.mapStateToDto(enriched, coveredAccounts));
+    }
+    return results;
   }
 
   /**
    * Get agreement info for a contract address, checking both:
    * 1. If the address IS an agreement contract itself
-   * 2. If the address is covered BY an agreement
+   * 2. If the address is covered BY an agreement (possibly multiple)
    */
   async getAgreementInfoForContract(
     contractAddress: string
-  ): Promise<{ agreement: AgreementDto | null; isAgreementContract: boolean }> {
+  ): Promise<{ agreements: AgreementDto[]; isAgreementContract: boolean }> {
     const normalizedAddress = contractAddress.toLowerCase();
 
     // First check if this address IS an agreement contract
@@ -521,24 +858,28 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       where: { agreementAddress: normalizedAddress },
     });
 
+    // Get all agreements that cover this address
+    const coveredBy = await this.getAgreementsByContract(contractAddress);
+
     if (agreementState) {
-      // It's an agreement contract - lazy-fetch details if needed
+      // It's an agreement contract - include it first, then any others that cover it
       const enrichedState = await this.ensureAgreementDetails(agreementState);
       const coveredAccounts = await this.getCoveredAccounts(normalizedAddress);
       const statesByAgreement = await this.getAgreementStates([normalizedAddress]);
       const computedState = statesByAgreement.get(normalizedAddress);
+      const selfDto = this.mapStateToDto(enrichedState, coveredAccounts, computedState);
+
+      // Deduplicate: coveredBy may include the agreement itself
+      const others = coveredBy.filter((a) => a.agreementAddress !== normalizedAddress);
 
       return {
-        agreement: this.mapStateToDto(enrichedState, coveredAccounts, computedState),
+        agreements: [selfDto, ...others],
         isAgreementContract: true,
       };
     }
 
-    // Otherwise check if it's covered by an agreement
-    // (getAgreementByContract already calls ensureAgreementDetails)
-    const coveredBy = await this.getAgreementByContract(contractAddress);
     return {
-      agreement: coveredBy,
+      agreements: coveredBy,
       isAgreementContract: false,
     };
   }

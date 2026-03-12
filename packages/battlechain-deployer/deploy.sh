@@ -322,8 +322,22 @@ if [ "$CREATE_TEST_AGREEMENT" = "true" ]; then
         cast send --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" --legacy \
             "$TEST_AGREEMENT_ADDRESS" \
             "addOrSetChains((string,(string,uint8)[],string)[])" \
-            "[(\"0x36615Cf349d7F6344891B1e7CA7C72883F5dc049\",[(\"0xABCDEF0123456789ABCDEF0123456789ABCDEF01\",1),(\"0x9876543210987654321098765432109876543210\",2)],\"eip155:625\")]" \
+            "[(\"0x36615Cf349d7F6344891B1e7CA7C72883F5dc049\",[(\"0xABCDEF0123456789ABCDEF0123456789ABCDEF01\",1),(\"0x9876543210987654321098765432109876543210\",2)],\"eip155:626\")]" \
             >/dev/null 2>&1 && echo "ChainAddedOrSet event emitted (2 accounts)" || echo "WARNING: addOrSetChains failed (non-critical)"
+
+        # --- Child Contract Scope Test Setup ---
+        # Add the AgreementFactory as an in-scope account with childContractScope=All (2)
+        # on the LOCAL chain so the child resolution polling job can be tested.
+        # The factory deploys agreement contracts via CREATE — the system ContractDeployer
+        # emits a ContractDeployed event with the factory as deployerAddress (topics[1]).
+        # The child resolution job queries the logs table for these events.
+        echo ""
+        echo "Adding AgreementFactory ($AGREEMENT_FACTORY_ADDRESS) with childContractScope=All on local chain..."
+        cast send --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" --legacy \
+            "$TEST_AGREEMENT_ADDRESS" \
+            "addOrSetChains((string,(string,uint8)[],string)[])" \
+            "[(\"0x0000000000000000000000000000000000000000\",[(\"$AGREEMENT_FACTORY_ADDRESS\",2)],\"eip155:626\")]" \
+            && echo "AgreementFactory added with childContractScope=All" || echo "WARNING: addOrSetChains (child scope) failed"
 
         # Extend commitment window to 30 days
         echo "Extending commitment window..."

@@ -74,7 +74,15 @@ export class AgreementCurrentState {
   @Column({ name: "commitment_deadline_updated_at", type: "timestamptz", nullable: true })
   commitmentDeadlineUpdatedAt: Date | null;
 
-  // From scope events (BattleChainScopeAddressAdded/Removed/Cleared)
+  // From scope events (BattleChainScopeAddressAdded/Removed/Cleared) — manually-specified
+  @Column({ name: "covered_scope_contracts", type: "text", array: true, nullable: true })
+  coveredScopeContracts: string[] | null;
+
+  // From child contract resolution (computed by polling job)
+  @Column({ name: "covered_child_contracts", type: "text", array: true, nullable: true })
+  coveredChildContracts: string[] | null;
+
+  // Union of covered_scope_contracts and covered_child_contracts (used for lookups)
   @Column({ name: "covered_contracts", type: "text", array: true, nullable: true })
   @Index()
   coveredContracts: string[] | null;

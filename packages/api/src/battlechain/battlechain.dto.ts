@@ -269,14 +269,14 @@ export class AgreementDto {
 }
 
 export class AgreementByContractDto {
-  @ApiPropertyOptional({
-    description: "Agreement covering this contract, if any",
-    type: AgreementDto,
+  @ApiProperty({
+    description: "Agreements covering this contract",
+    type: [AgreementDto],
   })
-  agreement: AgreementDto | null;
+  agreements: AgreementDto[];
 
   @ApiProperty({
-    description: "Whether the contract is covered by an agreement",
+    description: "Whether the contract is covered by at least one agreement",
     example: true,
   })
   hasCoverage: boolean;

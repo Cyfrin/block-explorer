@@ -104,7 +104,7 @@
         <div class="safe-harbor-tab-content">
           <ContentLoader v-if="isAgreementLoading" class="agreement-loader" />
           <template v-else-if="isAgreementFetched">
-            <template v-if="hasAgreement && agreement">
+            <template v-if="hasAgreement">
               <!-- Request Attackable Mode prompt (shown only in NEW_DEPLOYMENT state) -->
               <div v-if="showRequestUnderAttackPrompt" class="request-attackable-prompt">
                 <div class="prompt-header">
@@ -117,10 +117,12 @@
                 </button>
               </div>
               <AgreementDetails
-                :agreement="agreement"
-                :owner="agreement.owner"
+                v-for="item in agreements"
+                :key="item.agreement.agreementAddress"
+                :agreement="item.agreement"
+                :owner="item.agreement.owner"
                 :wallet-address="walletAddress"
-                :contract-state="contractState"
+                :contract-state="item.state ?? contractState"
                 @agreement-updated="handleAgreementUpdated"
                 @connect-wallet="connectWallet"
                 @request-promotion="openRequestPromotionModal"
@@ -147,16 +149,19 @@
       class="agreement-contract-details"
     >
       <ContentLoader v-if="isAgreementLoading" class="agreement-loader" />
-      <AgreementDetails
-        v-else-if="isAgreementFetched && hasAgreement && agreement"
-        :agreement="agreement"
-        :owner="agreement.owner"
-        :wallet-address="walletAddress"
-        :contract-state="agreementState"
-        readonly
-        @agreement-updated="handleAgreementUpdated"
-        @connect-wallet="connectWallet"
-      />
+      <template v-else-if="isAgreementFetched && hasAgreement">
+        <AgreementDetails
+          v-for="item in agreements"
+          :key="item.agreement.agreementAddress"
+          :agreement="item.agreement"
+          :owner="item.agreement.owner"
+          :wallet-address="walletAddress"
+          :contract-state="item.state ?? agreementState"
+          readonly
+          @agreement-updated="handleAgreementUpdated"
+          @connect-wallet="connectWallet"
+        />
+      </template>
     </div>
 
     <!-- Request Under Attack Modal -->
@@ -277,6 +282,7 @@ const props = defineProps({
 
 const contractAddress = computed(() => props.contract?.address || "");
 const {
+  agreements,
   agreement,
   agreementState,
   hasAgreement,
