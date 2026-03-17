@@ -220,25 +220,51 @@
         @save="saveCoveredContracts"
         @cancel="cancelEditing"
       >
+        <template v-if="coveredAccountsWithScope.length > 0" #header-actions>
+          <button
+            type="button"
+            class="expand-toggle"
+            :title="contractsExpanded ? t('safeHarbor.collapseContracts') : t('safeHarbor.expandContracts')"
+            @click="contractsExpanded = !contractsExpanded"
+          >
+            <ArrowsExpandIcon v-if="!contractsExpanded" class="icon" />
+            <MinusSmIcon v-else class="icon" />
+          </button>
+        </template>
         <template #default>
-          <div v-if="coveredAccountsWithScope.length > 0" class="covered-contracts-list">
-            <AddressLink
-              v-for="account in coveredAccountsWithScope"
-              :key="account.accountAddress"
-              :address="account.accountAddress"
-              class="covered-contract-link"
-            >
-              <span class="contract-address">{{ shortValue(account.accountAddress) }}</span>
-              <ExternalLinkIcon class="link-icon" />
-              <Badge
-                v-if="account.childContractScope !== ChildContractScope.None"
-                size="sm"
-                :color="getChildScopeBadgeColor(account.childContractScope)"
-                :tooltip="getChildScopeTooltip(account.childContractScope)"
+          <div v-if="coveredAccountsWithScope.length > 0">
+            <!-- Collapsed: truncated accounts with scope badges -->
+            <div v-if="!contractsExpanded" class="covered-contracts-list">
+              <AddressLink
+                v-for="account in coveredAccountsWithScope"
+                :key="account.accountAddress"
+                :address="account.accountAddress"
+                class="covered-contract-link"
               >
-                {{ getChildScopeLabel(account.childContractScope) }}
-              </Badge>
-            </AddressLink>
+                <span class="contract-address">{{ shortValue(account.accountAddress) }}</span>
+                <ExternalLinkIcon class="link-icon" />
+                <Badge
+                  v-if="account.childContractScope !== ChildContractScope.None"
+                  size="sm"
+                  :color="getChildScopeBadgeColor(account.childContractScope)"
+                  :tooltip="getChildScopeTooltip(account.childContractScope)"
+                >
+                  {{ getChildScopeLabel(account.childContractScope) }}
+                </Badge>
+              </AddressLink>
+            </div>
+            <!-- Expanded: full addresses of all in-scope contracts -->
+            <div v-else class="covered-contracts-list expanded">
+              <AddressLink
+                v-for="address in agreement.coveredContracts"
+                :key="address"
+                :address="address"
+                class="covered-contract-link"
+              >
+                <span class="contract-address">{{ address }}</span>
+                <ExternalLinkIcon class="link-icon" />
+              </AddressLink>
+            </div>
           </div>
           <div v-else class="no-contracts">
             {{ t("safeHarbor.noCoveredContracts") }}
@@ -341,12 +367,13 @@
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { ClockIcon } from "@heroicons/vue/outline";
+import { ArrowsExpandIcon, ClockIcon } from "@heroicons/vue/outline";
 import {
   CheckIcon,
   ExclamationCircleIcon,
   ExternalLinkIcon,
   InformationCircleIcon,
+  MinusSmIcon,
   PencilIcon,
   ShieldCheckIcon,
   XIcon,
@@ -805,6 +832,8 @@ const coveredAccountsWithScope = computed((): CoveredAccount[] => {
   }));
 });
 
+const contractsExpanded = ref(false);
+
 // Scope label helper
 const getChildScopeLabel = (scope: number): string => {
   const scopeMap: Record<number, string> = {
@@ -1221,6 +1250,26 @@ const getChildScopeTooltip = (scope: number): string => {
 
   .covered-contracts-list {
     @apply flex flex-wrap gap-2;
+
+    &.expanded {
+      @apply overflow-y-auto;
+      max-height: 400px;
+    }
+  }
+
+  .expand-toggle {
+    @apply flex items-center justify-center h-6 w-6 rounded border-0 cursor-pointer p-0;
+    background-color: var(--bg-tertiary);
+    color: var(--text-muted);
+
+    &:hover {
+      background-color: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .icon {
+      @apply h-3.5 w-3.5;
+    }
   }
 
   .covered-contract-link {
