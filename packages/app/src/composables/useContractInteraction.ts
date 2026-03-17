@@ -67,11 +67,21 @@ export default (context = useContext()) => {
       const valueMethodOption = {
         value: parseEther((params[PAYABLE_AMOUNT_PARAM_NAME] as string) ?? "0"),
       };
+
+      // Try to estimate gas; fall back to a high fixed limit if simulation reverts.
+      // This avoids blocking the user when estimateGas fails (e.g. custom errors, node quirks).
+      let gasLimit: bigint;
+      try {
+        gasLimit = await method.estimateGas(...methodArguments);
+      } catch {
+        gasLimit = 10_000_000n;
+      }
+
       const res = await method(
         ...[
           ...(methodArguments.length ? methodArguments : []),
           {
-            ...{ from: await signer.getAddress(), type: 0 },
+            ...{ from: await signer.getAddress(), type: 0, gasLimit },
             ...(abiFragment.stateMutability === "payable" ? valueMethodOption : undefined),
           },
         ].filter((e) => e !== undefined)
