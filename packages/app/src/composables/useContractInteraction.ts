@@ -68,11 +68,20 @@ export default (context = useContext()) => {
         value: parseEther((params[PAYABLE_AMOUNT_PARAM_NAME] as string) ?? "0"),
       };
 
-      // Try to estimate gas; fall back to a high fixed limit if simulation reverts.
-      // This avoids blocking the user when estimateGas fails (e.g. custom errors, node quirks).
-      let gasLimit: bigint;
+      // Estimate gas upfront. If estimation fails (e.g. contract reverts with a custom error),
+      // fall back to a generous limit so the transaction still reaches MetaMask — MetaMask will
+      // show its own "this transaction is likely to fail" warning and let the user decide.
+      let gasLimit: bigint | undefined;
       try {
-        gasLimit = await method.estimateGas(...methodArguments);
+        gasLimit = await method.estimateGas(
+          ...[
+            ...(methodArguments.length ? methodArguments : []),
+            {
+              from: await signer.getAddress(),
+              ...(abiFragment.stateMutability === "payable" ? valueMethodOption : undefined),
+            },
+          ].filter((e) => e !== undefined)
+        );
       } catch {
         gasLimit = 10_000_000n;
       }

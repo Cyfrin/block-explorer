@@ -10,6 +10,40 @@ import { AgreementAccount } from "./agreementAccount.entity";
 import { AgreementOwnerAuthorized } from "./agreementOwnerAuthorized.entity";
 import { AttackModeratorTransferred } from "./attackModeratorTransferred.entity";
 import { ContractState } from "./battlechain.dto";
+import { PROMOTION_WINDOW_MS, PROMOTION_DELAY_MS } from "./battlechain.constants";
+
+// Helper to build a minimal AgreementCurrentState mock
+const makeAgreementState = (
+  overrides: Partial<AgreementCurrentState> = {}
+): AgreementCurrentState =>
+  ({
+    agreementAddress: "0xagreement1234567890123456789012345678901",
+    owner: "0xowner",
+    coveredScopeContracts: [],
+    coveredChildContracts: [],
+    coveredContracts: [],
+    createdAtBlock: 100,
+    createdAt: new Date(),
+    protocolName: null,
+    protocolNameUpdatedAt: null,
+    agreementUri: null,
+    agreementUriUpdatedAt: null,
+    bountyPercentage: null,
+    bountyCapUsd: null,
+    retainable: null,
+    identityRequirement: null,
+    diligenceRequirements: null,
+    aggregateBountyCapUsd: null,
+    bountyTermsUpdatedAt: null,
+    contactDetails: null,
+    contactDetailsUpdatedAt: null,
+    commitmentDeadline: null,
+    commitmentDeadlineUpdatedAt: null,
+    scopeUpdatedAt: null,
+    lastUpdatedAt: null,
+    rpcFetchedAt: null,
+    ...overrides,
+  }) as AgreementCurrentState;
 
 describe("BattlechainService", () => {
   let service: BattlechainService;
@@ -106,38 +140,22 @@ describe("BattlechainService", () => {
     });
 
     it("returns correct state from agreement state changes", async () => {
+      // Use fake timers so registration is recent (within 14-day window)
+      const now = new Date("2024-01-05T00:00:00Z");
+      jest.useFakeTimers({ now });
       const timestamp = new Date("2024-01-01T00:00:00Z");
 
       // Mock finding the agreement that covers this contract
       const mockQueryBuilder = mock<SelectQueryBuilder<AgreementCurrentState>>();
       mockQueryBuilder.where.mockReturnValue(mockQueryBuilder);
-      mockQueryBuilder.getOne.mockResolvedValue({
-        agreementAddress: agreementAddress.toLowerCase(),
-        owner: "0xowner",
-        coveredScopeContracts: [contractAddress.toLowerCase()],
-        coveredChildContracts: [],
-        coveredContracts: [contractAddress.toLowerCase()],
-        createdAtBlock: 100,
-        createdAt: timestamp,
-        protocolName: null,
-        protocolNameUpdatedAt: null,
-        agreementUri: null,
-        agreementUriUpdatedAt: null,
-        bountyPercentage: null,
-        bountyCapUsd: null,
-        retainable: null,
-        identityRequirement: null,
-        diligenceRequirements: null,
-        aggregateBountyCapUsd: null,
-        bountyTermsUpdatedAt: null,
-        contactDetails: null,
-        contactDetailsUpdatedAt: null,
-        commitmentDeadline: null,
-        commitmentDeadlineUpdatedAt: null,
-        scopeUpdatedAt: null,
-        lastUpdatedAt: null,
-        rpcFetchedAt: null,
-      });
+      mockQueryBuilder.getOne.mockResolvedValue(
+        makeAgreementState({
+          agreementAddress: agreementAddress.toLowerCase(),
+          coveredScopeContracts: [contractAddress.toLowerCase()],
+          coveredContracts: [contractAddress.toLowerCase()],
+          createdAt: timestamp,
+        })
+      );
       (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
       // Mock the agreement state changes
@@ -160,6 +178,8 @@ describe("BattlechainService", () => {
       expect(result.productionAt).toBeNull();
       // Should have promotion window calculated
       expect(result.promotionWindowEnds).toBeDefined();
+
+      jest.useRealTimers();
     });
 
     it("correctly processes multiple state changes to PRODUCTION", async () => {
@@ -360,6 +380,265 @@ describe("BattlechainService", () => {
         where: { agreementAddress: upperCaseAddress.toLowerCase() },
         order: { blockNumber: "ASC", logIndex: "ASC" },
       });
+    });
+  });
+
+  describe("time-based state transitions", () => {
+    const agreementAddress = "0xagreement1234567890123456789012345678901";
+
+    it("auto-promotes NEW_DEPLOYMENT to PRODUCTION after deadline passes", async () => {
+      const registeredAt = new Date("2024-01-01T00:00:00Z");
+      // Set "now" to 15 days after registration (past 14-day deadline)
+      jest.useFakeTimers({ now: new Date(registeredAt.getTime() + 15 * 24 * 60 * 60 * 1000) });
+
+      (agreementStateChangeRepository.find as jest.Mock).mockResolvedValue([
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.NEW_DEPLOYMENT,
+          blockNumber: 100,
+          logIndex: "0",
+          blockTimestamp: registeredAt,
+          txHash: "0xreg",
+        },
+      ]);
+
+      const result = await service.getAgreementStateInfo(agreementAddress);
+
+      expect(result.state).toBe("PRODUCTION");
+      expect(result.productionAt).toBe(registeredAt.getTime() + PROMOTION_WINDOW_MS);
+      expect(result.productionTxHash).toBeNull(); // No tx for time-based transition
+
+      jest.useRealTimers();
+    });
+
+    it("auto-promotes ATTACK_REQUESTED to PRODUCTION after deadline passes", async () => {
+      const registeredAt = new Date("2024-01-01T00:00:00Z");
+      const attackRequestedAt = new Date("2024-01-02T00:00:00Z");
+      // Set "now" to 15 days after registration (past 14-day deadline)
+      jest.useFakeTimers({ now: new Date(registeredAt.getTime() + 15 * 24 * 60 * 60 * 1000) });
+
+      (agreementStateChangeRepository.find as jest.Mock).mockResolvedValue([
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.NEW_DEPLOYMENT,
+          blockNumber: 100,
+          logIndex: "0",
+          blockTimestamp: registeredAt,
+          txHash: "0xreg",
+        },
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.ATTACK_REQUESTED,
+          blockNumber: 200,
+          logIndex: "0",
+          blockTimestamp: attackRequestedAt,
+          txHash: "0xattackreq",
+        },
+      ]);
+
+      const result = await service.getAgreementStateInfo(agreementAddress);
+
+      expect(result.state).toBe("PRODUCTION");
+      expect(result.productionAt).toBe(registeredAt.getTime() + PROMOTION_WINDOW_MS);
+
+      jest.useRealTimers();
+    });
+
+    it("keeps ATTACK_REQUESTED state when deadline has not passed", async () => {
+      const registeredAt = new Date("2024-01-01T00:00:00Z");
+      const attackRequestedAt = new Date("2024-01-02T00:00:00Z");
+      // Set "now" to 5 days after registration (within 14-day window)
+      jest.useFakeTimers({ now: new Date(registeredAt.getTime() + 5 * 24 * 60 * 60 * 1000) });
+
+      (agreementStateChangeRepository.find as jest.Mock).mockResolvedValue([
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.NEW_DEPLOYMENT,
+          blockNumber: 100,
+          logIndex: "0",
+          blockTimestamp: registeredAt,
+          txHash: "0xreg",
+        },
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.ATTACK_REQUESTED,
+          blockNumber: 200,
+          logIndex: "0",
+          blockTimestamp: attackRequestedAt,
+          txHash: "0xattackreq",
+        },
+      ]);
+
+      const result = await service.getAgreementStateInfo(agreementAddress);
+
+      expect(result.state).toBe("ATTACK_REQUESTED");
+
+      jest.useRealTimers();
+    });
+
+    it("promotes PROMOTION_REQUESTED to PRODUCTION after delay passes", async () => {
+      const registeredAt = new Date("2024-01-01T00:00:00Z");
+      const promotionRequestedAt = new Date("2024-01-10T00:00:00Z");
+      // Set "now" to 4 days after promotion request (past 3-day delay)
+      jest.useFakeTimers({ now: new Date(promotionRequestedAt.getTime() + 4 * 24 * 60 * 60 * 1000) });
+
+      (agreementStateChangeRepository.find as jest.Mock).mockResolvedValue([
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.NEW_DEPLOYMENT,
+          blockNumber: 100,
+          logIndex: "0",
+          blockTimestamp: registeredAt,
+          txHash: "0xreg",
+        },
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.PROMOTION_REQUESTED,
+          blockNumber: 200,
+          logIndex: "0",
+          blockTimestamp: promotionRequestedAt,
+          txHash: "0xpromoreq",
+        },
+      ]);
+
+      const result = await service.getAgreementStateInfo(agreementAddress);
+
+      expect(result.state).toBe("PRODUCTION");
+      expect(result.productionAt).toBe(promotionRequestedAt.getTime() + PROMOTION_DELAY_MS);
+      expect(result.productionTxHash).toBeNull();
+
+      jest.useRealTimers();
+    });
+
+    it("keeps PROMOTION_REQUESTED state when delay has not passed", async () => {
+      const registeredAt = new Date("2024-01-01T00:00:00Z");
+      const promotionRequestedAt = new Date("2024-01-10T00:00:00Z");
+      // Set "now" to 1 day after promotion request (within 3-day delay)
+      jest.useFakeTimers({ now: new Date(promotionRequestedAt.getTime() + 1 * 24 * 60 * 60 * 1000) });
+
+      (agreementStateChangeRepository.find as jest.Mock).mockResolvedValue([
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.NEW_DEPLOYMENT,
+          blockNumber: 100,
+          logIndex: "0",
+          blockTimestamp: registeredAt,
+          txHash: "0xreg",
+        },
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.PROMOTION_REQUESTED,
+          blockNumber: 200,
+          logIndex: "0",
+          blockTimestamp: promotionRequestedAt,
+          txHash: "0xpromoreq",
+        },
+      ]);
+
+      const result = await service.getAgreementStateInfo(agreementAddress);
+
+      expect(result.state).toBe("PROMOTION_REQUESTED");
+
+      jest.useRealTimers();
+    });
+
+    it("does not auto-promote UNDER_ATTACK even after deadline", async () => {
+      const registeredAt = new Date("2024-01-01T00:00:00Z");
+      const underAttackAt = new Date("2024-01-05T00:00:00Z");
+      // Set "now" well past the 14-day deadline
+      jest.useFakeTimers({ now: new Date(registeredAt.getTime() + 30 * 24 * 60 * 60 * 1000) });
+
+      (agreementStateChangeRepository.find as jest.Mock).mockResolvedValue([
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.NEW_DEPLOYMENT,
+          blockNumber: 100,
+          logIndex: "0",
+          blockTimestamp: registeredAt,
+          txHash: "0xreg",
+        },
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.UNDER_ATTACK,
+          blockNumber: 200,
+          logIndex: "0",
+          blockTimestamp: underAttackAt,
+          txHash: "0xattack",
+        },
+      ]);
+
+      const result = await service.getAgreementStateInfo(agreementAddress);
+
+      // UNDER_ATTACK is not auto-promoted by deadline — needs explicit transition
+      expect(result.state).toBe("UNDER_ATTACK");
+
+      jest.useRealTimers();
+    });
+
+    it("does not override CORRUPTED state with time-based promotion", async () => {
+      const registeredAt = new Date("2024-01-01T00:00:00Z");
+      const corruptedAt = new Date("2024-01-05T00:00:00Z");
+      // Set "now" well past the 14-day deadline
+      jest.useFakeTimers({ now: new Date(registeredAt.getTime() + 30 * 24 * 60 * 60 * 1000) });
+
+      (agreementStateChangeRepository.find as jest.Mock).mockResolvedValue([
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.NEW_DEPLOYMENT,
+          blockNumber: 100,
+          logIndex: "0",
+          blockTimestamp: registeredAt,
+          txHash: "0xreg",
+        },
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.CORRUPTED,
+          blockNumber: 200,
+          logIndex: "0",
+          blockTimestamp: corruptedAt,
+          txHash: "0xcorrupt",
+        },
+      ]);
+
+      const result = await service.getAgreementStateInfo(agreementAddress);
+
+      expect(result.state).toBe("CORRUPTED");
+
+      jest.useRealTimers();
+    });
+
+    it("does not override explicit PRODUCTION state", async () => {
+      const registeredAt = new Date("2024-01-01T00:00:00Z");
+      const productionAt = new Date("2024-01-05T00:00:00Z");
+      jest.useFakeTimers({ now: new Date(registeredAt.getTime() + 30 * 24 * 60 * 60 * 1000) });
+
+      (agreementStateChangeRepository.find as jest.Mock).mockResolvedValue([
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.NEW_DEPLOYMENT,
+          blockNumber: 100,
+          logIndex: "0",
+          blockTimestamp: registeredAt,
+          txHash: "0xreg",
+        },
+        {
+          agreementAddress: agreementAddress.toLowerCase(),
+          newState: ContractState.PRODUCTION,
+          blockNumber: 200,
+          logIndex: "0",
+          blockTimestamp: productionAt,
+          txHash: "0xprod",
+        },
+      ]);
+
+      const result = await service.getAgreementStateInfo(agreementAddress);
+
+      expect(result.state).toBe("PRODUCTION");
+      // Should use the explicit production timestamp, not the deadline
+      expect(result.productionAt).toBe(productionAt.getTime());
+      expect(result.productionTxHash).toBe("0xprod");
+
+      jest.useRealTimers();
     });
   });
 

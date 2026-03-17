@@ -583,6 +583,42 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
+    // Apply time-based state transitions that occur without emitting events,
+    // mirroring the smart contract's _getAgreementState() logic.
+    // The contract computes state dynamically from timestamps — these transitions
+    // happen silently without AgreementStateChanged events.
+    const now = Date.now();
+
+    if (
+      currentState !== ContractState.PRODUCTION &&
+      currentState !== ContractState.CORRUPTED
+    ) {
+      // 1. Promotion delay elapsed: promotionRequestedTimestamp + PROMOTION_DELAY has passed
+      if (currentState === ContractState.PROMOTION_REQUESTED && promotionRequestedAt) {
+        const promotionCompletesAt = promotionRequestedAt + PROMOTION_DELAY_MS;
+        if (now >= promotionCompletesAt) {
+          currentState = ContractState.PRODUCTION;
+          productionAt = promotionCompletesAt;
+          productionTxHash = null; // No tx — time-based transition
+        }
+      }
+
+      // 2. Auto-promotion: deadline (registeredAt + PROMOTION_WINDOW) has passed
+      // This applies to NEW_DEPLOYMENT and ATTACK_REQUESTED states
+      if (
+        currentState !== ContractState.PRODUCTION &&
+        currentState !== ContractState.UNDER_ATTACK &&
+        registeredAt
+      ) {
+        const deadlineTimestamp = registeredAt + PROMOTION_WINDOW_MS;
+        if (now >= deadlineTimestamp) {
+          currentState = ContractState.PRODUCTION;
+          productionAt = deadlineTimestamp;
+          productionTxHash = null; // No tx — time-based transition
+        }
+      }
+    }
+
     // Calculate promotion window end timestamp based on current state
     let promotionWindowEnds: number | null = null;
     if (currentState === ContractState.NEW_DEPLOYMENT && registeredAt) {
