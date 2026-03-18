@@ -879,6 +879,8 @@
     "registeredAt": "Registered",
     "lastModified": "Last Modified",
     "noCoveredContracts": "No covered contracts specified",
+    "expandContracts": "Show all in-scope contracts",
+    "collapseContracts": "Show summary view",
     "noAgreementURI": "No agreement document linked",
     "identityRequirement": "Identity Requirement",
     "diligenceRequirements": "Diligence Requirements",

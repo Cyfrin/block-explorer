@@ -3,6 +3,7 @@
     <div class="section-header">
       <h3 class="section-title">{{ title }}</h3>
       <div class="section-actions">
+        <slot name="header-actions" />
         <template v-if="isEditing">
           <button @click="$emit('save')" :disabled="isSaving || !canSave" class="btn-save">
             <Spinner v-if="isSaving" size="xs" class="spinner" />

@@ -90,6 +90,16 @@ export class AgreementCurrentState {
   @Column({ name: "scope_updated_at", type: "timestamptz", nullable: true })
   scopeUpdatedAt: Date | null;
 
+  // From AgreementStateChanged (via AttackRegistry) — materialized for efficient list queries
+  @Column({ name: "computed_state", type: "varchar", length: 20, nullable: true })
+  computedState: string | null;
+
+  @Column({ name: "registered_at", type: "timestamptz", nullable: true })
+  registeredAt: Date | null;
+
+  @Column({ name: "promotion_requested_at", type: "timestamptz", nullable: true })
+  promotionRequestedAt: Date | null;
+
   // Metadata
   @Column({ name: "last_updated_at", type: "timestamptz", nullable: true })
   lastUpdatedAt: Date | null;
