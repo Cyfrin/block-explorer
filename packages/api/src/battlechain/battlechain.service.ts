@@ -39,6 +39,8 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
   private static readonly RPC_POLL_INTERVAL_MS = 10_000;
   private static readonly RPC_POLL_BATCH_SIZE = 10;
   private static readonly CHILD_RESOLUTION_INTERVAL_MS = 15_000;
+  private static readonly STATE_TRANSITION_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+  private stateTransitionTimer: NodeJS.Timer = null;
 
   constructor(
     private readonly configService: ConfigService,
@@ -77,6 +79,12 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
     this.logger.log(
       `Child contract resolution polling started (every ${BattlechainService.CHILD_RESOLUTION_INTERVAL_MS}ms)`
     );
+
+    this.stateTransitionTimer = setInterval(
+      () => this.applyTimeBasedStateTransitions(),
+      BattlechainService.STATE_TRANSITION_INTERVAL_MS
+    );
+    this.logger.log(`State transition polling started (every ${BattlechainService.STATE_TRANSITION_INTERVAL_MS}ms)`);
   }
 
   onModuleDestroy() {
@@ -85,6 +93,9 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
     }
     if (this.childResolutionTimer) {
       clearInterval(this.childResolutionTimer);
+    }
+    if (this.stateTransitionTimer) {
+      clearInterval(this.stateTransitionTimer);
     }
   }
 
@@ -142,6 +153,44 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
   private static readonly CHILD_SCOPE_EXISTING_ONLY = 1;
   private static readonly CHILD_SCOPE_ALL = 2;
   private static readonly CHILD_SCOPE_FUTURE_ONLY = 3;
+
+  /**
+   * Apply time-based state transitions that happen without emitting events.
+   * Mirrors the smart contract's _getAgreementState() logic:
+   * 1. PROMOTION_REQUESTED → PRODUCTION after 3-day delay
+   * 2. Auto-promotion → PRODUCTION after 14-day window from registration
+   */
+  private async applyTimeBasedStateTransitions(): Promise<void> {
+    try {
+      // 1. Auto-promote PROMOTION_REQUESTED after 3-day delay
+      const promotionResult = await this.dataSource.query(
+        `UPDATE battlechainindexer_agreement.agreement_current_state
+         SET computed_state = 'PRODUCTION', last_updated_at = NOW()
+         WHERE computed_state = 'PROMOTION_REQUESTED'
+           AND promotion_requested_at IS NOT NULL
+           AND NOW() >= promotion_requested_at + INTERVAL '3 days'`
+      );
+
+      // 2. Auto-promote after 14-day window
+      const windowResult = await this.dataSource.query(
+        `UPDATE battlechainindexer_agreement.agreement_current_state
+         SET computed_state = 'PRODUCTION', last_updated_at = NOW()
+         WHERE computed_state IN ('NEW_DEPLOYMENT', 'ATTACK_REQUESTED')
+           AND registered_at IS NOT NULL
+           AND NOW() >= registered_at + INTERVAL '14 days'`
+      );
+
+      const total = (promotionResult?.[1] || 0) + (windowResult?.[1] || 0);
+      if (total > 0) {
+        this.logger.log(`Time-based state transitions: ${total} agreement(s) promoted to PRODUCTION`);
+      }
+    } catch (error) {
+      this.logger.error({
+        message: "Failed to apply time-based state transitions",
+        stack: (error as Error)?.stack,
+      });
+    }
+  }
 
   /**
    * Incrementally resolve child contracts for agreements that have accounts
@@ -272,9 +321,7 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
     const accounts = await this.agreementAccountRepository.find({
       where: { agreementAddress: normalizedAddress },
     });
-    const scopedAccounts = accounts.filter(
-      (a) => a.childContractScope !== BattlechainService.CHILD_SCOPE_NONE
-    );
+    const scopedAccounts = accounts.filter((a) => a.childContractScope !== BattlechainService.CHILD_SCOPE_NONE);
 
     if (scopedAccounts.length === 0) {
       // No child scope — clear child contracts
@@ -441,9 +488,7 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
    * addresses table. Only advances forward to handle reorgs gracefully.
    */
   private async advanceChildScopeCursor(currentCursor: number): Promise<void> {
-    const result = await this.dataSource.query(
-      `SELECT MAX("createdInBlockNumber") AS "maxBlock" FROM addresses`
-    );
+    const result = await this.dataSource.query(`SELECT MAX("createdInBlockNumber") AS "maxBlock" FROM addresses`);
 
     const maxBlock = result?.[0]?.maxBlock ?? currentCursor;
     if (maxBlock > currentCursor) {
@@ -589,10 +634,7 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
     // happen silently without AgreementStateChanged events.
     const now = Date.now();
 
-    if (
-      currentState !== ContractState.PRODUCTION &&
-      currentState !== ContractState.CORRUPTED
-    ) {
+    if (currentState !== ContractState.PRODUCTION && currentState !== ContractState.CORRUPTED) {
       // 1. Promotion delay elapsed: promotionRequestedTimestamp + PROMOTION_DELAY has passed
       if (currentState === ContractState.PROMOTION_REQUESTED && promotionRequestedAt) {
         const promotionCompletesAt = promotionRequestedAt + PROMOTION_DELAY_MS;
@@ -605,11 +647,7 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
 
       // 2. Auto-promotion: deadline (registeredAt + PROMOTION_WINDOW) has passed
       // This applies to NEW_DEPLOYMENT and ATTACK_REQUESTED states
-      if (
-        currentState !== ContractState.PRODUCTION &&
-        currentState !== ContractState.UNDER_ATTACK &&
-        registeredAt
-      ) {
+      if (currentState !== ContractState.PRODUCTION && currentState !== ContractState.UNDER_ATTACK && registeredAt) {
         const deadlineTimestamp = registeredAt + PROMOTION_WINDOW_MS;
         if (now >= deadlineTimestamp) {
           currentState = ContractState.PRODUCTION;
@@ -647,9 +685,7 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
     };
 
     // Get commitmentLockedUntil from the agreement if available
-    const commitmentLockedUntil = agreement?.commitmentDeadline
-      ? Number(agreement.commitmentDeadline) * 1000
-      : null;
+    const commitmentLockedUntil = agreement?.commitmentDeadline ? Number(agreement.commitmentDeadline) * 1000 : null;
 
     return {
       state: stateNames[currentState] || "NOT_REGISTERED",
@@ -811,7 +847,11 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
 
   private async upsertAccountsFromChains(
     agreementAddress: string,
-    chains: { assetRecoveryAddress: string; accounts: { accountAddress: string; childContractScope: number }[]; caip2ChainId: string }[]
+    chains: {
+      assetRecoveryAddress: string;
+      accounts: { accountAddress: string; childContractScope: number }[];
+      caip2ChainId: string;
+    }[]
   ): Promise<void> {
     for (const chain of chains) {
       for (const account of chain.accounts) {
@@ -850,7 +890,7 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
 
     state = await this.ensureAgreementDetails(state);
     const coveredAccounts = await this.getCoveredAccounts(normalizedAddress);
-    return this.mapStateToDto(state, coveredAccounts);
+    return this.mapStateToDto(state, coveredAccounts, state.computedState || "NOT_REGISTERED");
   }
 
   /**
@@ -870,11 +910,20 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       return [];
     }
 
+    // Batch fetch accounts for all matching agreements
+    const addresses = states.map((s) => s.agreementAddress.toLowerCase());
+    const accountsByAgreement = await this.getAccountsForAgreements(addresses);
+
     const results: AgreementDto[] = [];
     for (const state of states) {
       const enriched = await this.ensureAgreementDetails(state);
-      const coveredAccounts = await this.getCoveredAccounts(state.agreementAddress);
-      results.push(this.mapStateToDto(enriched, coveredAccounts));
+      results.push(
+        this.mapStateToDto(
+          enriched,
+          accountsByAgreement.get(state.agreementAddress.toLowerCase()),
+          enriched.computedState || "NOT_REGISTERED"
+        )
+      );
     }
     return results;
   }
@@ -901,9 +950,11 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       // It's an agreement contract - include it first, then any others that cover it
       const enrichedState = await this.ensureAgreementDetails(agreementState);
       const coveredAccounts = await this.getCoveredAccounts(normalizedAddress);
-      const statesByAgreement = await this.getAgreementStates([normalizedAddress]);
-      const computedState = statesByAgreement.get(normalizedAddress);
-      const selfDto = this.mapStateToDto(enrichedState, coveredAccounts, computedState);
+      const selfDto = this.mapStateToDto(
+        enrichedState,
+        coveredAccounts,
+        enrichedState.computedState || "NOT_REGISTERED"
+      );
 
       // Deduplicate: coveredBy may include the agreement itself
       const others = coveredBy.filter((a) => a.agreementAddress !== normalizedAddress);
@@ -949,70 +1000,46 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
     const safePage = Math.max(1, page);
     const offset = (safePage - 1) * safeLimit;
 
-    // Build query
+    // Build query with SQL-level filtering, sorting, and pagination
+    // using the materialized computed_state column
     let query = this.agreementStateRepository.createQueryBuilder("agreement");
 
-    // Apply sorting (state sorting handled after we compute states)
-    const isStateSorting = sortBy === "state";
-    if (!isStateSorting) {
+    // Filter by materialized state in SQL
+    if (stateFilter) {
+      query = query.where("agreement.computed_state = :state", { state: stateFilter });
+    }
+
+    // Sort — state sorting uses a CASE expression for custom ordering
+    if (sortBy === "state") {
+      query = query.orderBy(
+        `CASE agreement.computed_state
+          WHEN 'NEW_DEPLOYMENT' THEN 0
+          WHEN 'ATTACK_REQUESTED' THEN 1
+          WHEN 'UNDER_ATTACK' THEN 2
+          WHEN 'CORRUPTED' THEN 3
+          WHEN 'PROMOTION_REQUESTED' THEN 4
+          WHEN 'PRODUCTION' THEN 5
+          ELSE 99 END`,
+        sortOrder
+      );
+    } else {
       const sortColumn = this.mapSortColumn(sortBy);
       query = query.orderBy(sortColumn, sortOrder, "NULLS LAST");
     }
 
-    // For state filtering/sorting, we need to get all agreements first and then filter in memory
-    // because state is computed from state change events
-    // This is acceptable for the expected scale of agreements
-
-    // Get all agreement states to compute their current state
-    const allStates = await query.getMany();
-    const allAddresses = allStates.map((s) => s.agreementAddress.toLowerCase());
-    const statesByAgreement = await this.getAgreementStates(allAddresses);
-
-    // Filter by state if provided
-    let filteredStates = allStates;
-    if (stateFilter) {
-      filteredStates = allStates.filter((s) => {
-        const computedState = statesByAgreement.get(s.agreementAddress.toLowerCase());
-        return computedState === stateFilter;
-      });
-    }
-
-    // Sort by state if requested
-    if (isStateSorting) {
-      const stateOrder: Record<string, number> = {
-        NEW_DEPLOYMENT: 0,
-        ATTACK_REQUESTED: 1,
-        UNDER_ATTACK: 2,
-        CORRUPTED: 3,
-        PROMOTION_REQUESTED: 4,
-        PRODUCTION: 5,
-        NOT_REGISTERED: 99,
-      };
-      filteredStates.sort((a, b) => {
-        const aState = statesByAgreement.get(a.agreementAddress.toLowerCase()) || "NOT_REGISTERED";
-        const bState = statesByAgreement.get(b.agreementAddress.toLowerCase()) || "NOT_REGISTERED";
-        const aOrder = stateOrder[aState] ?? 99;
-        const bOrder = stateOrder[bState] ?? 99;
-        return sortOrder === "ASC" ? aOrder - bOrder : bOrder - aOrder;
-      });
-    }
-
-    // Get total count after filtering
-    const total = filteredStates.length;
-
-    // Apply pagination
-    const paginatedStates = filteredStates.slice(offset, offset + safeLimit);
+    // Get total count + paginated results in a single SQL query
+    const [paginatedStates, total] = await query.skip(offset).take(safeLimit).getManyAndCount();
 
     // Get accounts only for paginated results
     const paginatedAddresses = paginatedStates.map((s) => s.agreementAddress.toLowerCase());
     const accountsByAgreement = await this.getAccountsForAgreements(paginatedAddresses);
 
-    // Map to DTOs
+    // Map to DTOs using the materialized state
     const items = paginatedStates.map((state) =>
       this.mapStateToDto(
         state,
         accountsByAgreement.get(state.agreementAddress.toLowerCase()),
-        statesByAgreement.get(state.agreementAddress.toLowerCase())
+        state.computedState || "NOT_REGISTERED"
       )
     );
 
@@ -1055,62 +1082,6 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
     }
 
     return accountsByAgreement;
-  }
-
-  /**
-   * Get the current state for multiple agreements efficiently.
-   * Returns a map of agreement address -> state string.
-   */
-  private async getAgreementStates(agreementAddresses: string[]): Promise<Map<string, string>> {
-    const statesByAgreement = new Map<string, string>();
-
-    if (agreementAddresses.length === 0) {
-      return statesByAgreement;
-    }
-
-    // Get all state changes for all agreements in a single query
-    const stateChanges = await this.agreementStateChangeRepository
-      .createQueryBuilder("change")
-      .where("LOWER(change.agreementAddress) IN (:...addresses)", { addresses: agreementAddresses })
-      .orderBy("change.blockNumber", "ASC")
-      .addOrderBy("change.logIndex", "ASC")
-      .getMany();
-
-    // Group state changes by agreement and find current state
-    const changesByAgreement = new Map<string, typeof stateChanges>();
-    for (const change of stateChanges) {
-      const key = change.agreementAddress.toLowerCase();
-      if (!changesByAgreement.has(key)) {
-        changesByAgreement.set(key, []);
-      }
-      changesByAgreement.get(key)!.push(change);
-    }
-
-    const stateNames: Record<number, string> = {
-      [ContractState.NOT_REGISTERED]: "NOT_REGISTERED",
-      [ContractState.NOT_DEPLOYED]: "NOT_DEPLOYED",
-      [ContractState.NEW_DEPLOYMENT]: "NEW_DEPLOYMENT",
-      [ContractState.ATTACK_REQUESTED]: "ATTACK_REQUESTED",
-      [ContractState.UNDER_ATTACK]: "UNDER_ATTACK",
-      [ContractState.PROMOTION_REQUESTED]: "PROMOTION_REQUESTED",
-      [ContractState.PRODUCTION]: "PRODUCTION",
-      [ContractState.CORRUPTED]: "CORRUPTED",
-    };
-
-    // Calculate current state for each agreement
-    for (const address of agreementAddresses) {
-      const changes = changesByAgreement.get(address) || [];
-      if (changes.length === 0) {
-        statesByAgreement.set(address, "NOT_REGISTERED");
-        continue;
-      }
-
-      // The last state change determines current state
-      const lastChange = changes[changes.length - 1];
-      statesByAgreement.set(address, stateNames[lastChange.newState] || "NOT_REGISTERED");
-    }
-
-    return statesByAgreement;
   }
 
   /**

@@ -209,7 +209,7 @@
 
       <!-- Covered Contracts Section -->
       <EditableSection
-        v-if="(agreement.coveredContracts && agreement.coveredContracts.length > 0) || isOwner"
+        v-if="coveredAccountsWithScope.length > 0 || isOwner"
         class="full-width"
         :title="t('safeHarbor.coveredContracts')"
         :is-editing="activeSection === 'coveredContracts'"
@@ -220,7 +220,7 @@
         @save="saveCoveredContracts"
         @cancel="cancelEditing"
       >
-        <template v-if="coveredAccountsWithScope.length > 0" #header-actions>
+        <template v-if="coveredAccountsWithScope.length > 0 && agreement.coveredContracts?.length > 0" #header-actions>
           <button
             type="button"
             class="expand-toggle"
