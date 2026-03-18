@@ -15,7 +15,7 @@
           <Badge v-else-if="isPromotionPending" color="neutral" size="sm">{{
             t("safeHarbor.badges.promotionPending")
           }}</Badge>
-          <Badge v-else-if="isProduction" color="neutral" size="sm">{{ t("safeHarbor.badges.production") }}</Badge>
+          <Badge v-else-if="isProduction" color="accent" size="sm">{{ t("safeHarbor.badges.production") }}</Badge>
           <Badge v-else-if="isCorrupted" color="error" size="sm">{{ t("safeHarbor.badges.corrupted") }}</Badge>
         </div>
         <div class="badge-details">
@@ -88,9 +88,10 @@ const isProduction = computed(() => props.contractState === "PRODUCTION");
 const isCorrupted = computed(() => props.contractState === "CORRUPTED");
 
 const badgeClass = computed(() => ({
-  "has-agreement": props.hasAgreement && !isPendingApproval.value && !isCorrupted.value,
+  "has-agreement": props.hasAgreement && !isPendingApproval.value && !isCorrupted.value && !isProduction.value,
   "pending-approval": props.hasAgreement && isPendingApproval.value,
   "state-corrupted": props.hasAgreement && isCorrupted.value,
+  "state-production": props.hasAgreement && isProduction.value,
   "no-agreement": !props.hasAgreement,
 }));
 
@@ -179,6 +180,18 @@ const identityRequirementTooltip = computed(() => {
 
     .badge-title {
       color: var(--error-text);
+    }
+  }
+
+  &.state-production {
+    background-color: var(--accent-muted);
+
+    .badge-icon .icon {
+      color: var(--accent);
+    }
+
+    .badge-title {
+      color: var(--accent-text);
     }
   }
 

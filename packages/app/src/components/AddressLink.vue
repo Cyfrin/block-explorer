@@ -13,6 +13,11 @@
       {{ formattedAddress }}
     </slot>
   </span>
+  <a v-else-if="newTab" :href="localUrl" target="_blank" rel="noopener noreferrer">
+    <slot>
+      {{ formattedAddress }}
+    </slot>
+  </a>
   <router-link v-else :to="{ name: props.isTokenAddress ? `token` : `address`, params: { address: formattedAddress } }">
     <slot>
       {{ formattedAddress }}
@@ -22,6 +27,7 @@
 
 <script lang="ts" setup>
 import { computed, type PropType } from "vue";
+import { useRouter } from "vue-router";
 
 import useContext from "@/composables/useContext";
 
@@ -45,8 +51,20 @@ const props = defineProps({
     default: false,
     required: false,
   },
+  newTab: {
+    type: Boolean,
+    default: false,
+  },
 });
 
+const router = useRouter();
 const { currentNetwork } = useContext();
 const formattedAddress = computed(() => checksumAddress(props.address));
+const localUrl = computed(() => {
+  const resolved = router.resolve({
+    name: props.isTokenAddress ? "token" : "address",
+    params: { address: formattedAddress.value },
+  });
+  return resolved.href;
+});
 </script>
