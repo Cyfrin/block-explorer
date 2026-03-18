@@ -226,6 +226,7 @@ function getStateColor(state?: ContractState): "neutral" | "success" | "warning"
     case ContractState.CORRUPTED:
       return "error";
     case ContractState.PRODUCTION:
+      return "accent";
     case ContractState.NEW_DEPLOYMENT:
     default:
       return "neutral";
@@ -285,10 +286,10 @@ function formatBountyCap(bountyCapUsd?: string): string {
     @apply rounded-t-lg;
 
     td {
-      @apply relative flex flex-col items-end justify-end whitespace-normal text-right md:table-cell md:text-left md:py-2.5;
+      @apply relative flex flex-col items-start justify-start whitespace-normal text-left md:table-cell md:text-left md:py-2.5;
 
       &:before {
-        @apply absolute left-4 top-2 whitespace-nowrap pr-5 text-left text-xs uppercase content-[attr(data-heading)] md:content-none;
+        @apply block whitespace-nowrap text-xs uppercase content-[attr(data-heading)] md:content-none mb-0.5;
         color: var(--text-muted);
       }
     }
@@ -316,12 +317,12 @@ function formatBountyCap(bountyCapUsd?: string): string {
 
   // Expand column
   .expand-column {
-    @apply w-10 min-w-10 max-w-10;
+    @apply hidden md:table-cell w-10 min-w-10 max-w-10;
   }
 
   th.expand-column,
   td.expand-column {
-    @apply w-10 px-2;
+    @apply hidden md:table-cell w-10 px-2;
   }
 
   .expand-icon {
@@ -349,7 +350,7 @@ function formatBountyCap(bountyCapUsd?: string): string {
 
     // Reset AgreementDetails styles for inline display
     .agreement-details {
-      @apply p-4;
+      @apply p-2 sm:p-4;
       background-color: transparent;
     }
   }

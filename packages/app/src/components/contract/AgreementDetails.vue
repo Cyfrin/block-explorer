@@ -41,7 +41,7 @@
           </div>
           <div class="agreement-address">
             <span class="address-label">{{ t("safeHarbor.agreementContract") }}:</span>
-            <AddressLink :address="agreement.agreementAddress" class="address-link">
+            <AddressLink :address="agreement.agreementAddress" class="address-link" new-tab>
               <span class="address-value">{{ shortValue(agreement.agreementAddress) }}</span>
               <ExternalLinkIcon class="link-icon" />
             </AddressLink>
@@ -240,6 +240,7 @@
                 :key="account.accountAddress"
                 :address="account.accountAddress"
                 class="covered-contract-link"
+                new-tab
               >
                 <span class="contract-address">{{ shortValue(account.accountAddress) }}</span>
                 <ExternalLinkIcon class="link-icon" />
@@ -260,6 +261,7 @@
                 :key="address"
                 :address="address"
                 class="covered-contract-link"
+                new-tab
               >
                 <span class="contract-address">{{ address }}</span>
                 <ExternalLinkIcon class="link-icon" />
@@ -999,11 +1001,11 @@ const getChildScopeTooltip = (scope: number): string => {
       background-color: var(--bg-secondary);
 
       .header-icon .icon {
-        color: var(--text-muted);
+        color: var(--accent);
       }
 
       .protocol-name {
-        color: var(--text-primary);
+        color: var(--accent-text);
       }
     }
 

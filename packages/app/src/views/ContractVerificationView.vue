@@ -550,6 +550,9 @@ async function submitForm() {
     @apply mb-6 w-full max-w-[26rem] lg:mb-0;
   }
 }
+h1 {
+  @apply text-2xl sm:text-3xl;
+}
 .subtitle {
   @apply mt-2 text-sm;
   color: var(--text-secondary);
@@ -604,13 +607,10 @@ async function submitForm() {
     border-color: var(--border-default);
   }
   .form-footer {
-    @apply flex flex-col items-center sm:flex-row;
+    @apply flex flex-col gap-3 sm:flex-row;
 
     .button {
-      @apply w-full max-w-xs sm:w-max;
-    }
-    .button:nth-child(2) {
-      @apply mt-2 sm:ml-4 sm:mt-0;
+      @apply w-full sm:w-max;
     }
   }
   .contract-dropdowns-container {
