@@ -492,10 +492,9 @@ UPDATE
   battlechainindexer_agreement.agreement_current_state
 SET
   computed_state = state_name,
-  -- Only set registered_at on first NEW_DEPLOYMENT event
+  -- Set registered_at on the first state change event (registration + attack request are atomic)
   registered_at = CASE
-    WHEN NEW.new_state = 1
-    AND registered_at IS NULL THEN NEW.block_timestamp
+    WHEN registered_at IS NULL THEN NEW.block_timestamp
     ELSE registered_at
   END,
   -- Track latest PROMOTION_REQUESTED timestamp
@@ -844,8 +843,6 @@ registered_times AS (
     block_timestamp AS registered_at
   FROM
     battlechainindexer_attack_registry.agreement_state_changed
-  WHERE
-    new_state = 1
   ORDER BY
     agreement_address,
     block_number ASC,
