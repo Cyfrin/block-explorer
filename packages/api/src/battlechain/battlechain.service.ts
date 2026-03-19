@@ -509,13 +509,13 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
   async getContractStateInfo(contractAddress: string): Promise<ContractStateInfoDto> {
     const normalizedContractAddress = contractAddress.toLowerCase();
 
-    // First, find the agreement that covers this contract
-    const agreement = await this.agreementStateRepository
+    // Find all agreements that cover this contract
+    const agreements = await this.agreementStateRepository
       .createQueryBuilder("state")
       .where(":address = ANY(state.covered_contracts)", { address: normalizedContractAddress })
-      .getOne();
+      .getMany();
 
-    if (!agreement) {
+    if (agreements.length === 0) {
       return {
         state: "NOT_REGISTERED",
         wasUnderAttack: false,
@@ -526,8 +526,28 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       };
     }
 
-    // Now get state info for the agreement, passing the agreement to get commitmentDeadline
-    return this.getAgreementStateInfoInternal(agreement.agreementAddress, agreement);
+    // Get state info for each covering agreement and return the most progressed one.
+    // State progression order (higher = more progressed toward production):
+    const stateRank: Record<string, number> = {
+      NOT_REGISTERED: 0,
+      NOT_DEPLOYED: 1,
+      NEW_DEPLOYMENT: 2,
+      ATTACK_REQUESTED: 3,
+      UNDER_ATTACK: 4,
+      PROMOTION_REQUESTED: 5,
+      PRODUCTION: 6,
+      CORRUPTED: 7,
+    };
+
+    const results = await Promise.all(
+      agreements.map((a) => this.getAgreementStateInfoInternal(a.agreementAddress, a))
+    );
+
+    return results.reduce((best, current) => {
+      const bestRank = stateRank[best.state] ?? 0;
+      const currentRank = stateRank[current.state] ?? 0;
+      return currentRank > bestRank ? current : best;
+    });
   }
 
   /**
@@ -684,11 +704,35 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       [ContractState.CORRUPTED]: "CORRUPTED",
     };
 
+    // Use the materialized computed_state if available, as it accounts for
+    // time-based transitions (auto-promotion) applied by the periodic timer.
+    // The event-based computation above may miss these since they happen without events.
+    const resolvedState = agreement?.computedState || stateNames[currentState] || "NOT_REGISTERED";
+
+    // If auto-promoted to PRODUCTION but no event recorded the timestamp,
+    // derive it from the materialized registered_at + promotion window.
+    if (resolvedState === "PRODUCTION" && !productionAt) {
+      const materializedRegisteredAt = agreement?.registeredAt?.getTime() ?? registeredAt;
+      if (materializedRegisteredAt) {
+        if (agreement?.promotionRequestedAt) {
+          productionAt = agreement.promotionRequestedAt.getTime() + PROMOTION_DELAY_MS;
+        } else {
+          productionAt = materializedRegisteredAt + PROMOTION_WINDOW_MS;
+        }
+        productionTxHash = null;
+      }
+    }
+
+    // Backfill registeredAt from materialized table if missing from events
+    if (!registeredAt && agreement?.registeredAt) {
+      registeredAt = agreement.registeredAt.getTime();
+    }
+
     // Get commitmentLockedUntil from the agreement if available
     const commitmentLockedUntil = agreement?.commitmentDeadline ? Number(agreement.commitmentDeadline) * 1000 : null;
 
     return {
-      state: stateNames[currentState] || "NOT_REGISTERED",
+      state: resolvedState,
       wasUnderAttack,
       registeredAt,
       registeredTxHash,
