@@ -190,7 +190,7 @@ else
 
     # Stop rindexer
     echo "Stopping rindexer for SQL setup..."
-    kill $RINDEXER_PID 2>/dev/null
+    kill $RINDEXER_PID 2>/dev/null || true
     wait $RINDEXER_PID 2>/dev/null || true
     sleep 2
 
