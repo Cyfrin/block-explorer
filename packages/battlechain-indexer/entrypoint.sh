@@ -102,58 +102,88 @@ else
     echo ""
 fi
 
-# Start rindexer with passed arguments
-echo "========================================"
-echo "Starting rindexer"
-echo "========================================"
-echo ""
-
-# Start rindexer briefly to create event tables, then stop it,
-# run SQL setup (creates triggers), reset the cursor, and restart.
-echo "Starting rindexer to create event tables..."
+# Check if triggers already exist (i.e. SQL setup has run before)
 cd "${SCRIPT_DIR}"
-/app/rindexer "$@" &
-RINDEXER_PID=$!
-
-# Wait for event tables to be created
-echo "Waiting for rindexer to create event tables..."
-sleep 10
-max_attempts=30
-attempt=0
-while [ $attempt -lt $max_attempts ]; do
-    if psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement_factory.agreement_created LIMIT 0" 2>/dev/null; then
-        echo "Event tables exist!"
-        break
-    fi
-    attempt=$((attempt + 1))
-    echo "  Waiting for event tables... ($attempt/$max_attempts)"
-    sleep 5
-done
-
-# Stop rindexer
-echo "Stopping rindexer for SQL setup..."
-kill $RINDEXER_PID 2>/dev/null
-wait $RINDEXER_PID 2>/dev/null || true
-sleep 2
-
-# Run SQL setup (creates triggers)
-if [ -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql" ]; then
-    echo "Running create-agreement-current-state.sql..."
-    if psql "$DATABASE_URL" -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql"; then
-        echo "SQL setup completed successfully!"
-    else
-        echo "WARNING: SQL setup script had errors (non-fatal)"
-    fi
+TRIGGERS_EXIST=false
+if psql "$DATABASE_URL" -c "SELECT 1 FROM pg_trigger WHERE tgname = 'trg_agreement_created' LIMIT 1" 2>/dev/null | grep -q "1"; then
+    TRIGGERS_EXIST=true
 fi
 
-# Reset rindexer cursor so it re-processes all blocks with triggers in place
-echo "Resetting rindexer cursor to reprocess events with triggers..."
-psql "$DATABASE_URL" -c "TRUNCATE rindexer_internal.latest_block;" 2>/dev/null || true
+if [ "$TRIGGERS_EXIST" = true ]; then
+    # Triggers already exist — just run SQL setup to update trigger functions
+    # (CREATE OR REPLACE FUNCTION updates in-place) and start rindexer normally
+    echo "========================================"
+    echo "Triggers already exist — updating functions"
+    echo "========================================"
+    echo ""
 
-# Restart rindexer for real
-echo ""
-echo "========================================"
-echo "Starting rindexer (with triggers ready)"
-echo "========================================"
-echo ""
-exec /app/rindexer "$@"
+    if [ -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql" ]; then
+        if psql "$DATABASE_URL" -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql"; then
+            echo "SQL setup updated successfully!"
+        else
+            echo "WARNING: SQL setup script had errors (non-fatal)"
+        fi
+    fi
+
+    echo ""
+    echo "========================================"
+    echo "Starting rindexer"
+    echo "========================================"
+    echo ""
+    exec /app/rindexer "$@"
+else
+    # First run: triggers don't exist yet.
+    # Start rindexer briefly to create event tables, then stop it,
+    # run SQL setup (creates triggers), reset the cursor, and restart.
+    echo "========================================"
+    echo "First run — setting up triggers"
+    echo "========================================"
+    echo ""
+
+    echo "Starting rindexer to create event tables..."
+    /app/rindexer "$@" &
+    RINDEXER_PID=$!
+
+    # Wait for event tables to be created
+    echo "Waiting for rindexer to create event tables..."
+    sleep 10
+    max_attempts=30
+    attempt=0
+    while [ $attempt -lt $max_attempts ]; do
+        if psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement_factory.agreement_created LIMIT 0" 2>/dev/null; then
+            echo "Event tables exist!"
+            break
+        fi
+        attempt=$((attempt + 1))
+        echo "  Waiting for event tables... ($attempt/$max_attempts)"
+        sleep 5
+    done
+
+    # Stop rindexer
+    echo "Stopping rindexer for SQL setup..."
+    kill $RINDEXER_PID 2>/dev/null
+    wait $RINDEXER_PID 2>/dev/null || true
+    sleep 2
+
+    # Run SQL setup (creates triggers)
+    if [ -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql" ]; then
+        echo "Running create-agreement-current-state.sql..."
+        if psql "$DATABASE_URL" -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql"; then
+            echo "SQL setup completed successfully!"
+        else
+            echo "WARNING: SQL setup script had errors (non-fatal)"
+        fi
+    fi
+
+    # Reset rindexer cursor so it re-processes all blocks with triggers in place
+    echo "Resetting rindexer cursor to reprocess events with triggers..."
+    psql "$DATABASE_URL" -c "TRUNCATE rindexer_internal.latest_block;" 2>/dev/null || true
+
+    # Restart rindexer for real
+    echo ""
+    echo "========================================"
+    echo "Starting rindexer (with triggers ready)"
+    echo "========================================"
+    echo ""
+    exec /app/rindexer "$@"
+fi
