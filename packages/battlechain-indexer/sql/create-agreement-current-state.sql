@@ -793,18 +793,32 @@ WHERE
   ) DO NOTHING;
 
 -- ============================================
--- Backfill covered_scope_contracts from existing covered_contracts
+-- Backfill covered_scope_contracts from BattleChainScopeAddressAdded events
 -- ============================================
--- On first run with these new columns, existing covered_contracts values
--- were set by the scope triggers (which wrote to covered_contracts directly).
--- Copy them into covered_scope_contracts so the new trigger logic works correctly.
+-- Due to the race condition (rindexer indexes events before triggers exist),
+-- we must backfill covered_scope_contracts directly from the raw event table.
+-- Aggregate all scope addresses per agreement, then upsert.
 UPDATE
-  battlechainindexer_agreement.agreement_current_state
+  battlechainindexer_agreement.agreement_current_state AS acs
 SET
-  covered_scope_contracts = COALESCE(covered_contracts, ARRAY [] :: TEXT [])
+  covered_scope_contracts = backfill.scope_addrs,
+  covered_contracts = backfill.scope_addrs || COALESCE(acs.covered_child_contracts, ARRAY [] :: TEXT [])
+FROM
+  (
+    SELECT
+      contract_address,
+      array_agg(DISTINCT addr) AS scope_addrs
+    FROM
+      battlechainindexer_agreement.battle_chain_scope_address_added
+    GROUP BY
+      contract_address
+  ) AS backfill
 WHERE
-  covered_scope_contracts IS NULL
-  OR covered_scope_contracts = ARRAY [] :: TEXT [];
+  acs.agreement_address = backfill.contract_address
+  AND (
+    acs.covered_scope_contracts IS NULL
+    OR acs.covered_scope_contracts = ARRAY [] :: TEXT []
+  );
 
 -- ============================================
 -- Enqueue all agreements with child-scope accounts for initial reindex
