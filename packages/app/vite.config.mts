@@ -34,10 +34,7 @@ export default defineConfig({
           if (id.includes("@matterlabs")) {
             return "m";
           }
-          if (id.includes("/src/composables")) {
-            return "cm";
-          }
-          if (id.includes("/src/components")) {
+          if (id.includes("/src/composables") || id.includes("/src/components")) {
             return "cn";
           }
         },
