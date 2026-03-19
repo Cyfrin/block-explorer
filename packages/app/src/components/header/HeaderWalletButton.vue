@@ -1,6 +1,6 @@
 <template>
   <button v-if="!address" class="header-wallet-btn" :disabled="isConnectPending" @click="connect">
-    <WalletIcon class="btn-icon" />
+    <CreditCardIcon class="btn-icon" />
     <span>{{ isConnectPending ? t("connectMetamaskButton.connecting") : t("connectMetamaskButton.label") }}</span>
   </button>
   <div v-else class="wallet-dropdown-wrapper" ref="dropdownRef">
@@ -21,15 +21,12 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
+import { CreditCardIcon } from "@heroicons/vue/outline";
+
 import useContext from "@/composables/useContext";
 import useWallet from "@/composables/useWallet";
 
 import { formatShortAddress } from "@/utils/formatters";
-
-// Inline wallet icon (Heroicons outline)
-const WalletIcon = {
-  template: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1 0-6h.75A2.25 2.25 0 0 1 18 6v0a2.25 2.25 0 0 1-2.25 2.25H15M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>`,
-};
 
 const { t } = useI18n();
 const context = useContext();
