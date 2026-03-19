@@ -144,18 +144,27 @@ else
     /app/rindexer "$@" &
     RINDEXER_PID=$!
 
-    # Wait for event tables to be created
+    # Wait for all event tables to be created (3 schemas)
     echo "Waiting for rindexer to create event tables..."
     sleep 10
-    max_attempts=30
+    max_attempts=60
     attempt=0
     while [ $attempt -lt $max_attempts ]; do
-        if psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement_factory.agreement_created LIMIT 0" 2>/dev/null; then
-            echo "Event tables exist!"
+        factory_ok=false
+        agreement_ok=false
+        registry_ok=false
+
+        psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement_factory.agreement_created LIMIT 0" 2>/dev/null && factory_ok=true
+        psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement.protocol_name_updated LIMIT 0" 2>/dev/null && agreement_ok=true
+        psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_attack_registry.agreement_state_changed LIMIT 0" 2>/dev/null && registry_ok=true
+
+        if [ "$factory_ok" = true ] && [ "$agreement_ok" = true ] && [ "$registry_ok" = true ]; then
+            echo "All event tables exist!"
             break
         fi
+
         attempt=$((attempt + 1))
-        echo "  Waiting for event tables... ($attempt/$max_attempts)"
+        echo "  Waiting for event tables... ($attempt/$max_attempts) [factory=$factory_ok agreement=$agreement_ok registry=$registry_ok]"
         sleep 5
     done
 
