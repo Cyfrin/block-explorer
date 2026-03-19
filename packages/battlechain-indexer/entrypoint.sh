@@ -144,29 +144,49 @@ else
     /app/rindexer "$@" &
     RINDEXER_PID=$!
 
-    # Wait for all event tables to be created (3 schemas)
-    echo "Waiting for rindexer to create event tables..."
+    # Wait for factory tables (always created immediately by rindexer)
+    echo "Waiting for rindexer to create factory tables..."
     sleep 10
-    max_attempts=60
+    max_attempts=30
     attempt=0
     while [ $attempt -lt $max_attempts ]; do
-        factory_ok=false
+        if psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement_factory.agreement_created LIMIT 0" 2>/dev/null; then
+            echo "Factory tables exist!"
+            break
+        fi
+        attempt=$((attempt + 1))
+        echo "  Waiting for factory tables... ($attempt/$max_attempts)"
+        sleep 5
+    done
+
+    # Wait a bit longer for agreement/registry tables (created once rindexer
+    # discovers Agreement contracts via factory events). These may never appear
+    # if no agreements exist on chain yet — that's OK, we'll proceed without them.
+    echo "Waiting for agreement & registry tables (up to 60s)..."
+    extra_attempts=12
+    extra=0
+    all_ready=false
+    while [ $extra -lt $extra_attempts ]; do
         agreement_ok=false
         registry_ok=false
-
-        psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement_factory.agreement_created LIMIT 0" 2>/dev/null && factory_ok=true
         psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement.protocol_name_updated LIMIT 0" 2>/dev/null && agreement_ok=true
         psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_attack_registry.agreement_state_changed LIMIT 0" 2>/dev/null && registry_ok=true
 
-        if [ "$factory_ok" = true ] && [ "$agreement_ok" = true ] && [ "$registry_ok" = true ]; then
+        if [ "$agreement_ok" = true ] && [ "$registry_ok" = true ]; then
             echo "All event tables exist!"
+            all_ready=true
             break
         fi
 
-        attempt=$((attempt + 1))
-        echo "  Waiting for event tables... ($attempt/$max_attempts) [factory=$factory_ok agreement=$agreement_ok registry=$registry_ok]"
+        extra=$((extra + 1))
+        echo "  Waiting... ($extra/$extra_attempts) [agreement=$agreement_ok registry=$registry_ok]"
         sleep 5
     done
+
+    if [ "$all_ready" = false ]; then
+        echo "Some event tables not yet created (no agreements on chain yet?)"
+        echo "Triggers for missing tables will be created on next restart."
+    fi
 
     # Stop rindexer
     echo "Stopping rindexer for SQL setup..."
@@ -174,13 +194,13 @@ else
     wait $RINDEXER_PID 2>/dev/null || true
     sleep 2
 
-    # Run SQL setup (creates triggers)
+    # Run SQL setup (creates materialized table + triggers for existing event tables)
     if [ -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql" ]; then
         echo "Running create-agreement-current-state.sql..."
         if psql "$DATABASE_URL" -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql"; then
             echo "SQL setup completed successfully!"
         else
-            echo "WARNING: SQL setup script had errors (non-fatal)"
+            echo "WARNING: SQL setup script had errors (may be OK if some event tables don't exist yet)"
         fi
     fi
 
