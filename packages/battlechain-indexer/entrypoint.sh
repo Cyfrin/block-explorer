@@ -1,5 +1,7 @@
 #!/bin/bash
-set -e
+# Note: not using set -e because rindexer may panic/crash during the
+# first-run setup phase, and we need the script to continue past that
+# to run SQL setup and restart rindexer.
 
 # BattleChain Indexer Entrypoint
 # Waits for deployed contract addresses and generates rindexer config
@@ -191,17 +193,27 @@ else
     # Stop rindexer
     echo "Stopping rindexer for SQL setup..."
     kill $RINDEXER_PID 2>/dev/null || true
+    echo "  kill exit code: $?"
     wait $RINDEXER_PID 2>/dev/null || true
+    echo "  wait exit code: $?"
+    echo "  Rindexer stopped. Sleeping 2s..."
     sleep 2
 
     # Run SQL setup (creates materialized table + triggers for existing event tables)
+    echo "Checking for SQL file: ${SCRIPT_DIR}/sql/create-agreement-current-state.sql"
+    ls -la "${SCRIPT_DIR}/sql/" 2>&1 || echo "  Could not list sql directory"
     if [ -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql" ]; then
         echo "Running create-agreement-current-state.sql..."
-        if psql "$DATABASE_URL" -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql"; then
+        psql "$DATABASE_URL" -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql" 2>&1
+        SQL_EXIT=$?
+        echo "  SQL exit code: $SQL_EXIT"
+        if [ $SQL_EXIT -eq 0 ]; then
             echo "SQL setup completed successfully!"
         else
             echo "WARNING: SQL setup script had errors (may be OK if some event tables don't exist yet)"
         fi
+    else
+        echo "ERROR: SQL file not found at ${SCRIPT_DIR}/sql/create-agreement-current-state.sql"
     fi
 
     # Reset rindexer cursor so it re-processes all blocks with triggers in place
