@@ -31,7 +31,10 @@
             </a>
           </PopoverGroup>
           <WalletButton v-if="runtimeConfig.appEnvironment === 'prividium'" />
-          <NetworkSwitch v-else />
+          <template v-else>
+            <HeaderWalletButton />
+            <NetworkSwitch />
+          </template>
           <ThemeToggle />
           <div v-if="socials.length" class="header-socials">
             <a
@@ -99,7 +102,10 @@
 
           <div class="mobile-controls">
             <WalletButton v-if="runtimeConfig.appEnvironment === 'prividium'" />
-            <NetworkSwitch v-else />
+            <template v-else>
+              <HeaderWalletButton />
+              <NetworkSwitch />
+            </template>
             <ThemeToggle />
           </div>
 
@@ -128,6 +134,7 @@ import { useI18n } from "vue-i18n";
 import { Popover, PopoverButton, PopoverGroup, PopoverPanel } from "@headlessui/vue";
 import { MenuIcon, XIcon } from "@heroicons/vue/outline";
 
+import HeaderWalletButton from "./HeaderWalletButton.vue";
 import LinksMobilePopover from "./LinksMobilePopover.vue";
 import LinksPopover from "./LinksPopover.vue";
 import WalletButton from "../prividium/WalletButton.vue";

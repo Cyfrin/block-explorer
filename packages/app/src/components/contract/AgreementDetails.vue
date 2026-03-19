@@ -1031,8 +1031,8 @@ const getChildScopeTooltip = (scope: number): string => {
     max-width: 300px;
 
     &:focus {
-      @apply outline-none ring-2;
-      ring-color: var(--accent);
+      @apply outline-none ring-2 ring-offset-0;
+      --tw-ring-color: var(--accent);
     }
   }
 

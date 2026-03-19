@@ -157,7 +157,6 @@
           :owner="item.agreement.owner"
           :wallet-address="walletAddress"
           :contract-state="item.state ?? agreementState"
-          readonly
           @agreement-updated="handleAgreementUpdated"
           @connect-wallet="connectWallet"
         />
