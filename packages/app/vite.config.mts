@@ -13,33 +13,7 @@ export default defineConfig({
   build: {
     target: "esnext",
     sourcemap: "hidden",
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          if (id.includes("vue/dist/vue")) {
-            return "v";
-          }
-          if (id.includes("vue-") || id.includes("@vue")) {
-            return "vi";
-          }
-          if (id.includes("@sentry")) {
-            return "s";
-          }
-          if (id.includes("@headlessui") || id.includes("@heroicons") || id.includes("@tailwind")) {
-            return "t";
-          }
-          if (id.includes("@firebase")) {
-            return "f";
-          }
-          if (id.includes("@matterlabs")) {
-            return "m";
-          }
-          if (id.includes("/src/composables") || id.includes("/src/components")) {
-            return "cn";
-          }
-        },
-      },
-    },
+    rollupOptions: {},
   },
   optimizeDeps: {
     esbuildOptions: {
