@@ -32,7 +32,8 @@
     "connecting": "Connecting...",
     "redirecting": "Redirecting...",
     "metaMaskNotFound": "MetaMask not found",
-    "logout": "Logout"
+    "logout": "Logout",
+    "disconnect": "Disconnect"
   },
   "networkStats": {
     "title": "Network Stats",
