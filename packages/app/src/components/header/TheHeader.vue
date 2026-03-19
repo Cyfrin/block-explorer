@@ -128,16 +128,16 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed, defineAsyncComponent, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { Popover, PopoverButton, PopoverGroup, PopoverPanel } from "@headlessui/vue";
 import { MenuIcon, XIcon } from "@heroicons/vue/outline";
 
-import HeaderWalletButton from "./HeaderWalletButton.vue";
+const HeaderWalletButton = defineAsyncComponent(() => import("./HeaderWalletButton.vue"));
 import LinksMobilePopover from "./LinksMobilePopover.vue";
 import LinksPopover from "./LinksPopover.vue";
-import WalletButton from "../prividium/WalletButton.vue";
+const WalletButton = defineAsyncComponent(() => import("../prividium/WalletButton.vue"));
 
 import NetworkSwitch from "@/components/NetworkSwitch.vue";
 import ThemeToggle from "@/components/ThemeToggle.vue";
