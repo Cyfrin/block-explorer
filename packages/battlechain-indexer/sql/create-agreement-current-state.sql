@@ -109,7 +109,7 @@ VALUES
 -- Trigger: Initialize state on AgreementCreated
 -- ============================================
 CREATE
-OR REPLACE FUNCTION init_agreement_state() RETURNS TRIGGER AS $ $ BEGIN
+OR REPLACE FUNCTION init_agreement_state() RETURNS TRIGGER AS $$ BEGIN
 INSERT INTO
   battlechainindexer_agreement.agreement_current_state (
     agreement_address,
@@ -137,7 +137,7 @@ RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_agreement_created ON battlechainindexer_agreement_factory.agreement_created;
 
@@ -150,7 +150,7 @@ INSERT
 -- Trigger: Update state on ProtocolNameUpdated
 -- ============================================
 CREATE
-OR REPLACE FUNCTION update_agreement_protocol_name() RETURNS TRIGGER AS $ $ BEGIN
+OR REPLACE FUNCTION update_agreement_protocol_name() RETURNS TRIGGER AS $$ BEGIN
 INSERT INTO
   battlechainindexer_agreement.agreement_current_state (
     agreement_address,
@@ -175,7 +175,7 @@ RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_protocol_name_updated ON battlechainindexer_agreement.protocol_name_updated;
 
@@ -188,7 +188,7 @@ INSERT
 -- Trigger: Update state on AgreementURIUpdated
 -- ============================================
 CREATE
-OR REPLACE FUNCTION update_agreement_uri() RETURNS TRIGGER AS $ $ BEGIN
+OR REPLACE FUNCTION update_agreement_uri() RETURNS TRIGGER AS $$ BEGIN
 INSERT INTO
   battlechainindexer_agreement.agreement_current_state (
     agreement_address,
@@ -213,7 +213,7 @@ RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_agreement_uri_updated ON battlechainindexer_agreement.agreement_uri_updated;
 
@@ -226,7 +226,7 @@ INSERT
 -- Trigger: Update state on BountyTermsUpdated
 -- ============================================
 CREATE
-OR REPLACE FUNCTION update_agreement_bounty_terms() RETURNS TRIGGER AS $ $ BEGIN
+OR REPLACE FUNCTION update_agreement_bounty_terms() RETURNS TRIGGER AS $$ BEGIN
 INSERT INTO
   battlechainindexer_agreement.agreement_current_state (
     agreement_address,
@@ -266,7 +266,7 @@ RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_bounty_terms_updated ON battlechainindexer_agreement.bounty_terms_updated;
 
@@ -279,7 +279,7 @@ INSERT
 -- Trigger: Update state on ContactDetailsSet
 -- ============================================
 CREATE
-OR REPLACE FUNCTION update_agreement_contact_details() RETURNS TRIGGER AS $ $ BEGIN
+OR REPLACE FUNCTION update_agreement_contact_details() RETURNS TRIGGER AS $$ BEGIN
 INSERT INTO
   battlechainindexer_agreement.agreement_current_state (
     agreement_address,
@@ -304,7 +304,7 @@ RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_contact_details_set ON battlechainindexer_agreement.contact_details_set;
 
@@ -317,7 +317,7 @@ INSERT
 -- Trigger: Update state on CommitmentWindowExtended
 -- ============================================
 CREATE
-OR REPLACE FUNCTION update_agreement_commitment_window() RETURNS TRIGGER AS $ $ BEGIN
+OR REPLACE FUNCTION update_agreement_commitment_window() RETURNS TRIGGER AS $$ BEGIN
 INSERT INTO
   battlechainindexer_agreement.agreement_current_state (
     agreement_address,
@@ -342,7 +342,7 @@ RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_commitment_window_extended ON battlechainindexer_agreement.commitment_window_extended;
 
@@ -355,7 +355,7 @@ INSERT
 -- Trigger: Add address to scope
 -- ============================================
 CREATE
-OR REPLACE FUNCTION update_agreement_scope_add() RETURNS TRIGGER AS $ $ BEGIN
+OR REPLACE FUNCTION update_agreement_scope_add() RETURNS TRIGGER AS $$ BEGIN
 INSERT INTO
   battlechainindexer_agreement.agreement_current_state (
     agreement_address,
@@ -398,7 +398,7 @@ RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_scope_address_added ON battlechainindexer_agreement.battle_chain_scope_address_added;
 
@@ -411,7 +411,7 @@ INSERT
 -- Trigger: Remove address from scope
 -- ============================================
 CREATE
-OR REPLACE FUNCTION update_agreement_scope_remove() RETURNS TRIGGER AS $ $ BEGIN
+OR REPLACE FUNCTION update_agreement_scope_remove() RETURNS TRIGGER AS $$ BEGIN
 UPDATE
   battlechainindexer_agreement.agreement_current_state
 SET
@@ -432,7 +432,7 @@ RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_scope_address_removed ON battlechainindexer_agreement.battle_chain_scope_address_removed;
 
@@ -445,7 +445,7 @@ INSERT
 -- Trigger: Clear scope
 -- ============================================
 CREATE
-OR REPLACE FUNCTION update_agreement_scope_clear() RETURNS TRIGGER AS $ $ BEGIN
+OR REPLACE FUNCTION update_agreement_scope_clear() RETURNS TRIGGER AS $$ BEGIN
 UPDATE
   battlechainindexer_agreement.agreement_current_state
 SET
@@ -460,7 +460,7 @@ RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_scope_cleared ON battlechainindexer_agreement.battle_chain_scope_cleared;
 
@@ -473,7 +473,7 @@ INSERT
 -- Trigger: Update computed state on AgreementStateChanged (from AttackRegistry)
 -- ============================================
 CREATE
-OR REPLACE FUNCTION update_agreement_computed_state() RETURNS TRIGGER AS $ $ DECLARE state_name VARCHAR(20);
+OR REPLACE FUNCTION update_agreement_computed_state() RETURNS TRIGGER AS $$ DECLARE state_name VARCHAR(20);
 
 BEGIN -- Map numeric state to string
 state_name := CASE
@@ -510,7 +510,7 @@ RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_agreement_state_changed ON battlechainindexer_attack_registry.agreement_state_changed;
 
@@ -576,7 +576,7 @@ CREATE INDEX IF NOT EXISTS idx_agreement_accounts_agreement_address_lower ON bat
 -- Trigger: Insert account on AccountAdded
 -- ============================================
 CREATE
-OR REPLACE FUNCTION insert_agreement_account() RETURNS TRIGGER AS $ $ BEGIN
+OR REPLACE FUNCTION insert_agreement_account() RETURNS TRIGGER AS $$ BEGIN
 INSERT INTO
   battlechainindexer_agreement.agreement_accounts (
     agreement_address,
@@ -614,7 +614,7 @@ RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_account_added ON battlechainindexer_agreement.account_added;
 
@@ -627,7 +627,7 @@ INSERT
 -- Trigger: Remove account on AccountRemoved
 -- ============================================
 CREATE
-OR REPLACE FUNCTION remove_agreement_account() RETURNS TRIGGER AS $ $ BEGIN
+OR REPLACE FUNCTION remove_agreement_account() RETURNS TRIGGER AS $$ BEGIN
 DELETE FROM
   battlechainindexer_agreement.agreement_accounts
 WHERE
@@ -645,7 +645,7 @@ RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_account_removed ON battlechainindexer_agreement.account_removed;
 
@@ -660,7 +660,7 @@ INSERT
 -- accounts_account_address and accounts_child_contract_scope columns
 -- ============================================
 CREATE
-OR REPLACE FUNCTION upsert_chain_accounts() RETURNS TRIGGER AS $ $ BEGIN IF NEW.accounts_account_address IS NOT NULL THEN
+OR REPLACE FUNCTION upsert_chain_accounts() RETURNS TRIGGER AS $$ BEGIN IF NEW.accounts_account_address IS NOT NULL THEN
 INSERT INTO
   battlechainindexer_agreement.agreement_accounts (
     agreement_address,
@@ -700,7 +700,7 @@ RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_chain_added_or_set ON battlechainindexer_agreement.chain_added_or_set;
 
@@ -713,7 +713,7 @@ INSERT
 -- Trigger: Remove all accounts for chain on ChainRemoved
 -- ============================================
 CREATE
-OR REPLACE FUNCTION remove_chain_accounts() RETURNS TRIGGER AS $ $ BEGIN
+OR REPLACE FUNCTION remove_chain_accounts() RETURNS TRIGGER AS $$ BEGIN
 DELETE FROM
   battlechainindexer_agreement.agreement_accounts
 WHERE
@@ -730,7 +730,7 @@ RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_chain_removed ON battlechainindexer_agreement.chain_removed;
 
