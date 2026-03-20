@@ -6,8 +6,7 @@
       {
         "name": "newFactory",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -19,14 +18,12 @@
       {
         "name": "registeredContractAddress",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       },
       {
         "name": "authorizedOwner",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -38,14 +35,12 @@
       {
         "name": "agreementAddress",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       },
       {
         "name": "newState",
         "type": "uint8",
-        "indexed": false,
-        "internalType": "enum IAttackRegistry.ContractState"
+        "indexed": false
       }
     ],
     "anonymous": false
@@ -57,14 +52,12 @@
       {
         "name": "agreementAddress",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       },
       {
         "name": "newModerator",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -76,8 +69,7 @@
       {
         "name": "newDeployer",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -89,14 +81,12 @@
       {
         "name": "registeredContractAddress",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       },
       {
         "name": "agreementAddress",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -108,8 +98,7 @@
       {
         "name": "version",
         "type": "uint64",
-        "indexed": false,
-        "internalType": "uint64"
+        "indexed": false
       }
     ],
     "anonymous": false
@@ -121,14 +110,12 @@
       {
         "name": "previousOwner",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       },
       {
         "name": "newOwner",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -140,14 +127,12 @@
       {
         "name": "previousOwner",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       },
       {
         "name": "newOwner",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -159,8 +144,7 @@
       {
         "name": "newModerator",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -172,8 +156,7 @@
       {
         "name": "newRegistry",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -185,8 +168,7 @@
       {
         "name": "implementation",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
