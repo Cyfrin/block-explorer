@@ -17,7 +17,7 @@
                 :placeholder="t('safeHarbor.edit.protocolNamePlaceholder')"
               />
               <button @click="saveProtocolName" :disabled="isSaving" class="btn-inline-save">
-                <Spinner v-if="isSaving" size="xs" />
+                <Spinner v-if="isSaving" size="xs" color="white" />
                 <CheckIcon v-else class="icon" />
               </button>
               <button @click="cancelEditing" :disabled="isSaving" class="btn-inline-cancel">
@@ -1039,7 +1039,7 @@ const getChildScopeTooltip = (scope: number): string => {
   .btn-inline-edit,
   .btn-inline-save,
   .btn-inline-cancel {
-    @apply shrink-0 rounded p-1 transition-colors;
+    @apply inline-flex shrink-0 items-center justify-center rounded p-1 transition-colors;
   }
 
   .btn-inline-edit {

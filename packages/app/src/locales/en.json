@@ -903,6 +903,7 @@
       "bountyCapError": "Please enter a valid bounty cap",
       "diligencePlaceholder": "Describe diligence requirements for named rescuers...",
       "aggregateCapHelp": "Maximum total bounties across all rescues (optional)",
+      "cannotSetBothRetainableAndAggregateCap": "Cannot set both retainable and aggregate bounty cap",
       "contactNamePlaceholder": "Contact type (e.g., Email)",
       "contactValuePlaceholder": "Contact value",
       "addContact": "Add Contact",

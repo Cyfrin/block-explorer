@@ -69,11 +69,17 @@ watch(
   { deep: true }
 );
 
-// Update form when prop changes
+// Update form when prop changes (only if actually different to avoid infinite loop)
 watch(
   () => props.modelValue,
   (newVal) => {
-    form.contacts = newVal.length > 0 ? [...newVal] : [{ name: "", contact: "" }];
+    const incoming = newVal.length > 0 ? newVal : [{ name: "", contact: "" }];
+    if (
+      incoming.length !== form.contacts.length ||
+      incoming.some((c, i) => c.name !== form.contacts[i]?.name || c.contact !== form.contacts[i]?.contact)
+    ) {
+      form.contacts = [...incoming];
+    }
   },
   { deep: true }
 );

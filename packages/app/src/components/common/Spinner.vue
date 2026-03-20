@@ -10,7 +10,7 @@ defineProps({
     default: "sm",
   },
   color: {
-    type: String as PropType<"neutral" | "primary" | "dark-neutral">,
+    type: String as PropType<"neutral" | "primary" | "dark-neutral" | "white">,
     default: "neutral",
   },
   outline: {
@@ -50,6 +50,9 @@ defineProps({
   }
   &.dark-neutral {
     @apply border-transparent border-l-neutral-700;
+  }
+  &.white {
+    @apply border-white/30 border-l-white;
   }
 }
 </style>
