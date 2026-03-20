@@ -6,8 +6,7 @@
       {
         "name": "factory",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -19,14 +18,12 @@
       {
         "name": "entity",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       },
       {
         "name": "newDetails",
         "type": "address",
-        "indexed": false,
-        "internalType": "address"
+        "indexed": false
       }
     ],
     "anonymous": false
@@ -38,14 +35,12 @@
       {
         "name": "caip2ChainId",
         "type": "string",
-        "indexed": false,
-        "internalType": "string"
+        "indexed": false
       },
       {
         "name": "valid",
         "type": "bool",
-        "indexed": false,
-        "internalType": "bool"
+        "indexed": false
       }
     ],
     "anonymous": false
@@ -57,8 +52,7 @@
       {
         "name": "version",
         "type": "uint64",
-        "indexed": false,
-        "internalType": "uint64"
+        "indexed": false
       }
     ],
     "anonymous": false
@@ -70,14 +64,12 @@
       {
         "name": "previousOwner",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       },
       {
         "name": "newOwner",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -89,14 +81,12 @@
       {
         "name": "previousOwner",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       },
       {
         "name": "newOwner",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -108,8 +98,7 @@
       {
         "name": "implementation",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false

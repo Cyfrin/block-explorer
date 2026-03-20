@@ -75,11 +75,12 @@
           type="text"
           inputmode="numeric"
           class="form-input"
-          :class="{ error: errors.aggregateCapLocked }"
+          :class="{ error: errors.aggregateCapLocked || errors.retainableAndAggregateCap }"
           @input="formatAggregateCap"
         />
       </div>
-      <span v-if="errors.aggregateCapLocked" class="error-text">{{ errors.aggregateCapLocked }}</span>
+      <span v-if="errors.retainableAndAggregateCap" class="error-text">{{ errors.retainableAndAggregateCap }}</span>
+      <span v-else-if="errors.aggregateCapLocked" class="error-text">{{ errors.aggregateCapLocked }}</span>
       <span v-else class="help-text">{{ t("safeHarbor.edit.aggregateCapHelp") }}</span>
     </div>
   </div>
@@ -131,6 +132,7 @@ const errors = reactive({
   aggregateCapLocked: "",
   identityLocked: "",
   retainableLocked: "",
+  retainableAndAggregateCap: "",
 });
 
 // Identity strictness levels (higher = stricter)
@@ -190,6 +192,14 @@ watch(
       errors.bountyCapUsd = t("safeHarbor.edit.bountyCapError");
     } else {
       errors.bountyCapUsd = "";
+    }
+
+    // Validate retainable + aggregate cap mutual exclusion
+    const aggCapNum = parseInt(newForm.aggregateBountyCapUsd.replace(/,/g, ""), 10) || 0;
+    if (newForm.retainable && aggCapNum > 0) {
+      errors.retainableAndAggregateCap = t("safeHarbor.edit.cannotSetBothRetainableAndAggregateCap");
+    } else {
+      errors.retainableAndAggregateCap = "";
     }
 
     // Lock-state validations

@@ -6,24 +6,20 @@
       {
         "name": "caip2ChainId",
         "type": "string",
-        "indexed": false,
-        "internalType": "string"
+        "indexed": false
       },
       {
         "name": "account",
         "type": "tuple",
         "indexed": false,
-        "internalType": "struct Account",
         "components": [
           {
             "name": "accountAddress",
-            "type": "string",
-            "internalType": "string"
+            "type": "string"
           },
           {
             "name": "childContractScope",
-            "type": "uint8",
-            "internalType": "enum ChildContractScope"
+            "type": "uint8"
           }
         ]
       }
@@ -37,14 +33,12 @@
       {
         "name": "caip2ChainId",
         "type": "string",
-        "indexed": false,
-        "internalType": "string"
+        "indexed": false
       },
       {
         "name": "accountAddress",
         "type": "string",
-        "indexed": false,
-        "internalType": "string"
+        "indexed": false
       }
     ],
     "anonymous": false
@@ -56,8 +50,7 @@
       {
         "name": "newAgreementURI",
         "type": "string",
-        "indexed": false,
-        "internalType": "string"
+        "indexed": false
       }
     ],
     "anonymous": false
@@ -69,8 +62,7 @@
       {
         "name": "newRegistry",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -82,8 +74,7 @@
       {
         "name": "addr",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -95,8 +86,7 @@
       {
         "name": "addr",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -115,37 +105,30 @@
         "name": "newBountyTerms",
         "type": "tuple",
         "indexed": false,
-        "internalType": "struct BountyTerms",
         "components": [
           {
             "name": "bountyPercentage",
-            "type": "uint256",
-            "internalType": "uint256"
+            "type": "uint256"
           },
           {
             "name": "bountyCapUsd",
-            "type": "uint256",
-            "internalType": "uint256"
+            "type": "uint256"
           },
           {
             "name": "retainable",
-            "type": "bool",
-            "internalType": "bool"
+            "type": "bool"
           },
           {
             "name": "identity",
-            "type": "uint8",
-            "internalType": "enum IdentityRequirements"
+            "type": "uint8"
           },
           {
             "name": "diligenceRequirements",
-            "type": "string",
-            "internalType": "string"
+            "type": "string"
           },
           {
             "name": "aggregateBountyCapUsd",
-            "type": "uint256",
-            "internalType": "uint256"
+            "type": "uint256"
           }
         ]
       }
@@ -159,30 +142,25 @@
       {
         "name": "caip2ChainId",
         "type": "string",
-        "indexed": false,
-        "internalType": "string"
+        "indexed": false
       },
       {
         "name": "assetRecoveryAddress",
         "type": "string",
-        "indexed": false,
-        "internalType": "string"
+        "indexed": false
       },
       {
         "name": "accounts",
         "type": "tuple[]",
         "indexed": false,
-        "internalType": "struct Account[]",
         "components": [
           {
             "name": "accountAddress",
-            "type": "string",
-            "internalType": "string"
+            "type": "string"
           },
           {
             "name": "childContractScope",
-            "type": "uint8",
-            "internalType": "enum ChildContractScope"
+            "type": "uint8"
           }
         ]
       }
@@ -196,8 +174,7 @@
       {
         "name": "caip2ChainId",
         "type": "string",
-        "indexed": false,
-        "internalType": "string"
+        "indexed": false
       }
     ],
     "anonymous": false
@@ -209,8 +186,7 @@
       {
         "name": "newCantChangeUntil",
         "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
+        "indexed": false
       }
     ],
     "anonymous": false
@@ -223,17 +199,14 @@
         "name": "newContactDetails",
         "type": "tuple[]",
         "indexed": false,
-        "internalType": "struct Contact[]",
         "components": [
           {
             "name": "name",
-            "type": "string",
-            "internalType": "string"
+            "type": "string"
           },
           {
             "name": "contact",
-            "type": "string",
-            "internalType": "string"
+            "type": "string"
           }
         ]
       }
@@ -247,14 +220,12 @@
       {
         "name": "previousOwner",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       },
       {
         "name": "newOwner",
         "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "indexed": true
       }
     ],
     "anonymous": false
@@ -266,8 +237,7 @@
       {
         "name": "newName",
         "type": "string",
-        "indexed": false,
-        "internalType": "string"
+        "indexed": false
       }
     ],
     "anonymous": false

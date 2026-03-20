@@ -17,7 +17,7 @@
                 :placeholder="t('safeHarbor.edit.protocolNamePlaceholder')"
               />
               <button @click="saveProtocolName" :disabled="isSaving" class="btn-inline-save">
-                <Spinner v-if="isSaving" size="xs" />
+                <Spinner v-if="isSaving" size="xs" color="white" />
                 <CheckIcon v-else class="icon" />
               </button>
               <button @click="cancelEditing" :disabled="isSaving" class="btn-inline-cancel">
@@ -275,7 +275,7 @@
         <template #edit-form>
           <CoveredContractsForm
             v-model="editForms.coveredContracts"
-            :existing-contracts="agreement.coveredContracts || []"
+            :existing-contracts="coveredAccountsWithScope"
             :is-locked="isTermsLocked"
           />
         </template>
@@ -700,7 +700,8 @@ const saveBountyTerms = async () => {
 };
 
 const saveContacts = async () => {
-  const success = await setContactDetails(editForms.contacts);
+  const filteredContacts = editForms.contacts.filter((c) => c.name.trim() || c.contact.trim());
+  const success = await setContactDetails(filteredContacts.length > 0 ? filteredContacts : editForms.contacts);
   if (success) {
     emit("agreementUpdated");
   }
@@ -714,7 +715,7 @@ const saveCoveredContracts = async () => {
     success = await removeAccounts(editForms.coveredContracts.toRemove);
   }
 
-  // Then add new contracts
+  // Then add new contracts with their child scope settings
   if (success && editForms.coveredContracts.toAdd.length > 0) {
     success = await addAccounts(editForms.coveredContracts.toAdd);
   }
@@ -1039,7 +1040,7 @@ const getChildScopeTooltip = (scope: number): string => {
   .btn-inline-edit,
   .btn-inline-save,
   .btn-inline-cancel {
-    @apply shrink-0 rounded p-1 transition-colors;
+    @apply inline-flex shrink-0 items-center justify-center rounded p-1 transition-colors;
   }
 
   .btn-inline-edit {

@@ -6,7 +6,7 @@
         <slot name="header-actions" />
         <template v-if="isEditing">
           <button @click="$emit('save')" :disabled="isSaving || !canSave" class="btn-save">
-            <Spinner v-if="isSaving" size="xs" class="spinner" />
+            <Spinner v-if="isSaving" size="xs" color="white" class="spinner" />
             {{ isSaving ? t("common.saving") : t("common.save") }}
           </button>
           <button @click="$emit('cancel')" :disabled="isSaving" class="btn-cancel">

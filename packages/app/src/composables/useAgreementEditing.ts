@@ -63,6 +63,8 @@ export default function useAgreementEditing(agreementAddress: Ref<string>, conte
   const saveError = ref<string | null>(null);
   const lastTxHash = ref<string | null>(null);
 
+  const caip2ChainId = computed(() => `eip155:${context.currentNetwork.value.l2ChainId}`);
+
   const isWalletConnected = computed(() => !!walletAddress.value);
 
   const startEditing = (section: EditSection) => {
@@ -243,7 +245,7 @@ export default function useAgreementEditing(agreementAddress: Ref<string>, conte
     }
   };
 
-  const addAccounts = async (accounts: string[]): Promise<boolean> => {
+  const addAccounts = async (accounts: { accountAddress: string; childContractScope: number }[]): Promise<boolean> => {
     try {
       isSaving.value = true;
       saveError.value = null;
@@ -251,7 +253,7 @@ export default function useAgreementEditing(agreementAddress: Ref<string>, conte
       const contract = await getContract();
       const signer = await getL2Signer();
 
-      const tx = await contract.addAccounts(accounts, {
+      const tx = await contract.addAccounts(caip2ChainId.value, accounts, {
         from: await signer.getAddress(),
         type: 0,
       });
@@ -281,7 +283,7 @@ export default function useAgreementEditing(agreementAddress: Ref<string>, conte
       const contract = await getContract();
       const signer = await getL2Signer();
 
-      const tx = await contract.removeAccounts(accounts, {
+      const tx = await contract.removeAccounts(caip2ChainId.value, accounts, {
         from: await signer.getAddress(),
         type: 0,
       });
