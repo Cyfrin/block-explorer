@@ -164,8 +164,23 @@ watch(
 watch(
   () => props.modelValue,
   (newVal) => {
-    form.toAdd = newVal.toAdd.map((a) => ({ ...a }));
-    form.toRemove = [...newVal.toRemove];
+    // Guard against infinite loop: only update if values actually differ
+    const toAddChanged =
+      newVal.toAdd.length !== form.toAdd.length ||
+      newVal.toAdd.some(
+        (a, i) =>
+          a.accountAddress !== form.toAdd[i]?.accountAddress ||
+          a.childContractScope !== form.toAdd[i]?.childContractScope
+      );
+    const toRemoveChanged =
+      newVal.toRemove.length !== form.toRemove.length || newVal.toRemove.some((addr, i) => addr !== form.toRemove[i]);
+
+    if (toAddChanged) {
+      form.toAdd = newVal.toAdd.map((a) => ({ ...a }));
+    }
+    if (toRemoveChanged) {
+      form.toRemove = [...newVal.toRemove];
+    }
   },
   { deep: true }
 );
