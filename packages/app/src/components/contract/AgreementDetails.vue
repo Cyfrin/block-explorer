@@ -700,7 +700,8 @@ const saveBountyTerms = async () => {
 };
 
 const saveContacts = async () => {
-  const success = await setContactDetails(editForms.contacts);
+  const filteredContacts = editForms.contacts.filter((c) => c.name.trim() || c.contact.trim());
+  const success = await setContactDetails(filteredContacts.length > 0 ? filteredContacts : editForms.contacts);
   if (success) {
     emit("agreementUpdated");
   }

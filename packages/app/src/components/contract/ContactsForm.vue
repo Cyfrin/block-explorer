@@ -58,13 +58,12 @@ const form = reactive({
   contacts: props.modelValue.length > 0 ? [...props.modelValue] : [{ name: "", contact: "" }],
 });
 
-// Emit on change
+// Emit on change (don't filter empty rows — they're needed for the UI.
+// Empty contacts should be filtered at save time, not during editing.)
 watch(
   () => form.contacts,
   (newContacts) => {
-    // Filter out completely empty contacts before emitting
-    const validContacts = newContacts.filter((c) => c.name.trim() || c.contact.trim());
-    emit("update:modelValue", validContacts.length > 0 ? validContacts : newContacts);
+    emit("update:modelValue", [...newContacts]);
   },
   { deep: true }
 );
