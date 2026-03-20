@@ -275,7 +275,7 @@
         <template #edit-form>
           <CoveredContractsForm
             v-model="editForms.coveredContracts"
-            :existing-contracts="agreement.coveredContracts || []"
+            :existing-contracts="coveredAccountsWithScope"
             :is-locked="isTermsLocked"
           />
         </template>

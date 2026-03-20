@@ -147,9 +147,9 @@ ContactsEditing.args = { isEditing: true };
 // --- Covered Contracts in EditableSection ---
 
 const sampleContracts = [
-  "0xabcdef1234567890abcdef1234567890abcdef12",
-  "0x1111111111111111111111111111111111111111",
-  "0x2222222222222222222222222222222222222222",
+  { accountAddress: "0xabcdef1234567890abcdef1234567890abcdef12", childContractScope: 0 },
+  { accountAddress: "0x1111111111111111111111111111111111111111", childContractScope: 1 },
+  { accountAddress: "0x2222222222222222222222222222222222222222", childContractScope: 2 },
 ];
 
 const CoveredContractsTemplate = (args: { isEditing: boolean; isLocked: boolean }) => ({
@@ -195,8 +195,8 @@ const CoveredContractsTemplate = (args: { isEditing: boolean; isLocked: boolean 
       >
         <template #default>
           <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-            <code v-for="addr in existingContracts" :key="addr" style="font-size: 12px; padding: 2px 8px; background: #f0f0f0; border-radius: 4px;">
-              {{ addr.slice(0, 6) }}...{{ addr.slice(-4) }}
+            <code v-for="account in existingContracts" :key="account.accountAddress" style="font-size: 12px; padding: 2px 8px; background: #f0f0f0; border-radius: 4px;">
+              {{ account.accountAddress.slice(0, 6) }}...{{ account.accountAddress.slice(-4) }}
             </code>
           </div>
         </template>

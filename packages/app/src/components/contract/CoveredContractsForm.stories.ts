@@ -3,13 +3,18 @@ import { ref } from "vue";
 import CoveredContractsForm from "./CoveredContractsForm.vue";
 
 import type { CoveredContractsChange } from "./CoveredContractsForm.vue";
+import type { CoveredAccount } from "@/types";
 
 export default {
   title: "Contract/CoveredContractsForm",
   component: CoveredContractsForm,
 };
 
-const Template = (args: { existingContracts: string[]; modelValue: CoveredContractsChange; isLocked: boolean }) => ({
+const Template = (args: {
+  existingContracts: CoveredAccount[];
+  modelValue: CoveredContractsChange;
+  isLocked: boolean;
+}) => ({
   components: { CoveredContractsForm },
   setup() {
     const model = ref({ ...args.modelValue });
@@ -32,10 +37,10 @@ const Template = (args: { existingContracts: string[]; modelValue: CoveredContra
   `,
 });
 
-const sampleContracts = [
-  "0xabcdef1234567890abcdef1234567890abcdef12",
-  "0x1111111111111111111111111111111111111111",
-  "0x2222222222222222222222222222222222222222",
+const sampleContracts: CoveredAccount[] = [
+  { accountAddress: "0xabcdef1234567890abcdef1234567890abcdef12", childContractScope: 0 },
+  { accountAddress: "0x1111111111111111111111111111111111111111", childContractScope: 1 },
+  { accountAddress: "0x2222222222222222222222222222222222222222", childContractScope: 2 },
 ];
 
 // Default state with existing contracts
@@ -82,7 +87,7 @@ WithRemovals.args = {
   existingContracts: sampleContracts,
   modelValue: {
     toAdd: [],
-    toRemove: [sampleContracts[1]],
+    toRemove: [sampleContracts[1].accountAddress],
   },
   isLocked: false,
 };
@@ -93,7 +98,7 @@ MixedState.args = {
   existingContracts: sampleContracts,
   modelValue: {
     toAdd: [{ accountAddress: "0x5555555555555555555555555555555555555555", childContractScope: 1 }],
-    toRemove: [sampleContracts[0]],
+    toRemove: [sampleContracts[0].accountAddress],
   },
   isLocked: false,
 };

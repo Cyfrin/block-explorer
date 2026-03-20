@@ -8,17 +8,18 @@
       </div>
       <div class="contracts-list">
         <div
-          v-for="address in form.existingContracts"
-          :key="address"
-          class="contract-chip"
-          :class="{ 'to-remove': form.toRemove.includes(address) }"
+          v-for="account in form.existingContracts"
+          :key="account.accountAddress"
+          class="contract-row existing"
+          :class="{ 'to-remove': form.toRemove.includes(account.accountAddress) }"
         >
-          <span class="address">{{ shortValue(address) }}</span>
+          <span class="address">{{ shortValue(account.accountAddress) }}</span>
+          <span class="scope-badge">{{ scopeLabel(account.childContractScope) }}</span>
           <!-- Hide remove/undo buttons when locked -->
           <template v-if="!isLocked">
             <button
-              v-if="!form.toRemove.includes(address)"
-              @click="markForRemoval(address)"
+              v-if="!form.toRemove.includes(account.accountAddress)"
+              @click="markForRemoval(account.accountAddress)"
               class="btn-chip-action remove"
               :title="t('safeHarbor.edit.markForRemoval')"
             >
@@ -26,7 +27,7 @@
             </button>
             <button
               v-else
-              @click="unmarkForRemoval(address)"
+              @click="unmarkForRemoval(account.accountAddress)"
               class="btn-chip-action undo"
               :title="t('safeHarbor.edit.undoRemoval')"
             >
@@ -89,7 +90,7 @@ import { useI18n } from "vue-i18n";
 
 import { PlusIcon, RefreshIcon, XIcon } from "@heroicons/vue/solid";
 
-import type { Address } from "@/types";
+import type { Address, CoveredAccount } from "@/types";
 import type { PropType } from "vue";
 
 import { shortValue } from "@/utils/formatters";
@@ -106,7 +107,7 @@ export interface CoveredContractsChange {
 
 const props = defineProps({
   existingContracts: {
-    type: Array as PropType<Address[]>,
+    type: Array as PropType<CoveredAccount[]>,
     default: () => [],
   },
   modelValue: {
@@ -126,7 +127,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const form = reactive({
-  existingContracts: [...props.existingContracts],
+  existingContracts: props.existingContracts.map((a) => ({ ...a })) as CoveredAccount[],
   toAdd: [...props.modelValue.toAdd] as AccountToAdd[],
   toRemove: [...props.modelValue.toRemove],
 });
@@ -134,6 +135,16 @@ const form = reactive({
 const newAddress = ref("");
 const newChildScope = ref(0);
 const addressError = ref("");
+
+const scopeLabel = (scope: number): string => {
+  const labels: Record<number, string> = {
+    0: t("safeHarbor.createAgreement.scopeNone"),
+    1: t("safeHarbor.createAgreement.scopeExisting"),
+    2: t("safeHarbor.createAgreement.scopeAll"),
+    3: t("safeHarbor.createAgreement.scopeFuture"),
+  };
+  return labels[scope] ?? labels[0];
+};
 
 const isValidAddress = computed(() => {
   const addr = newAddress.value.trim();
@@ -156,7 +167,7 @@ watch(
 watch(
   () => props.existingContracts,
   (newVal) => {
-    form.existingContracts = [...newVal];
+    form.existingContracts = newVal.map((a) => ({ ...a }));
   },
   { deep: true }
 );
@@ -197,7 +208,10 @@ const addContract = () => {
   }
 
   // Check if already exists
-  if (form.existingContracts.includes(addr) || form.toAdd.some((a) => a.accountAddress === addr)) {
+  if (
+    form.existingContracts.some((a) => a.accountAddress === addr) ||
+    form.toAdd.some((a) => a.accountAddress === addr)
+  ) {
     addressError.value = t("safeHarbor.edit.addressAlreadyExists");
     return;
   }
@@ -245,13 +259,21 @@ const unmarkForRemoval = (address: Address) => {
 }
 
 .contracts-list {
-  @apply flex flex-wrap gap-2;
+  @apply flex flex-col gap-1;
 }
 
-.contract-chip {
-  @apply flex items-center gap-1 rounded-md px-2 py-1 text-sm;
-  background-color: var(--bg-tertiary);
-  color: var(--text-secondary);
+.contract-row {
+  @apply flex items-center gap-2 rounded-md px-2 py-1.5;
+
+  &.existing {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+  }
+
+  &.new {
+    background-color: var(--success-muted);
+    color: var(--success-text);
+  }
 
   &.to-remove {
     @apply line-through opacity-50;
@@ -259,21 +281,14 @@ const unmarkForRemoval = (address: Address) => {
   }
 
   .address {
-    @apply font-mono text-xs;
+    @apply flex-1 font-mono text-xs;
   }
 }
 
-.contract-row {
-  @apply flex items-center gap-2 rounded-md px-2 py-1.5;
-
-  &.new {
-    background-color: var(--success-muted);
-    color: var(--success-text);
-  }
-
-  .address {
-    @apply flex-1 font-mono text-xs;
-  }
+.scope-badge {
+  @apply rounded px-1.5 py-0.5 text-[10px] font-medium;
+  background-color: var(--bg-primary);
+  color: var(--text-muted);
 }
 
 .btn-chip-action {
@@ -331,7 +346,7 @@ const unmarkForRemoval = (address: Address) => {
 }
 
 .scope-select {
-  @apply cursor-pointer rounded-md border px-2 py-2 text-xs;
+  @apply cursor-pointer rounded-md border px-3 py-2 text-xs;
   border-color: var(--border-default);
   background-color: var(--bg-primary);
   color: var(--text-primary);
@@ -344,7 +359,7 @@ const unmarkForRemoval = (address: Address) => {
 }
 
 .scope-select-sm {
-  @apply py-1;
+  @apply px-2 py-1;
 }
 
 .btn-add {
