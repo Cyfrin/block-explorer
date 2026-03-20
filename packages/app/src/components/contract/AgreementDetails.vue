@@ -715,7 +715,7 @@ const saveCoveredContracts = async () => {
     success = await removeAccounts(editForms.coveredContracts.toRemove);
   }
 
-  // Then add new contracts
+  // Then add new contracts with their child scope settings
   if (success && editForms.coveredContracts.toAdd.length > 0) {
     success = await addAccounts(editForms.coveredContracts.toAdd);
   }

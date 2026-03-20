@@ -52,6 +52,12 @@
           :placeholder="t('safeHarbor.edit.addressPlaceholder')"
           @keyup.enter="addContract"
         />
+        <select v-model.number="newChildScope" class="scope-select">
+          <option :value="0">{{ t("safeHarbor.createAgreement.scopeNone") }}</option>
+          <option :value="1">{{ t("safeHarbor.createAgreement.scopeExisting") }}</option>
+          <option :value="2">{{ t("safeHarbor.createAgreement.scopeAll") }}</option>
+          <option :value="3">{{ t("safeHarbor.createAgreement.scopeFuture") }}</option>
+        </select>
         <button @click="addContract" class="btn-add" :disabled="!isValidAddress">
           <PlusIcon class="icon" />
         </button>
@@ -60,8 +66,14 @@
 
       <!-- Pending additions -->
       <div v-if="form.toAdd.length > 0" class="pending-additions">
-        <div v-for="(address, index) in form.toAdd" :key="address" class="contract-chip new">
-          <span class="address">{{ shortValue(address) }}</span>
+        <div v-for="(account, index) in form.toAdd" :key="account.accountAddress" class="contract-row new">
+          <span class="address">{{ shortValue(account.accountAddress) }}</span>
+          <select v-model.number="account.childContractScope" class="scope-select scope-select-sm">
+            <option :value="0">{{ t("safeHarbor.createAgreement.scopeNone") }}</option>
+            <option :value="1">{{ t("safeHarbor.createAgreement.scopeExisting") }}</option>
+            <option :value="2">{{ t("safeHarbor.createAgreement.scopeAll") }}</option>
+            <option :value="3">{{ t("safeHarbor.createAgreement.scopeFuture") }}</option>
+          </select>
           <button @click="removeFromPending(index)" class="btn-chip-action remove" :title="t('common.remove')">
             <XIcon class="icon" />
           </button>
@@ -82,8 +94,13 @@ import type { PropType } from "vue";
 
 import { shortValue } from "@/utils/formatters";
 
+export interface AccountToAdd {
+  accountAddress: string;
+  childContractScope: number;
+}
+
 export interface CoveredContractsChange {
-  toAdd: Address[];
+  toAdd: AccountToAdd[];
   toRemove: Address[];
 }
 
@@ -110,11 +127,12 @@ const { t } = useI18n();
 
 const form = reactive({
   existingContracts: [...props.existingContracts],
-  toAdd: [...props.modelValue.toAdd],
+  toAdd: [...props.modelValue.toAdd] as AccountToAdd[],
   toRemove: [...props.modelValue.toRemove],
 });
 
 const newAddress = ref("");
+const newChildScope = ref(0);
 const addressError = ref("");
 
 const isValidAddress = computed(() => {
@@ -126,7 +144,10 @@ const isValidAddress = computed(() => {
 watch(
   () => ({ toAdd: form.toAdd, toRemove: form.toRemove }),
   (newVal) => {
-    emit("update:modelValue", { toAdd: [...newVal.toAdd], toRemove: [...newVal.toRemove] });
+    emit("update:modelValue", {
+      toAdd: newVal.toAdd.map((a) => ({ ...a })),
+      toRemove: [...newVal.toRemove],
+    });
   },
   { deep: true }
 );
@@ -143,7 +164,7 @@ watch(
 watch(
   () => props.modelValue,
   (newVal) => {
-    form.toAdd = [...newVal.toAdd];
+    form.toAdd = newVal.toAdd.map((a) => ({ ...a }));
     form.toRemove = [...newVal.toRemove];
   },
   { deep: true }
@@ -161,13 +182,14 @@ const addContract = () => {
   }
 
   // Check if already exists
-  if (form.existingContracts.includes(addr) || form.toAdd.includes(addr)) {
+  if (form.existingContracts.includes(addr) || form.toAdd.some((a) => a.accountAddress === addr)) {
     addressError.value = t("safeHarbor.edit.addressAlreadyExists");
     return;
   }
 
-  form.toAdd.push(addr);
+  form.toAdd.push({ accountAddress: addr, childContractScope: newChildScope.value });
   newAddress.value = "";
+  newChildScope.value = 0;
 };
 
 const removeFromPending = (index: number) => {
@@ -221,13 +243,21 @@ const unmarkForRemoval = (address: Address) => {
     background-color: var(--error-muted);
   }
 
+  .address {
+    @apply font-mono text-xs;
+  }
+}
+
+.contract-row {
+  @apply flex items-center gap-2 rounded-md px-2 py-1.5;
+
   &.new {
     background-color: var(--success-muted);
     color: var(--success-text);
   }
 
   .address {
-    @apply font-mono text-xs;
+    @apply flex-1 font-mono text-xs;
   }
 }
 
@@ -285,6 +315,23 @@ const unmarkForRemoval = (address: Address) => {
   }
 }
 
+.scope-select {
+  @apply cursor-pointer rounded-md border px-2 py-2 text-xs;
+  border-color: var(--border-default);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+
+  &:focus {
+    @apply outline-none ring-2;
+    ring-color: var(--accent);
+    border-color: var(--accent);
+  }
+}
+
+.scope-select-sm {
+  @apply py-1;
+}
+
 .btn-add {
   @apply flex-shrink-0 rounded-md px-3 py-2 transition-colors;
   background-color: var(--accent);
@@ -309,6 +356,6 @@ const unmarkForRemoval = (address: Address) => {
 }
 
 .pending-additions {
-  @apply mt-2 flex flex-wrap gap-2;
+  @apply mt-2 space-y-1;
 }
 </style>
