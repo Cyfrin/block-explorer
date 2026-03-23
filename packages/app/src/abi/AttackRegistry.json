@@ -135,6 +135,32 @@
   },
   {
     "type": "function",
+    "name": "claimBond",
+    "inputs": [
+      {
+        "name": "agreementAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "finalizeState",
+    "inputs": [
+      {
+        "name": "agreementAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "getAgreementFactory",
     "inputs": [],
     "outputs": [
@@ -298,6 +324,75 @@
   },
   {
     "type": "function",
+    "name": "getBondDeposit",
+    "inputs": [
+      {
+        "name": "agreementAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IAttackRegistry.BondDeposit",
+        "components": [
+          {
+            "name": "depositor",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "token",
+            "type": "address",
+            "internalType": "contract IERC20"
+          },
+          {
+            "name": "feeAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "bondAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "bondClaimable",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "claimed",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "slashed",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getBondToken",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getContractDeployer",
     "inputs": [
       {
@@ -317,6 +412,19 @@
   },
   {
     "type": "function",
+    "name": "getFeeAmount",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getRegistryModerator",
     "inputs": [],
     "outputs": [
@@ -330,6 +438,25 @@
   },
   {
     "type": "function",
+    "name": "getReservedByToken",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getSafeHarborRegistry",
     "inputs": [],
     "outputs": [
@@ -337,6 +464,45 @@
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTreasury",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getUnverifiedBondAmount",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVerifiedBondAmount",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -375,6 +541,29 @@
       },
       {
         "name": "_agreementFactory",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_battleChainDeployer",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_treasury",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "instantCorrupt",
+    "inputs": [
+      {
+        "name": "agreementAddress",
         "type": "address",
         "internalType": "address"
       }
@@ -481,6 +670,19 @@
   },
   {
     "type": "function",
+    "name": "registerContractForExistingAgreement",
+    "inputs": [
+      {
+        "name": "contractAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "registerDeployment",
     "inputs": [
       {
@@ -505,6 +707,11 @@
         "name": "agreementAddress",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "slashBond",
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
     "outputs": [],
@@ -515,7 +722,7 @@
     "name": "renounceOwnership",
     "inputs": [],
     "outputs": [],
-    "stateMutability": "nonpayable"
+    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -533,6 +740,19 @@
   {
     "type": "function",
     "name": "requestUnderAttackByNonAuthorized",
+    "inputs": [
+      {
+        "name": "agreementAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "requestUnderAttackForUnverifiedContracts",
     "inputs": [
       {
         "name": "agreementAddress",
@@ -571,10 +791,88 @@
   },
   {
     "type": "function",
+    "name": "setBondToken",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setFeeAmount",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "setSafeHarborRegistry",
     "inputs": [
       {
         "name": "newRegistry",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setTreasury",
+    "inputs": [
+      {
+        "name": "treasury",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setUnverifiedBondAmount",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setVerifiedBondAmount",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "syncNewContracts",
+    "inputs": [
+      {
+        "name": "agreementAddress",
         "type": "address",
         "internalType": "address"
       }
@@ -615,6 +913,19 @@
   },
   {
     "type": "function",
+    "name": "unregisterContractForExistingAgreement",
+    "inputs": [
+      {
+        "name": "contractAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "upgradeToAndCall",
     "inputs": [
       {
@@ -643,6 +954,30 @@
       }
     ],
     "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "withdrawFunds",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "recipient",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "event",
@@ -729,6 +1064,132 @@
   },
   {
     "type": "event",
+    "name": "BondClaimable",
+    "inputs": [
+      {
+        "name": "agreement",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BondClaimed",
+    "inputs": [
+      {
+        "name": "agreement",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "depositor",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BondDeposited",
+    "inputs": [
+      {
+        "name": "agreement",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "depositor",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BondForfeited",
+    "inputs": [
+      {
+        "name": "agreement",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "depositor",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BondSlashed",
+    "inputs": [
+      {
+        "name": "agreement",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BondTokenChanged",
+    "inputs": [
+      {
+        "name": "newToken",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "ContractRegistered",
     "inputs": [
       {
@@ -742,6 +1203,107 @@
         "type": "address",
         "indexed": true,
         "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ContractUnregistered",
+    "inputs": [
+      {
+        "name": "contractAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "agreementAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ContractsSynced",
+    "inputs": [
+      {
+        "name": "agreementAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newContractCount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "FeeAmountChanged",
+    "inputs": [
+      {
+        "name": "newAmount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "FeeCollected",
+    "inputs": [
+      {
+        "name": "agreement",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "payer",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "FundsWithdrawn",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "recipient",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -825,6 +1387,51 @@
   },
   {
     "type": "event",
+    "name": "TreasuryChanged",
+    "inputs": [
+      {
+        "name": "newTreasury",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "UnverifiedBondAmountChanged",
+    "inputs": [
+      {
+        "name": "newAmount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "UnverifiedContractSynced",
+    "inputs": [
+      {
+        "name": "contractAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "agreementAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Upgraded",
     "inputs": [
       {
@@ -832,6 +1439,19 @@
         "type": "address",
         "indexed": true,
         "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "VerifiedBondAmountChanged",
+    "inputs": [
+      {
+        "name": "newAmount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -849,6 +1469,17 @@
   },
   {
     "type": "error",
+    "name": "AttackRegistry__AgreementNotRegistered",
+    "inputs": [
+      {
+        "name": "agreementAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "AttackRegistry__AgreementOwnerNotAuthorized",
     "inputs": [
       {
@@ -858,6 +1489,44 @@
       },
       {
         "name": "agreementOwner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "AttackRegistry__ContractAlreadyLinked",
+    "inputs": [
+      {
+        "name": "contractAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "existingAgreement",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "AttackRegistry__ContractAlreadyRegistered",
+    "inputs": [
+      {
+        "name": "contractAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "AttackRegistry__DeployedViaBattleChainDeployer",
+    "inputs": [
+      {
+        "name": "contractAddress",
         "type": "address",
         "internalType": "address"
       }
@@ -908,6 +1577,17 @@
   },
   {
     "type": "error",
+    "name": "AttackRegistry__NoNewContracts",
+    "inputs": [
+      {
+        "name": "agreementAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "AttackRegistry__NotAgreementOwner",
     "inputs": [
       {
@@ -935,6 +1615,11 @@
   },
   {
     "type": "error",
+    "name": "AttackRegistry__RenounceDisabled",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "AttackRegistry__Unauthorized",
     "inputs": [
       {
@@ -947,6 +1632,76 @@
   {
     "type": "error",
     "name": "AttackRegistry__ZeroAddress",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BondManager__BondAlreadyClaimed",
+    "inputs": [
+      {
+        "name": "agreement",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "BondManager__BondAlreadySlashed",
+    "inputs": [
+      {
+        "name": "agreement",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "BondManager__BondNotYetClaimable",
+    "inputs": [
+      {
+        "name": "agreement",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "BondManager__NoBondDeposit",
+    "inputs": [
+      {
+        "name": "agreement",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "BondManager__NotBondDepositor",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "depositor",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "BondManager__TreasuryNotSet",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BondManager__ZeroAddress",
     "inputs": []
   },
   {
@@ -997,6 +1752,17 @@
     "inputs": [
       {
         "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "SafeERC20FailedOperation",
+    "inputs": [
+      {
+        "name": "token",
         "type": "address",
         "internalType": "address"
       }
