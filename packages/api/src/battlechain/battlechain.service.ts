@@ -1135,14 +1135,21 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
    */
   async getAuthorizedOwner(contractAddress: string): Promise<string | null> {
     const normalizedAddress = contractAddress.toLowerCase();
+    this.logger.log(`getAuthorizedOwner called for: ${normalizedAddress}`);
 
-    // Get the most recent AgreementOwnerAuthorized event for this contract
-    const authorization = await this.agreementOwnerAuthorizedRepository.findOne({
-      where: { contractAddress: normalizedAddress },
-      order: { blockNumber: "DESC", rindexerId: "DESC" },
-    });
+    try {
+      // Get the most recent AgreementOwnerAuthorized event for this contract
+      const authorization = await this.agreementOwnerAuthorizedRepository.findOne({
+        where: { contractAddress: normalizedAddress },
+        order: { blockNumber: "DESC", rindexerId: "DESC" },
+      });
 
-    return authorization?.authorizedOwner ?? null;
+      this.logger.log(`getAuthorizedOwner result: ${JSON.stringify(authorization)}`);
+      return authorization?.authorizedOwner ?? null;
+    } catch (error) {
+      this.logger.error(`getAuthorizedOwner error: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   /**
