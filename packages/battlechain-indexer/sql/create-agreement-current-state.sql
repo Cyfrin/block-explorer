@@ -656,38 +656,44 @@ INSERT
 
 -- ============================================
 -- Trigger: Insert/update accounts from ChainAddedOrSet
--- rindexer flattens tuple[] into one row per account with
--- accounts_account_address and accounts_child_contract_scope columns
+-- rindexer stores tuple[] as JSONB "accounts" column containing
+-- array of {account_address, child_contract_scope} objects
 -- ============================================
 CREATE
-OR REPLACE FUNCTION upsert_chain_accounts() RETURNS TRIGGER AS $$ BEGIN IF NEW.accounts_account_address IS NOT NULL THEN
-INSERT INTO
-  battlechainindexer_agreement.agreement_accounts (
-    agreement_address,
-    caip2_chain_id,
-    account_address,
-    child_contract_scope,
-    created_at,
-    updated_at
-  )
-VALUES
-  (
-    NEW.contract_address,
-    NEW.caip_2_chain_id,
-    NEW.accounts_account_address,
-    NEW.accounts_child_contract_scope,
-    NEW.block_timestamp,
-    NEW.block_timestamp
-  ) ON CONFLICT (
-    agreement_address,
-    caip2_chain_id,
-    account_address
-  ) DO
-UPDATE
-SET
-  child_contract_scope = EXCLUDED.child_contract_scope,
-  updated_at = NOW();
-
+OR REPLACE FUNCTION upsert_chain_accounts() RETURNS TRIGGER AS $$
+DECLARE
+  acct JSONB;
+BEGIN
+IF NEW.accounts IS NOT NULL AND jsonb_typeof(NEW.accounts) = 'array' THEN
+  FOR acct IN SELECT * FROM jsonb_array_elements(NEW.accounts)
+  LOOP
+    INSERT INTO
+      battlechainindexer_agreement.agreement_accounts (
+        agreement_address,
+        caip2_chain_id,
+        account_address,
+        child_contract_scope,
+        created_at,
+        updated_at
+      )
+    VALUES
+      (
+        NEW.contract_address,
+        NEW.caip_2_chain_id,
+        acct->>'account_address',
+        COALESCE((acct->>'child_contract_scope')::SMALLINT, 0),
+        NEW.block_timestamp,
+        NEW.block_timestamp
+      ) ON CONFLICT (
+        agreement_address,
+        caip2_chain_id,
+        account_address
+      ) DO
+    UPDATE
+    SET
+      child_contract_scope = EXCLUDED.child_contract_scope,
+      updated_at = NOW();
+  END LOOP;
 END IF;
 
 -- Enqueue child contract reindex for this agreement
@@ -766,7 +772,7 @@ FROM
     account_address
   ) DO NOTHING;
 
--- Backfill from chain_added_or_set events (rindexer flattens tuple[] into rows)
+-- Backfill from chain_added_or_set events (rindexer stores tuple[] as JSONB)
 INSERT INTO
   battlechainindexer_agreement.agreement_accounts (
     agreement_address,
@@ -777,16 +783,19 @@ INSERT INTO
     updated_at
   )
 SELECT
-  contract_address,
-  caip_2_chain_id,
-  accounts_account_address,
-  accounts_child_contract_scope,
-  block_timestamp,
-  block_timestamp
+  c.contract_address,
+  c.caip_2_chain_id,
+  acct->>'account_address',
+  COALESCE((acct->>'child_contract_scope')::SMALLINT, 0),
+  c.block_timestamp,
+  c.block_timestamp
 FROM
-  battlechainindexer_agreement.chain_added_or_set
+  battlechainindexer_agreement.chain_added_or_set c,
+  jsonb_array_elements(c.accounts) AS acct
 WHERE
-  accounts_account_address IS NOT NULL ON CONFLICT (
+  c.accounts IS NOT NULL
+  AND jsonb_typeof(c.accounts) = 'array'
+  AND acct->>'account_address' IS NOT NULL ON CONFLICT (
     agreement_address,
     caip2_chain_id,
     account_address
