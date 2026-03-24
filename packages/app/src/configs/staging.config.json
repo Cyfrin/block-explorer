@@ -22,9 +22,9 @@
       "published": true,
       "rpcUrl": "https://testnet.battlechain.com:3051",
       "baseTokenAddress": "0x000000000000000000000000000000000000800a",
-      "attackRegistryAddress": "0x9E62988ccA776ff6613Fa68D34c9AB5431Ce57e1",
-      "agreementFactoryAddress": "0x0EbBEeB3aBeF51801a53Fdd1fb263Ac0f2E3Ed36",
-      "safeHarborRegistryAddress": "0xCb2A561395118895e2572A04C2D8AB8eCA8d7E5D",
+      "attackRegistryAddress": "0xdD029a6374095EEb4c47a2364Ce1D0f47f007350",
+      "agreementFactoryAddress": "0x0CD420d2C8201eFF1f0f4813DbaC2842de0e4B00",
+      "safeHarborRegistryAddress": "0x0Bf1A89976741678C94725E28b7A8F9E3cDdebBd",
       "excludedFromBattlechain": [
         "0x0000000000000000000000000000000000008001",
         "0x0000000000000000000000000000000000008002",
@@ -50,7 +50,8 @@
         "0x0000000000000000000000000000000000010003",
         "0x0000000000000000000000000000000000010004",
         "0x0000000000000000000000000000000000010005"
-      ]
+      ],
+      "defaultAgreementURI": "ipfs://bafkreifgln3ir67woluatpwn3b65gjkrbmoq6jgzzotm3anas3vvq4yp4m"
     }
   ]
 }
