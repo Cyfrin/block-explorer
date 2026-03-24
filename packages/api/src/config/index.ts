@@ -169,7 +169,7 @@ export default () => {
         ...(dbOptions.ssl && { ssl: dbOptions.ssl }),
       },
       synchronize: NODE_ENV === "test",
-      logging: process.env.TYPEORM_LOGGING === "true" ? "all" : false,
+      logging: false,
       autoLoadEntities: true,
       retryAttempts: 10,
       retryDelay: 3000,

@@ -516,6 +516,26 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       .getMany();
 
     if (agreements.length === 0) {
+      // No agreement covers this contract yet, but it may still be registered
+      // in the AttackRegistry (deployed via BattleChainDeployer without entering attack mode).
+      // Check the AgreementOwnerAuthorized event as proof of registration.
+      const authorization = await this.agreementOwnerAuthorizedRepository.findOne({
+        where: { contractAddress: normalizedContractAddress },
+        order: { blockNumber: "DESC", rindexerId: "DESC" },
+      });
+
+      if (authorization) {
+        return {
+          state: "NEW_DEPLOYMENT",
+          wasUnderAttack: false,
+          registeredAt: authorization.blockTimestamp ? authorization.blockTimestamp.getTime() : null,
+          registeredTxHash: authorization.txHash,
+          underAttackAt: null,
+          productionAt: null,
+          commitmentLockedUntil: null,
+        };
+      }
+
       return {
         state: "NOT_REGISTERED",
         wasUnderAttack: false,
@@ -1135,21 +1155,14 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
    */
   async getAuthorizedOwner(contractAddress: string): Promise<string | null> {
     const normalizedAddress = contractAddress.toLowerCase();
-    this.logger.log(`getAuthorizedOwner called for: ${normalizedAddress}`);
 
-    try {
-      // Get the most recent AgreementOwnerAuthorized event for this contract
-      const authorization = await this.agreementOwnerAuthorizedRepository.findOne({
-        where: { contractAddress: normalizedAddress },
-        order: { blockNumber: "DESC", rindexerId: "DESC" },
-      });
+    // Get the most recent AgreementOwnerAuthorized event for this contract
+    const authorization = await this.agreementOwnerAuthorizedRepository.findOne({
+      where: { contractAddress: normalizedAddress },
+      order: { blockNumber: "DESC", rindexerId: "DESC" },
+    });
 
-      this.logger.log(`getAuthorizedOwner result: ${JSON.stringify(authorization)}`);
-      return authorization?.authorizedOwner ?? null;
-    } catch (error) {
-      this.logger.error(`getAuthorizedOwner error: ${error.message}`, error.stack);
-      throw error;
-    }
+    return authorization?.authorizedOwner ?? null;
   }
 
   /**
