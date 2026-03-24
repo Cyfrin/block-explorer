@@ -1,4 +1,4 @@
-import { EventFragment, FunctionFragment } from "ethers";
+import { ErrorFragment, EventFragment, FunctionFragment } from "ethers";
 
 /**
  * Parse a function signature string from OpenChain/Sourcify into structured format
@@ -49,6 +49,30 @@ export function parseEventSignature(signature: string): ParsedSignature | null {
 
   try {
     const fragment = EventFragment.from(signature);
+    return {
+      name: fragment.name,
+      inputs: fragment.inputs.map((input, index) => ({
+        type: input.type,
+        name: input.name || `param${index}`,
+      })),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parse an error signature string into a structured format
+ * @param signature - Error signature like "InsufficientBalance(uint256,uint256)"
+ * @returns Parsed signature object or null if invalid
+ */
+export function parseErrorSignature(signature: string): ParsedSignature | null {
+  if (!signature || typeof signature !== "string") {
+    return null;
+  }
+
+  try {
+    const fragment = ErrorFragment.from(signature);
     return {
       name: fragment.name,
       inputs: fragment.inputs.map((input, index) => ({

@@ -1,4 +1,4 @@
-import { computed, nextTick } from "vue";
+import { computed, nextTick, ref } from "vue";
 import { createI18n } from "vue-i18n";
 
 import { describe, expect, it, vi } from "vitest";
@@ -174,12 +174,31 @@ const transaction: TransactionItem = {
   contractAddress: null,
 };
 
+vi.mock("vue-router", () => ({
+  useRouter: () => ({
+    resolve: (to: unknown) => ({ href: "#" }),
+  }),
+  useRoute: () => ({}),
+}));
+
 vi.mock("@/composables/useToken", () => {
   return {
     default: () => ({
       getTokenInfo: vi.fn(),
       tokenInfo: computed(() => ETH_TOKEN_MOCK),
       isRequestPending: computed(() => false),
+    }),
+  };
+});
+
+const mockDecodeRevertReason = vi.fn();
+const mockDecodedRevertReason = ref<Record<string, unknown> | null>(null);
+vi.mock("@/composables/useRevertReason", () => {
+  return {
+    default: () => ({
+      decodedRevertReason: mockDecodedRevertReason,
+      isDecodePending: ref(false),
+      decodeRevertReason: mockDecodeRevertReason,
     }),
   };
 });
@@ -226,12 +245,12 @@ describe("Transaction info table", () => {
     expect(txHash.find(".displayed-string").text()).toBe("0x9c526cc47ca...ff8a629cffa3c");
 
     const badges = status.findAllComponents(Badge);
-    expect(badges.length).toBe(5);
-    const [l2StatusBadgeTitle, l2StatusBadgeValue, l1StatusBadgeTitle, l1StatusBadgeValueDesktop] = badges;
-    expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
-    expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
-    expect(l1StatusBadgeTitle.text()).toBe(i18n.global.t("general.finality"));
-    expect(l1StatusBadgeValueDesktop.text()).toContain(i18n.global.t("transactions.statusComponent.executed"));
+    expect(badges.length).toBe(3);
+    const labels = status.findAll(".status-label");
+    expect(labels[0].text()).toBe(i18n.global.t("general.execution"));
+    expect(badges[0].text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
+    expect(labels[1].text()).toBe(i18n.global.t("general.finality"));
+    expect(badges[1].text()).toContain(i18n.global.t("transactions.statusComponent.executed"));
     expect(block.findComponent(RouterLinkStub).text()).toBe("#1162235");
 
     expect(from.text()).toBe("0x08d211E22dB19741FF25838A22e4e696FeE7eD36");
@@ -304,10 +323,10 @@ describe("Transaction info table", () => {
     const status = wrapper.findAll("tbody tr td:nth-child(2)")[1];
     const badges = status.findAllComponents(Badge);
 
-    const [l2StatusBadgeTitle, l2StatusBadgeValue, indexingBadge] = badges;
-    expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
-    expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
-    expect(indexingBadge.text()).toBe(i18n.global.t("transactions.statusComponent.indexing"));
+    const labels = status.findAll(".status-label");
+    expect(labels[0].text()).toBe(i18n.global.t("general.execution"));
+    expect(badges[0].text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
+    expect(badges[1].text()).toBe(i18n.global.t("transactions.statusComponent.indexing"));
   });
   it("renders failed transaction status", async () => {
     const wrapper = mount(Table, {
@@ -331,6 +350,65 @@ describe("Transaction info table", () => {
     expect(badges[0].text()).toBe(i18n.global.t("transactions.statusComponent.failed"));
     expect(reason.text()).toBe("Revert reason");
   });
+  it("renders decoded revert reason with error name and args", async () => {
+    mockDecodedRevertReason.value = {
+      raw: "0x7eab4bc40000000000000000000000000000000000000000000000000000000000000002",
+      decoded: {
+        name: "AttackRegistry__InvalidState",
+        signature: "AttackRegistry__InvalidState(uint8)",
+        args: [{ name: "state", type: "uint8", value: "2" }],
+      },
+    };
+    const wrapper = mount(Table, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub,
+          InfoTooltip: { template: "<div><slot /></div>" },
+        },
+        plugins: [i18n, $testId],
+      },
+      props: {
+        transaction: { ...transaction, status: "failed", revertReason: "0x7eab4bc4..." },
+        loading: false,
+      },
+    });
+    await nextTick();
+    const reason = wrapper.find(".transaction-error-value");
+    expect(reason.find(".revert-error-name").text()).toBe("AttackRegistry__InvalidState");
+    expect(reason.find(".revert-error-type").text()).toBe("uint8");
+    expect(reason.find(".revert-error-arg-name").text()).toBe("state");
+    expect(reason.text()).toContain(": 2");
+    mockDecodedRevertReason.value = null;
+  });
+  it("renders decoded revert reason without args", async () => {
+    mockDecodedRevertReason.value = {
+      raw: "0x7eab4bc4",
+      decoded: {
+        name: "AttackRegistry__InvalidState",
+        signature: "AttackRegistry__InvalidState(uint8)",
+        args: [],
+      },
+      isPartialDecoding: true,
+    };
+    const wrapper = mount(Table, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub,
+          InfoTooltip: { template: "<div><slot /></div>" },
+        },
+        plugins: [i18n, $testId],
+      },
+      props: {
+        transaction: { ...transaction, status: "failed", revertReason: "0x7eab4bc4" },
+        loading: false,
+      },
+    });
+    await nextTick();
+    const reason = wrapper.find(".transaction-error-value");
+    expect(reason.find(".revert-error-name").text()).toBe("AttackRegistry__InvalidState");
+    expect(reason.findAll(".revert-error-type")).toHaveLength(0);
+    mockDecodedRevertReason.value = null;
+  });
   it("renders included transaction status", async () => {
     const wrapper = mount(Table, {
       global: {
@@ -348,12 +426,12 @@ describe("Transaction info table", () => {
     await nextTick();
     const status = wrapper.findAll("tbody tr td:nth-child(2)")[1];
     const badges = status.findAllComponents(Badge);
-    expect(badges.length).toBe(5);
-    const [l2StatusBadgeTitle, l2StatusBadgeValue, l1StatusBadgeTitle, l1StatusBadgeValueDesktop] = badges;
-    expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
-    expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
-    expect(l1StatusBadgeTitle.text()).toBe(i18n.global.t("general.finality"));
-    expect(l1StatusBadgeValueDesktop.text()).toContain(i18n.global.t("transactions.statusComponent.sending"));
+    expect(badges.length).toBe(3);
+    const labels = status.findAll(".status-label");
+    expect(labels[0].text()).toBe(i18n.global.t("general.execution"));
+    expect(badges[0].text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
+    expect(labels[1].text()).toBe(i18n.global.t("general.finality"));
+    expect(badges[1].text()).toContain(i18n.global.t("transactions.statusComponent.sending"));
   });
   it("renders committed transaction status", async () => {
     const wrapper = mount(Table, {
@@ -372,12 +450,12 @@ describe("Transaction info table", () => {
     await nextTick();
     const status = wrapper.findAll("tbody tr td:nth-child(2)")[1];
     const badges = status.findAllComponents(Badge);
-    expect(badges.length).toBe(5);
-    const [l2StatusBadgeTitle, l2StatusBadgeValue, l1StatusBadgeTitle, l1StatusBadgeValueDesktop] = badges;
-    expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
-    expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
-    expect(l1StatusBadgeTitle.text()).toBe(i18n.global.t("general.finality"));
-    expect(l1StatusBadgeValueDesktop.text()).toContain(i18n.global.t("transactions.statusComponent.validating"));
+    expect(badges.length).toBe(3);
+    const labels = status.findAll(".status-label");
+    expect(labels[0].text()).toBe(i18n.global.t("general.execution"));
+    expect(badges[0].text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
+    expect(labels[1].text()).toBe(i18n.global.t("general.finality"));
+    expect(badges[1].text()).toContain(i18n.global.t("transactions.statusComponent.validating"));
   });
   it("renders proved transaction status", async () => {
     const wrapper = mount(Table, {
@@ -396,12 +474,12 @@ describe("Transaction info table", () => {
     await nextTick();
     const status = wrapper.findAll("tbody tr td:nth-child(2)")[1];
     const badges = status.findAllComponents(Badge);
-    expect(badges.length).toBe(5);
-    const [l2StatusBadgeTitle, l2StatusBadgeValue, l1StatusBadgeTitle, l1StatusBadgeValueDesktop] = badges;
-    expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
-    expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
-    expect(l1StatusBadgeTitle.text()).toBe(i18n.global.t("general.finality"));
-    expect(l1StatusBadgeValueDesktop.text()).toContain(i18n.global.t("transactions.statusComponent.executing"));
+    expect(badges.length).toBe(3);
+    const labels = status.findAll(".status-label");
+    expect(labels[0].text()).toBe(i18n.global.t("general.execution"));
+    expect(badges[0].text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
+    expect(labels[1].text()).toBe(i18n.global.t("general.finality"));
+    expect(badges[1].text()).toContain(i18n.global.t("transactions.statusComponent.executing"));
   });
   it("renders loading state", () => {
     const wrapper = mount(Table, {

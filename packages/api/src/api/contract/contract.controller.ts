@@ -44,6 +44,7 @@ export const parseAddressListPipeExceptionFactory = () => new BadRequestExceptio
 @UseFilters(ApiExceptionFilter)
 export class ContractController {
   private readonly contractVerificationApiUrl: string;
+  private readonly signatureDatabaseApiUrl: string | null;
   private readonly chainId: number;
   private readonly logger: Logger;
 
@@ -53,6 +54,7 @@ export class ContractController {
     configService: ConfigService
   ) {
     this.contractVerificationApiUrl = configService.get<string>("contractVerificationApiUrl");
+    this.signatureDatabaseApiUrl = configService.get<string>("signatureDatabaseApiUrl") || null;
     this.chainId = configService.get<number>("chainId");
     this.logger = new Logger(ContractController.name);
   }
@@ -328,6 +330,44 @@ export class ContractController {
       status: ResponseStatus.OK,
       message: ResponseMessage.OK,
       result: ResponseResultMessage.VERIFICATION_SUCCESSFUL,
+    };
+  }
+
+  @Get("/getsignatures")
+  public async getSignatures(@Query("hashes") hashes: string) {
+    if (!hashes) {
+      throw new BadRequestException("Missing hashes parameter");
+    }
+
+    if (!this.signatureDatabaseApiUrl) {
+      return {
+        status: ResponseStatus.OK,
+        message: ResponseMessage.OK,
+        result: {},
+      };
+    }
+
+    const { data } = await firstValueFrom<{ data: { ok: boolean; result: Record<string, unknown> } }>(
+      this.httpService
+        .get(`${this.signatureDatabaseApiUrl}/signature-database/v1/lookup`, {
+          params: { function: hashes, filter: true },
+        })
+        .pipe(
+          catchError((error: AxiosError) => {
+            this.logger.error({
+              message: "Error fetching signatures from 4byte service",
+              stack: error.stack,
+              response: error.response?.data,
+            });
+            throw new InternalServerErrorException("Failed to fetch signatures");
+          })
+        )
+    );
+
+    return {
+      status: ResponseStatus.OK,
+      message: ResponseMessage.OK,
+      result: data?.result?.function || {},
     };
   }
 }

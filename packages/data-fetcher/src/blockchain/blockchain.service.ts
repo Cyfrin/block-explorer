@@ -24,6 +24,7 @@ export interface TransactionTrace {
   to: string;
   error: string | null;
   revertReason: string | null;
+  output: string | null;
   calls: TransactionTrace[] | null;
   value: string;
   input: string;

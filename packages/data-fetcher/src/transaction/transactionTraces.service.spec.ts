@@ -147,6 +147,76 @@ describe("TransactionTracesService", () => {
         expect(data.error).toEqual("Bootloader-based tx failed");
         expect(data.revertReason).toEqual("A1");
       });
+
+      it("decodes revertReason from output when revertReason is null", async () => {
+        const traceWithOutput = {
+          type: "CALL",
+          from: "0x1234",
+          to: "0x5678",
+          error: "execution reverted",
+          revertReason: null,
+          output:
+            "0x08c379a0" +
+            "00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000014496e73756666696369656e742062616c616e6365000000000000000000000000",
+          calls: null,
+          value: "0x0",
+          input: "0x",
+        };
+        const data = await transactionTracesService.getData(
+          block,
+          transactionResponse,
+          transactionReceipt,
+          traceWithOutput
+        );
+        expect(data.error).toEqual("execution reverted");
+        expect(data.revertReason).toEqual("Insufficient balance");
+      });
+
+      it("preserves revertReason from trace when already set", async () => {
+        const traceWithBoth = {
+          type: "CALL",
+          from: "0x1234",
+          to: "0x5678",
+          error: "execution reverted",
+          revertReason: "Already decoded reason",
+          output:
+            "0x08c379a0" +
+            "0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d446966666572656e74206f6e6500000000000000000000000000000000000000",
+          calls: null,
+          value: "0x0",
+          input: "0x",
+        };
+        const data = await transactionTracesService.getData(
+          block,
+          transactionResponse,
+          transactionReceipt,
+          traceWithBoth
+        );
+        expect(data.revertReason).toEqual("Already decoded reason");
+      });
+
+      it("returns raw hex output for unknown custom errors", async () => {
+        const customErrorOutput = "0x7eab4bc4" + "0000000000000000000000000000000000000000000000000000000000000000";
+        const traceWithCustomError = {
+          type: "CALL",
+          from: "0x1234",
+          to: "0x5678",
+          error: "execution reverted",
+          revertReason: null,
+          output: customErrorOutput,
+          calls: null,
+          value: "0x0",
+          input: "0x",
+        };
+        const data = await transactionTracesService.getData(
+          block,
+          transactionResponse,
+          transactionReceipt,
+          traceWithCustomError
+        );
+        expect(data.error).toEqual("execution reverted");
+        expect(data.revertReason).toEqual(customErrorOutput);
+      });
     });
 
     describe("when transaction transfers base token", () => {
@@ -562,7 +632,7 @@ describe("TransactionTracesService", () => {
         expect(data).toEqual({
           contractAddresses: [],
           error: undefined,
-          revertReason: undefined,
+          revertReason: null,
           tokens: [],
           transfers: [],
         });

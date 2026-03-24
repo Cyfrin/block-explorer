@@ -46,6 +46,7 @@ services:
       - DATABASE_CONNECTION_POOL_SIZE=200
       - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL:-http://zksync:3050}
       - CONTRACT_VERIFICATION_API_URL=http://battlechain-sourcify:5555
+      - SIGNATURE_DATABASE_API_URL=http://battlechain-4byte:4444
       - CHAIN_ID=${CHAIN_ID:-270}
     depends_on:
       - worker
@@ -96,3 +97,20 @@ services:
       retries: '3'
       start_period: '40s'
       test: 'wget --no-verbose --tries=1 --spider http://localhost:5555/health || exit 1'
+
+  battlechain-4byte:
+    image: ghcr.io/argotorg/sourcify/4byte:1.1.9
+    environment:
+      - FOURBYTES_POSTGRES_HOST=${SOURCIFY_POSTGRES_HOST}
+      - FOURBYTES_POSTGRES_DB=${SOURCIFY_POSTGRES_DB}
+      - FOURBYTES_POSTGRES_USER=${SOURCIFY_POSTGRES_USER}
+      - FOURBYTES_POSTGRES_PASSWORD=${SOURCIFY_POSTGRES_PASSWORD}
+      - FOURBYTES_POSTGRES_PORT=${SOURCIFY_POSTGRES_PORT}
+      - PORT=4444
+    restart: unless-stopped
+    healthcheck:
+      interval: '1m30s'
+      timeout: '10s'
+      retries: '3'
+      start_period: '40s'
+      test: 'wget --no-verbose --tries=1 --spider http://localhost:4444/health || exit 1'
