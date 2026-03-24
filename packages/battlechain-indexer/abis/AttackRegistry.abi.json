@@ -901,7 +901,7 @@
     "name": "AgreementOwnerAuthorized",
     "inputs": [
       {
-        "name": "contractAddress",
+        "name": "registeredContractAddress",
         "type": "address",
         "indexed": true
       },
@@ -1076,7 +1076,7 @@
     "name": "ContractRegistered",
     "inputs": [
       {
-        "name": "contractAddress",
+        "name": "registeredContractAddress",
         "type": "address",
         "indexed": true
       },
@@ -1093,7 +1093,7 @@
     "name": "ContractUnregistered",
     "inputs": [
       {
-        "name": "contractAddress",
+        "name": "registeredContractAddress",
         "type": "address",
         "indexed": true
       },
@@ -1277,7 +1277,7 @@
     "name": "UnverifiedContractSynced",
     "inputs": [
       {
-        "name": "contractAddress",
+        "name": "registeredContractAddress",
         "type": "address",
         "indexed": true
       },
