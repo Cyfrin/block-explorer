@@ -14,7 +14,7 @@ export class AgreementOwnerAuthorized {
   @PrimaryColumn({ name: "rindexer_id", type: "int" })
   public readonly rindexerId: number;
 
-  @Column({ name: "contract_address", type: "char", length: 42 })
+  @Column({ name: "registered_contract_address", type: "char", length: 42 })
   @Index()
   public readonly contractAddress: string;
 

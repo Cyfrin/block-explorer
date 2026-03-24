@@ -516,6 +516,26 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       .getMany();
 
     if (agreements.length === 0) {
+      // No agreement covers this contract yet, but it may still be registered
+      // in the AttackRegistry (deployed via BattleChainDeployer without entering attack mode).
+      // Check the AgreementOwnerAuthorized event as proof of registration.
+      const authorization = await this.agreementOwnerAuthorizedRepository.findOne({
+        where: { contractAddress: normalizedContractAddress },
+        order: { blockNumber: "DESC", rindexerId: "DESC" },
+      });
+
+      if (authorization) {
+        return {
+          state: "NEW_DEPLOYMENT",
+          wasUnderAttack: false,
+          registeredAt: authorization.blockTimestamp ? authorization.blockTimestamp.getTime() : null,
+          registeredTxHash: authorization.txHash,
+          underAttackAt: null,
+          productionAt: null,
+          commitmentLockedUntil: null,
+        };
+      }
+
       return {
         state: "NOT_REGISTERED",
         wasUnderAttack: false,

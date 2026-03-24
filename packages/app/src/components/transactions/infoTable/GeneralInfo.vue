@@ -48,7 +48,22 @@
           </InfoTooltip>
         </TableBodyColumn>
         <TableBodyColumn class="transaction-table-value transaction-error-value">
-          {{ transaction.revertReason }}
+          <span v-if="decodedRevertReason?.decoded">
+            <span class="revert-error-name">{{ decodedRevertReason.decoded.name }}</span>
+            <span v-if="decodedRevertReason.decoded.args.length"
+              >(
+              <span v-for="(arg, index) in decodedRevertReason.decoded.args" :key="index">
+                <span class="revert-error-type">{{ arg.type }}</span>
+                <span v-if="arg.name" class="revert-error-arg-name"> {{ arg.name }}</span>
+                <span v-if="arg.value">: {{ arg.value }}</span>
+                <span v-if="index < decodedRevertReason.decoded.args.length - 1">, </span>
+              </span>
+              )</span
+            >
+          </span>
+          <span v-else>
+            {{ transaction.revertReason }}
+          </span>
         </TableBodyColumn>
       </tr>
       <tr class="transaction-table-row">
@@ -219,7 +234,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, type PropType } from "vue";
+import { computed, type PropType, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 import AddressLink from "@/components/AddressLink.vue";
@@ -236,6 +251,8 @@ import EthAmountPrice from "@/components/transactions/EthAmountPrice.vue";
 import TransactionStatus from "@/components/transactions/Status.vue";
 import TransactionData from "@/components/transactions/infoTable/TransactionData.vue";
 import TransferTableCell from "@/components/transactions/infoTable/TransferTableCell.vue";
+
+import useRevertReason from "@/composables/useRevertReason";
 
 import type { TransactionItem } from "@/composables/useTransaction";
 
@@ -256,6 +273,18 @@ const props = defineProps({
     type: String,
   },
 });
+
+const { decodedRevertReason, decodeRevertReason } = useRevertReason();
+
+watch(
+  () => props.transaction?.revertReason,
+  (revertReason) => {
+    if (revertReason) {
+      decodeRevertReason(revertReason, props.transaction?.to ?? null);
+    }
+  },
+  { immediate: true }
+);
 
 const showFeeDetails = computed(() => {
   if (props.transaction) {
@@ -348,6 +377,16 @@ const gasUsedPercent = computed(() => {
   }
   .transaction-error-value {
     @apply text-error-600 whitespace-normal break-all;
+
+    .revert-error-name {
+      font-weight: 600;
+    }
+    .revert-error-type {
+      color: var(--text-muted);
+    }
+    .revert-error-arg-name {
+      font-style: italic;
+    }
   }
 }
 </style>

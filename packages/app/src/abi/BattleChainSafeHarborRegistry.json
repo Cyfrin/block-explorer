@@ -71,6 +71,19 @@
   },
   {
     "type": "function",
+    "name": "getAttackRegistry",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "initialize",
     "inputs": [
       {
@@ -85,6 +98,11 @@
       },
       {
         "name": "agreementFactory",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "attackRegistry",
         "type": "address",
         "internalType": "address"
       }
@@ -174,7 +192,7 @@
     "name": "renounceOwnership",
     "inputs": [],
     "outputs": [],
-    "stateMutability": "nonpayable"
+    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -182,6 +200,19 @@
     "inputs": [
       {
         "name": "factory",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setAttackRegistry",
+    "inputs": [
+      {
+        "name": "attackRegistryAddr",
         "type": "address",
         "internalType": "address"
       }
@@ -265,6 +296,19 @@
     "inputs": [
       {
         "name": "factory",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "AttackRegistrySet",
+    "inputs": [
+      {
+        "name": "attackRegistry",
         "type": "address",
         "indexed": true,
         "internalType": "address"
@@ -388,6 +432,11 @@
   {
     "type": "error",
     "name": "BattleChainSafeHarborRegistry__NoAgreement",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BattleChainSafeHarborRegistry__RenounceDisabled",
     "inputs": []
   },
   {

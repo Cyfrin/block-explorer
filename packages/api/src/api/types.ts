@@ -38,6 +38,7 @@ export enum ApiContractAction {
   GetContractCreation = "getcontractcreation",
   VerifySourceCode = "verifysourcecode",
   GetVerificationStatus = "checkverifystatus",
+  GetSignatures = "getsignatures",
 }
 
 export enum ApiTransactionAction {

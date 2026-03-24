@@ -201,6 +201,68 @@
             <span>{{ t("requestUnderAttackModal.commitmentExtended") }}</span>
           </div>
 
+          <!-- Bond/Fee requirement -->
+          <div v-if="isFetchingBondInfo" class="commitment-check">
+            <span class="loading-spinner" />
+            <span>{{ t("requestUnderAttackModal.fetchingBondInfo") }}</span>
+          </div>
+          <template v-else-if="totalRequired > 0n">
+            <div class="bond-breakdown">
+              <h4 class="bond-title">{{ t("requestUnderAttackModal.bondRequired") }}</h4>
+              <div class="bond-row">
+                <span class="bond-label">{{ t("requestUnderAttackModal.fee") }}</span>
+                <span class="bond-value"
+                  >{{ formatTokenAmountDisplay(feeAmount) }} {{ bondTokenSymbol }} ({{
+                    t("requestUnderAttackModal.nonRefundable")
+                  }})</span
+                >
+              </div>
+              <div class="bond-row">
+                <span class="bond-label">{{ t("requestUnderAttackModal.bond") }}</span>
+                <span class="bond-value"
+                  >{{ formatTokenAmountDisplay(bondAmount) }} {{ bondTokenSymbol }} ({{
+                    t("requestUnderAttackModal.refundable")
+                  }})</span
+                >
+              </div>
+              <div class="bond-row bond-total">
+                <span class="bond-label">{{ t("requestUnderAttackModal.total") }}</span>
+                <span class="bond-value">{{ formatTokenAmountDisplay(totalRequired) }} {{ bondTokenSymbol }}</span>
+              </div>
+            </div>
+
+            <!-- Insufficient balance -->
+            <div v-if="hasInsufficientBalance && isWalletConnected" class="error-message">
+              <ExclamationCircleIcon class="error-icon" />
+              <span>{{ t("requestUnderAttackModal.insufficientBalance", { symbol: bondTokenSymbol }) }}</span>
+            </div>
+
+            <!-- Approval needed -->
+            <div v-else-if="needsApproval && isWalletConnected" class="commitment-warning">
+              <ExclamationCircleIcon class="warning-icon" />
+              <div class="commitment-content">
+                <p class="commitment-title">{{ t("requestUnderAttackModal.approvalRequired") }}</p>
+                <p class="commitment-description">
+                  {{ t("requestUnderAttackModal.approvalDescription", { symbol: bondTokenSymbol }) }}
+                </p>
+                <button type="button" class="btn-primary commitment-btn" :disabled="isApproving" @click="handleApprove">
+                  <span v-if="isApproving" class="loading-spinner" />
+                  {{ isApproving ? t("requestUnderAttackModal.approving") : t("requestUnderAttackModal.approve") }}
+                </button>
+                <div v-if="approvalError" class="error-message">
+                  <ExclamationCircleIcon class="error-icon" />
+                  <span>{{ approvalError }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Approval complete -->
+            <div v-else-if="isWalletConnected && !needsApproval" class="commitment-success">
+              <CheckCircleIcon class="success-icon" />
+              <span>{{ t("requestUnderAttackModal.bondApproved") }}</span>
+            </div>
+          </template>
+
           <!-- Not connected state -->
           <div v-if="!isWalletConnected" class="wallet-prompt">
             <p>{{ t("requestUnderAttackModal.connectWalletPrompt") }}</p>
@@ -264,7 +326,7 @@
         v-else-if="currentStep === 2"
         type="button"
         class="btn-primary"
-        :disabled="isRequesting || !isWalletConnected || !isCommitmentSufficient"
+        :disabled="isRequesting || !isWalletConnected || !isCommitmentSufficient || !isBondReady"
         @click="handleSubmit"
       >
         <span v-if="isRequesting" class="loading-spinner" />
@@ -293,7 +355,7 @@ import type { CoveredAccount, DetectedAgreement } from "@/composables/useAgreeme
 import type { PropType } from "vue";
 
 import { ChildContractScope } from "@/types";
-import { shortValue } from "@/utils/formatters";
+import { formatTokenAmount, shortValue } from "@/utils/formatters";
 
 const { t } = useI18n();
 const context = useContext();
@@ -364,6 +426,50 @@ const props = defineProps({
     type: Boolean,
     default: undefined,
   },
+  overrideFetchingBondInfo: {
+    type: Boolean,
+    default: undefined,
+  },
+  overrideTotalRequired: {
+    type: BigInt as unknown as PropType<bigint>,
+    default: undefined,
+  },
+  overrideFeeAmount: {
+    type: BigInt as unknown as PropType<bigint>,
+    default: undefined,
+  },
+  overrideBondAmount: {
+    type: BigInt as unknown as PropType<bigint>,
+    default: undefined,
+  },
+  overrideBondTokenSymbol: {
+    type: String,
+    default: undefined,
+  },
+  overrideBondTokenDecimals: {
+    type: Number,
+    default: undefined,
+  },
+  overrideNeedsApproval: {
+    type: Boolean,
+    default: undefined,
+  },
+  overrideInsufficientBalance: {
+    type: Boolean,
+    default: undefined,
+  },
+  overrideApproving: {
+    type: Boolean,
+    default: undefined,
+  },
+  overrideApprovalError: {
+    type: String as PropType<string | null>,
+    default: undefined,
+  },
+  overrideBondReady: {
+    type: Boolean,
+    default: undefined,
+  },
 });
 
 const emit = defineEmits<{
@@ -428,6 +534,31 @@ const showCommitmentExtendedSuccess = computed(() =>
 
 const isMetamaskInstalled = computed(() => request.isMetamaskInstalled.value);
 const isConnectPending = computed(() => request.isConnectPending.value);
+
+// Bond overrides
+const isFetchingBondInfo = computed(() =>
+  props.overrideFetchingBondInfo !== undefined ? props.overrideFetchingBondInfo : request.isFetchingBondInfo.value
+);
+const feeAmount = computed(() => props.overrideFeeAmount ?? request.feeAmount.value);
+const bondAmount = computed(() => props.overrideBondAmount ?? request.bondAmount.value);
+const totalRequired = computed(() => props.overrideTotalRequired ?? request.totalRequired.value);
+const bondTokenSymbol = computed(() => props.overrideBondTokenSymbol ?? request.bondTokenSymbol.value);
+const bondTokenDecimals = computed(() => props.overrideBondTokenDecimals ?? request.bondTokenDecimals.value);
+const hasInsufficientBalance = computed(() =>
+  props.overrideInsufficientBalance !== undefined
+    ? props.overrideInsufficientBalance
+    : request.hasInsufficientBalance.value
+);
+const needsApproval = computed(() =>
+  props.overrideNeedsApproval !== undefined ? props.overrideNeedsApproval : request.needsApproval.value
+);
+const isApproving = computed(() =>
+  props.overrideApproving !== undefined ? props.overrideApproving : request.isApproving.value
+);
+const approvalError = computed(() => props.overrideApprovalError ?? request.approvalError.value);
+const isBondReady = computed(() =>
+  props.overrideBondReady !== undefined ? props.overrideBondReady : request.isBondReady.value
+);
 
 // Computed values
 const selectedAgreement = computed(() => {
@@ -542,6 +673,14 @@ const handleExtendCommitment = async () => {
   }
 };
 
+const formatTokenAmountDisplay = (amount: bigint) => {
+  return formatTokenAmount(amount, bondTokenDecimals.value);
+};
+
+const handleApprove = async () => {
+  await request.approveToken();
+};
+
 // Actions
 const proceedToStep2 = () => {
   if (canProceedToStep2.value) {
@@ -552,6 +691,8 @@ const proceedToStep2 = () => {
     if (selectedAgreement.value) {
       request.checkCommitmentDeadline(selectedAgreement.value);
     }
+    // Fetch bond requirements (runs in parallel with commitment check)
+    request.fetchBondRequirements(props.contractAddress);
   }
 };
 
@@ -994,6 +1135,41 @@ defineExpose({ reset });
   .success-icon {
     @apply h-5 w-5 shrink-0;
     color: var(--success);
+  }
+}
+
+.bond-breakdown {
+  @apply rounded-lg border p-4;
+  border-color: var(--border-default);
+  background-color: var(--bg-secondary);
+
+  .bond-title {
+    @apply mb-3 text-sm font-medium;
+    color: var(--text-primary);
+  }
+
+  .bond-row {
+    @apply flex items-center justify-between py-1;
+
+    .bond-label {
+      @apply text-sm;
+      color: var(--text-muted);
+    }
+
+    .bond-value {
+      @apply text-sm font-medium;
+      color: var(--text-primary);
+    }
+
+    &.bond-total {
+      @apply mt-2 border-t pt-2;
+      border-color: var(--border-subtle);
+
+      .bond-label,
+      .bond-value {
+        font-weight: 600;
+      }
+    }
   }
 }
 

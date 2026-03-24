@@ -96,6 +96,21 @@ export function formatPricePretty(amount: BigNumberish, decimals: number, usdPri
   }
 }
 
+/**
+ * Format a token amount from its smallest unit (e.g. wei) to a human-readable string.
+ * Trims trailing zeros and adds thousand separators.
+ */
+export function formatTokenAmount(amount: bigint, decimals: number): string {
+  const raw = formatUnits(amount, decimals);
+  // Split into integer and fractional parts
+  const [intPart, fracPart] = raw.split(".");
+  const formattedInt = Number(intPart).toLocaleString("en-US");
+  if (!fracPart || fracPart === "0") return formattedInt;
+  // Trim trailing zeros from fractional part
+  const trimmedFrac = fracPart.replace(/0+$/, "");
+  return trimmedFrac ? `${formattedInt}.${trimmedFrac}` : formattedInt;
+}
+
 export function formatShortAddress(address: string | null | undefined, prefixLength = 6, suffixLength = 4): string {
   if (!address) return "-";
   return `${address.slice(0, prefixLength)}...${address.slice(-suffixLength)}`;

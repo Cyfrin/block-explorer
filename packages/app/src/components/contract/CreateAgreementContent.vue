@@ -529,7 +529,7 @@ const formData = reactive<AgreementFormData>({
     diligenceRequirements: "",
     aggregateBountyCapUsd: "",
   },
-  agreementURI: "",
+  agreementURI: context.currentNetwork.value.defaultAgreementURI || "",
 });
 
 const errors = reactive({

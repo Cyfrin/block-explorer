@@ -12,6 +12,7 @@ import {
 import { Transfer } from "../transfer/interfaces/transfer.interface";
 import { TransferType } from "../transfer/transfer.service";
 import { unixTimeToDate } from "../utils/date";
+import { decodeRevertReason } from "../utils/decodeRevertReason";
 
 export interface ContractAddress {
   address: string;
@@ -49,7 +50,7 @@ function getTransactionTraceData(
       contractAddresses: [],
       transfersWithValue: [],
       error: transactionTrace?.error,
-      revertReason: transactionTrace?.revertReason,
+      revertReason: transactionTrace?.revertReason || decodeRevertReason(transactionTrace?.output),
     };
   }
 

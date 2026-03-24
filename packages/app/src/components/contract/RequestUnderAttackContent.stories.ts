@@ -199,7 +199,7 @@ Step1CreateNew.parameters = {
   },
 };
 
-// Step 2: Review (Wallet Connected, Commitment Sufficient)
+// Step 2: Review (Wallet Connected, Commitment Sufficient, Bond Ready)
 export const Step2Review: StoryFn = () => ({
   components: { RequestUnderAttackContent },
   template: `<RequestUnderAttackContent
@@ -208,6 +208,7 @@ export const Step2Review: StoryFn = () => ({
     override-selected-agreement="${agreementAddress}"
     :override-wallet-connected="true"
     :override-commitment-sufficient="true"
+    :override-bond-ready="true"
   />`,
 });
 Step2Review.storyName = "Step 2: Review (Connected)";
@@ -249,6 +250,7 @@ export const Step2Submitting: StoryFn = () => ({
     override-selected-agreement="${agreementAddress}"
     :override-wallet-connected="true"
     :override-commitment-sufficient="true"
+    :override-bond-ready="true"
     :override-requesting="true"
   />`,
 });
@@ -270,6 +272,7 @@ export const Step2Error: StoryFn = () => ({
     override-selected-agreement="${agreementAddress}"
     :override-wallet-connected="true"
     :override-commitment-sufficient="true"
+    :override-bond-ready="true"
     override-error="User rejected the transaction"
   />`,
 });
@@ -365,6 +368,281 @@ Step2CommitmentExtended.parameters = {
     description: {
       story:
         "Success state after extending the commitment window. Shows a green success banner confirming the extension. The submit button is now enabled.",
+    },
+  },
+};
+
+// Step 2: Fetching Bond Info
+export const Step2FetchingBondInfo: StoryFn = () => ({
+  components: { RequestUnderAttackContent },
+  template: `<RequestUnderAttackContent
+    contract-address="${contractAddress}"
+    :override-step="2"
+    override-selected-agreement="${agreementAddress}"
+    :override-wallet-connected="true"
+    :override-commitment-sufficient="true"
+    :override-fetching-bond-info="true"
+  />`,
+});
+Step2FetchingBondInfo.storyName = "Step 2: Fetching Bond Info";
+Step2FetchingBondInfo.parameters = {
+  docs: {
+    description: {
+      story: "Loading state while fetching bond token, fee amount, and bond amount from the AttackRegistry.",
+    },
+  },
+};
+
+// Step 2: Bond Approval Needed
+export const Step2BondApprovalNeeded: StoryFn = () => ({
+  components: { RequestUnderAttackContent },
+  setup() {
+    return {
+      feeAmount: 100000000n, // 100 USDC (6 decimals)
+      bondAmount: 500000000n, // 500 USDC
+      totalRequired: 600000000n,
+    };
+  },
+  template: `<RequestUnderAttackContent
+    contract-address="${contractAddress}"
+    :override-step="2"
+    override-selected-agreement="${agreementAddress}"
+    :override-wallet-connected="true"
+    :override-commitment-sufficient="true"
+    :override-fetching-bond-info="false"
+    :override-fee-amount="feeAmount"
+    :override-bond-amount="bondAmount"
+    :override-total-required="totalRequired"
+    override-bond-token-symbol="USDC"
+    :override-bond-token-decimals="6"
+    :override-needs-approval="true"
+    :override-insufficient-balance="false"
+  />`,
+});
+Step2BondApprovalNeeded.storyName = "Step 2: Bond Approval Needed";
+Step2BondApprovalNeeded.parameters = {
+  docs: {
+    description: {
+      story:
+        "Bond breakdown is shown with fee (non-refundable) and bond (refundable). The user's token allowance is insufficient — they need to approve before submitting.",
+    },
+  },
+};
+
+// Step 2: Approving Token
+export const Step2Approving: StoryFn = () => ({
+  components: { RequestUnderAttackContent },
+  setup() {
+    return {
+      feeAmount: 100000000n,
+      bondAmount: 500000000n,
+      totalRequired: 600000000n,
+    };
+  },
+  template: `<RequestUnderAttackContent
+    contract-address="${contractAddress}"
+    :override-step="2"
+    override-selected-agreement="${agreementAddress}"
+    :override-wallet-connected="true"
+    :override-commitment-sufficient="true"
+    :override-fetching-bond-info="false"
+    :override-fee-amount="feeAmount"
+    :override-bond-amount="bondAmount"
+    :override-total-required="totalRequired"
+    override-bond-token-symbol="USDC"
+    :override-bond-token-decimals="6"
+    :override-needs-approval="true"
+    :override-insufficient-balance="false"
+    :override-approving="true"
+  />`,
+});
+Step2Approving.storyName = "Step 2: Approving Token";
+Step2Approving.parameters = {
+  docs: {
+    description: {
+      story: "State while the ERC-20 approve transaction is being processed in the user's wallet.",
+    },
+  },
+};
+
+// Step 2: Approval Error
+export const Step2ApprovalError: StoryFn = () => ({
+  components: { RequestUnderAttackContent },
+  setup() {
+    return {
+      feeAmount: 100000000n,
+      bondAmount: 500000000n,
+      totalRequired: 600000000n,
+    };
+  },
+  template: `<RequestUnderAttackContent
+    contract-address="${contractAddress}"
+    :override-step="2"
+    override-selected-agreement="${agreementAddress}"
+    :override-wallet-connected="true"
+    :override-commitment-sufficient="true"
+    :override-fetching-bond-info="false"
+    :override-fee-amount="feeAmount"
+    :override-bond-amount="bondAmount"
+    :override-total-required="totalRequired"
+    override-bond-token-symbol="USDC"
+    :override-bond-token-decimals="6"
+    :override-needs-approval="true"
+    :override-insufficient-balance="false"
+    override-approval-error="User rejected the transaction"
+  />`,
+});
+Step2ApprovalError.storyName = "Step 2: Approval Error";
+Step2ApprovalError.parameters = {
+  docs: {
+    description: {
+      story: "Error state when the ERC-20 approve transaction fails or is rejected by the user.",
+    },
+  },
+};
+
+// Step 2: Insufficient Balance
+export const Step2InsufficientBalance: StoryFn = () => ({
+  components: { RequestUnderAttackContent },
+  setup() {
+    return {
+      feeAmount: 100000000n,
+      bondAmount: 500000000n,
+      totalRequired: 600000000n,
+    };
+  },
+  template: `<RequestUnderAttackContent
+    contract-address="${contractAddress}"
+    :override-step="2"
+    override-selected-agreement="${agreementAddress}"
+    :override-wallet-connected="true"
+    :override-commitment-sufficient="true"
+    :override-fetching-bond-info="false"
+    :override-fee-amount="feeAmount"
+    :override-bond-amount="bondAmount"
+    :override-total-required="totalRequired"
+    override-bond-token-symbol="USDC"
+    :override-bond-token-decimals="6"
+    :override-insufficient-balance="true"
+    :override-needs-approval="false"
+  />`,
+});
+Step2InsufficientBalance.storyName = "Step 2: Insufficient Balance";
+Step2InsufficientBalance.parameters = {
+  docs: {
+    description: {
+      story:
+        "Warning state when the user does not have enough bond token balance to cover the fee + bond. Submit button is disabled.",
+    },
+  },
+};
+
+// Step 2: Bond Approved (Ready to Submit)
+export const Step2BondApproved: StoryFn = () => ({
+  components: { RequestUnderAttackContent },
+  setup() {
+    return {
+      feeAmount: 100000000n,
+      bondAmount: 500000000n,
+      totalRequired: 600000000n,
+    };
+  },
+  template: `<RequestUnderAttackContent
+    contract-address="${contractAddress}"
+    :override-step="2"
+    override-selected-agreement="${agreementAddress}"
+    :override-wallet-connected="true"
+    :override-commitment-sufficient="true"
+    :override-fetching-bond-info="false"
+    :override-fee-amount="feeAmount"
+    :override-bond-amount="bondAmount"
+    :override-total-required="totalRequired"
+    override-bond-token-symbol="USDC"
+    :override-bond-token-decimals="6"
+    :override-needs-approval="false"
+    :override-insufficient-balance="false"
+    :override-bond-ready="true"
+  />`,
+});
+Step2BondApproved.storyName = "Step 2: Bond Approved";
+Step2BondApproved.parameters = {
+  docs: {
+    description: {
+      story:
+        "Bond breakdown shows fee + bond amounts, and token has been approved. Green checkmark confirms approval. Submit button is enabled.",
+    },
+  },
+};
+
+// Step 2: ETH Bond — Ready to Submit (no approval needed)
+export const Step2EthBondReady: StoryFn = () => ({
+  components: { RequestUnderAttackContent },
+  setup() {
+    return {
+      feeAmount: 10000000000000000n, // 0.01 ETH
+      bondAmount: 100000000000000000n, // 0.1 ETH
+      totalRequired: 110000000000000000n, // 0.11 ETH
+    };
+  },
+  template: `<RequestUnderAttackContent
+    contract-address="${contractAddress}"
+    :override-step="2"
+    override-selected-agreement="${agreementAddress}"
+    :override-wallet-connected="true"
+    :override-commitment-sufficient="true"
+    :override-fetching-bond-info="false"
+    :override-fee-amount="feeAmount"
+    :override-bond-amount="bondAmount"
+    :override-total-required="totalRequired"
+    override-bond-token-symbol="ETH"
+    :override-bond-token-decimals="18"
+    :override-needs-approval="false"
+    :override-insufficient-balance="false"
+    :override-bond-ready="true"
+  />`,
+});
+Step2EthBondReady.storyName = "Step 2: ETH Bond (Ready)";
+Step2EthBondReady.parameters = {
+  docs: {
+    description: {
+      story:
+        "When the bond token is ETH, no approval step is needed. The fee + bond breakdown is shown with ETH amounts, and the approval checkmark appears immediately. The ETH value will be sent as msg.value with the transaction.",
+    },
+  },
+};
+
+// Step 2: ETH Bond — Insufficient Balance
+export const Step2EthBondInsufficientBalance: StoryFn = () => ({
+  components: { RequestUnderAttackContent },
+  setup() {
+    return {
+      feeAmount: 10000000000000000n,
+      bondAmount: 100000000000000000n,
+      totalRequired: 110000000000000000n,
+    };
+  },
+  template: `<RequestUnderAttackContent
+    contract-address="${contractAddress}"
+    :override-step="2"
+    override-selected-agreement="${agreementAddress}"
+    :override-wallet-connected="true"
+    :override-commitment-sufficient="true"
+    :override-fetching-bond-info="false"
+    :override-fee-amount="feeAmount"
+    :override-bond-amount="bondAmount"
+    :override-total-required="totalRequired"
+    override-bond-token-symbol="ETH"
+    :override-bond-token-decimals="18"
+    :override-needs-approval="false"
+    :override-insufficient-balance="true"
+  />`,
+});
+Step2EthBondInsufficientBalance.storyName = "Step 2: ETH Bond (Insufficient Balance)";
+Step2EthBondInsufficientBalance.parameters = {
+  docs: {
+    description: {
+      story:
+        "ETH bond flow when the user does not have enough ETH to cover the fee + bond. Shows an insufficient balance warning. No approval prompt is shown since ETH doesn't require ERC-20 approval.",
     },
   },
 };

@@ -1177,7 +1177,20 @@
     "extendCommitment": "Extend Commitment Window",
     "extendingCommitment": "Extending...",
     "commitmentExtended": "Commitment window extended successfully",
-    "checkingCommitment": "Checking commitment window..."
+    "checkingCommitment": "Checking commitment window...",
+    "fetchingBondInfo": "Checking bond requirements...",
+    "bondRequired": "Fee & Bond Required",
+    "fee": "Fee",
+    "bond": "Bond",
+    "total": "Total",
+    "nonRefundable": "non-refundable",
+    "refundable": "refundable",
+    "insufficientBalance": "Insufficient {symbol} balance to cover the required fee and bond.",
+    "approvalRequired": "Token approval required",
+    "approvalDescription": "You need to approve the AttackRegistry to spend your {symbol} tokens to cover the fee and bond.",
+    "approve": "Approve",
+    "approving": "Approving...",
+    "bondApproved": "Token approved — ready to submit"
   },
   "contractState": {
     "registered": "Registered",

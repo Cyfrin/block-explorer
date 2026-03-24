@@ -22,6 +22,7 @@ export type NetworkConfig = {
   agreementFactoryAddress?: string;
   safeHarborRegistryAddress?: string;
   excludedFromBattlechain?: string[];
+  defaultAgreementURI?: string;
 };
 
 export type SettlementChain = {
