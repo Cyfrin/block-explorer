@@ -160,8 +160,10 @@ export default (context = useContext()) => {
     }
   };
 
-  const getByHash = async (hash: string) => {
-    isRequestPending.value = true;
+  const getByHash = async (hash: string, { silent = false } = {}) => {
+    if (!silent) {
+      isRequestPending.value = true;
+    }
     isRequestFailed.value = false;
 
     try {

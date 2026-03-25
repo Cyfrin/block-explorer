@@ -133,7 +133,7 @@ const pollForTransaction = () => {
 
   const poll = async () => {
     pollAttempts++;
-    await getByHash(props.hash);
+    await getByHash(props.hash, { silent: true });
 
     if (transaction.value) {
       stopPolling();
