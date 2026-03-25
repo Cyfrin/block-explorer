@@ -118,6 +118,13 @@
     }
   },
   "transactions": {
+    "pendingNotFound": {
+      "title": "Transaction Not Found",
+      "description": "This transaction may still be pending. BattleChain uses a private mempool, so transactions won't appear here until they are confirmed on-chain.",
+      "polling": "Checking for transaction...",
+      "gaveUp": "We couldn't find this transaction after several attempts. It may still be processing — try refreshing in a few moments.",
+      "hash": "Transaction Hash"
+    },
     "tabs": {
       "generalInfo": "General Info",
       "logs": "Logs"
