@@ -92,6 +92,7 @@ export default (context = useContext()) => {
   const transaction = ref(<null | TransactionItem>null);
   const isRequestPending = ref(false);
   const isRequestFailed = ref(false);
+  const isTransactionNotFound = ref(false);
 
   const getFromBlockchainByHash = async (hash: string): Promise<TransactionItem | null> => {
     const provider = context.getL2Provider();
@@ -159,8 +160,10 @@ export default (context = useContext()) => {
     }
   };
 
-  const getByHash = async (hash: string) => {
-    isRequestPending.value = true;
+  const getByHash = async (hash: string, { silent = false } = {}) => {
+    if (!silent) {
+      isRequestPending.value = true;
+    }
     isRequestFailed.value = false;
 
     try {
@@ -170,9 +173,11 @@ export default (context = useContext()) => {
         all<Api.Response.Log>(context, `/transactions/${hash}/logs`, new URLSearchParams({ limit: "100" })),
       ]);
       transaction.value = mapTransaction(txResponse, txTransfers, txLogs);
+      isTransactionNotFound.value = false;
     } catch (error) {
       if (error instanceof FetchError && error.response?.status === 404) {
         transaction.value = await getFromBlockchainByHash(hash);
+        isTransactionNotFound.value = !transaction.value;
         return;
       }
       transaction.value = null;
@@ -188,6 +193,7 @@ export default (context = useContext()) => {
     transaction,
     isRequestPending,
     isRequestFailed,
+    isTransactionNotFound,
     getByHash,
   };
 };

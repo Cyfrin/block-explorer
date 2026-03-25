@@ -2,6 +2,11 @@
   <div class="error-container" v-if="isRequestFailed && !isRequestPending">
     <PageError />
   </div>
+  <TransactionNotFound
+    v-else-if="isTransactionNotFound && !isRequestPending"
+    :hash="props.hash"
+    :is-polling="isPolling"
+  />
   <div v-else-if="props.hash && isTransactionHash(props.hash)" class="detail-view">
     <div class="detail-header">
       <Breadcrumbs :items="breadcrumbItems" />
@@ -33,7 +38,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watchEffect } from "vue";
+import { computed, onBeforeUnmount, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 
 import PageError from "@/components/PageError.vue";
@@ -41,6 +46,7 @@ import SearchForm from "@/components/SearchForm.vue";
 import Breadcrumbs, { type BreadcrumbItem } from "@/components/common/Breadcrumbs.vue";
 import Tabs from "@/components/common/Tabs.vue";
 import Title from "@/components/common/Title.vue";
+import TransactionNotFound from "@/components/transactions/TransactionNotFound.vue";
 import GeneralInfo from "@/components/transactions/infoTable/GeneralInfo.vue";
 import Logs from "@/components/transactions/infoTable/Logs.vue";
 
@@ -60,8 +66,8 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const { useNotFoundView, setNotFoundView } = useNotFound();
-const { transaction, isRequestPending, isRequestFailed, getByHash } = useTransaction();
+const { setNotFoundView } = useNotFound();
+const { transaction, isRequestPending, isRequestFailed, isTransactionNotFound, getByHash } = useTransaction();
 const { collection: transactionEventLogs, isDecodePending: isDecodeEventLogsPending, decodeEventLog } = useEventLog();
 const {
   data: transactionData,
@@ -107,15 +113,59 @@ const tabs = computed(() => [
   },
 ]);
 
-useNotFoundView(isRequestPending, isRequestFailed, transaction);
+const POLL_INTERVAL_MS = 3000;
+const MAX_POLL_ATTEMPTS = 5;
+const isPolling = ref(false);
+let pollTimer: ReturnType<typeof setTimeout> | null = null;
+let pollAttempts = 0;
+
+const stopPolling = () => {
+  if (pollTimer) {
+    clearTimeout(pollTimer);
+    pollTimer = null;
+  }
+  isPolling.value = false;
+};
+
+const pollForTransaction = () => {
+  pollAttempts = 0;
+  isPolling.value = true;
+
+  const poll = async () => {
+    pollAttempts++;
+    await getByHash(props.hash, { silent: true });
+
+    if (transaction.value) {
+      stopPolling();
+      decodeEventLog(transaction.value.logs);
+      decodeTransactionData(transaction.value.data);
+      return;
+    }
+
+    if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+      stopPolling();
+      return;
+    }
+
+    pollTimer = setTimeout(poll, POLL_INTERVAL_MS);
+  };
+
+  pollTimer = setTimeout(poll, POLL_INTERVAL_MS);
+};
+
+onBeforeUnmount(stopPolling);
 
 watchEffect(() => {
   if (!props.hash || !isTransactionHash(props.hash)) {
     return setNotFoundView();
   }
+  stopPolling();
   getByHash(props.hash).then(() => {
     if (!transaction.value) {
       transactionEventLogs.value = [];
+      if (isTransactionNotFound.value) {
+        pollForTransaction();
+      }
       return;
     }
     decodeEventLog(transaction.value.logs);
