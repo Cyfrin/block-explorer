@@ -2,16 +2,16 @@
   "networks": [
     {
       "groupId": "era",
-      "apiUrl": "http://localhost:3020",
-      "bridgeUrl": "http://localhost:3000/bridge",
+      "apiUrl": "https://block-explorer-api.testnet.battlechain.com",
+      "verificationApiUrl": "https://block-explorer-api.testnet.battlechain.com/api",
       "hostnames": ["localhost"],
       "icon": "/images/icons/zksync-arrows.svg",
-      "l2ChainId": 270,
+      "l2ChainId": 627,
       "l2NetworkName": "Local",
       "maintenance": false,
       "name": "local",
       "published": true,
-      "rpcUrl": "http://localhost:3050",
+      "rpcUrl": "https://testnet.battlechain.com:3051",
       "baseTokenAddress": "0x000000000000000000000000000000000000800A",
       "excludedFromBattlechain": [
         "0x0000000000000000000000000000000000008001",

@@ -37,11 +37,13 @@ const upload = (files: File[]) => {
 </script>
 <style lang="scss" scoped>
 .debugger-empty-state-title {
-  @apply mb-1 font-sans text-3xl font-bold text-white;
+  @apply mb-1 font-sans text-3xl font-bold;
+  color: var(--text-primary);
 }
 
 .debugger-empty-state-description {
-  @apply mb-10 font-sans text-base font-normal text-white;
+  @apply mb-10 font-sans text-base font-normal;
+  color: var(--text-secondary);
 }
 .debugger-empty-upload-file-wrapper {
   @apply flex flex-col items-center justify-center rounded-lg p-4 shadow-md;
@@ -71,6 +73,7 @@ const upload = (files: File[]) => {
   @apply mr-1.5 h-6 w-6;
 }
 .upload-file-label {
-  @apply cursor-pointer font-medium text-primary-500 underline;
+  @apply cursor-pointer font-medium underline;
+  color: var(--accent);
 }
 </style>

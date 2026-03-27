@@ -218,7 +218,15 @@ watch(
 .navigation-active-step-label-container {
   @apply flex gap-x-1;
   .active-index {
-    @apply h-4 border-0 border-b border-neutral-400 bg-transparent p-0 text-center text-xs hover:border-neutral-600 focus:border-neutral-600 focus:ring-0 disabled:border-neutral-400;
+    @apply h-4 border-0 border-b bg-transparent p-0 text-center text-xs focus:ring-0;
+    border-color: var(--text-muted);
+    &:hover,
+    &:focus {
+      border-color: var(--text-secondary);
+    }
+    &:disabled {
+      border-color: var(--text-muted);
+    }
   }
   .total {
     @apply whitespace-nowrap;

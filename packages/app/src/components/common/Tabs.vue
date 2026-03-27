@@ -13,7 +13,8 @@
           >
             <slot v-if="$slots[`tab-${i + 1}-header`]" :name="`tab-${i + 1}-header`" />
             <template v-else>
-              <span v-html="tab.title" />
+              <span>{{ tab.title }}</span>
+              <span v-if="tab.badge != null" class="tab-badge">{{ tab.badge }}</span>
               <span v-if="tab.icon" class="tab-icon">
                 <component :is="tab.icon" />
               </span>
@@ -42,6 +43,7 @@ export type Tab = {
   title: string;
   hash: string | null;
   icon?: FunctionalComponent | null;
+  badge?: string | number | null;
 };
 
 const props = defineProps({
@@ -128,6 +130,11 @@ watchEffect(() => {
     outline: 2px solid var(--accent);
     outline-offset: -2px;
   }
+}
+
+.tab-badge {
+  @apply ml-1 min-w-5 rounded px-1 text-center text-sm font-normal;
+  background-color: var(--bg-tertiary);
 }
 
 .tab-icon {

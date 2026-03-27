@@ -63,9 +63,15 @@ const getNetworkUrl = (network: NetworkConfig) => {
   const hostname = getWindowLocation().hostname;
 
   if (hostname === "localhost" || hostname.endsWith("web.app") || !network.hostnames?.length) {
-    return `${route.path}?network=${network.name}`;
+    return `${route.path}?network=${encodeURIComponent(network.name)}`;
   }
-  return network.hostnames[0] + route.path;
+  try {
+    const url = new URL(network.hostnames[0]);
+    url.pathname = route.path;
+    return url.toString();
+  } catch {
+    return route.path;
+  }
 };
 </script>
 
