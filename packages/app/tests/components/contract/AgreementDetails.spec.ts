@@ -215,6 +215,75 @@ describe("AgreementDetails", () => {
     expect(container.textContent).toContain("$100,000");
   });
 
+  describe("XSS prevention", () => {
+    it("blocks javascript: agreementURI from appearing in href", () => {
+      const xssAgreement: SafeHarborAgreement = {
+        ...fullAgreement,
+        agreementURI: "javascript:alert(document.cookie)",
+      };
+      const { container } = render(AgreementDetails, {
+        props: { agreement: xssAgreement },
+        global,
+      });
+
+      const links = container.querySelectorAll("a[href]");
+      links.forEach((link) => {
+        expect(link.getAttribute("href")).not.toContain("javascript:");
+      });
+    });
+
+    it("blocks data: agreementURI from appearing in href", () => {
+      const xssAgreement: SafeHarborAgreement = {
+        ...fullAgreement,
+        agreementURI: "data:text/html,<script>alert(1)</script>",
+      };
+      const { container } = render(AgreementDetails, {
+        props: { agreement: xssAgreement },
+        global,
+      });
+
+      const links = container.querySelectorAll("a[href]");
+      links.forEach((link) => {
+        expect(link.getAttribute("href")).not.toContain("data:");
+      });
+    });
+
+    it("blocks malicious contact links from appearing in href", () => {
+      const xssAgreement: SafeHarborAgreement = {
+        ...fullAgreement,
+        contactDetails: [
+          { name: "Website", contact: "javascript:alert(1)" },
+          { name: "Blog", contact: "data:text/html,<script>alert(1)</script>" },
+        ],
+      };
+      const { container } = render(AgreementDetails, {
+        props: { agreement: xssAgreement },
+        global,
+      });
+
+      const links = container.querySelectorAll("a[href]");
+      links.forEach((link) => {
+        const href = link.getAttribute("href") || "";
+        expect(href).not.toContain("javascript:");
+        expect(href).not.toContain("data:");
+      });
+    });
+
+    it("allows legitimate https agreementURI in href", () => {
+      const safeAgreement: SafeHarborAgreement = {
+        ...fullAgreement,
+        agreementURI: "https://example.com/agreement.pdf",
+      };
+      const { container } = render(AgreementDetails, {
+        props: { agreement: safeAgreement },
+        global,
+      });
+
+      const agreementLink = container.querySelector("a.agreement-uri");
+      expect(agreementLink?.getAttribute("href")).toBe("https://example.com/agreement.pdf");
+    });
+  });
+
   describe("edit mode", () => {
     const globalWithEditStubs = {
       ...global,

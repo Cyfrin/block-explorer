@@ -403,6 +403,7 @@ import type { PropType } from "vue";
 import { ChildContractScope, TimeFormat } from "@/types";
 import { shortValue, truncateMiddle, truncateString } from "@/utils/formatters";
 import { ISOStringFromUnixTimestamp, localDateFromUnixTimestamp } from "@/utils/helpers";
+import { sanitizeHref } from "@/utils/validators";
 
 const { t } = useI18n();
 
@@ -765,7 +766,7 @@ const agreementLink = computed(() => {
   if (uri.startsWith("ar://")) {
     return `https://arweave.net/${uri.slice(5)}`;
   }
-  return uri;
+  return sanitizeHref(uri);
 });
 
 // Contact helpers
@@ -789,7 +790,7 @@ const formatContactLink = (contact: ContactDetail): string => {
   const nameLower = contact.name.toLowerCase();
 
   if (value.startsWith("http")) {
-    return value;
+    return sanitizeHref(value);
   }
 
   if (value.startsWith("@") || nameLower.includes("telegram")) {
@@ -804,7 +805,7 @@ const formatContactLink = (contact: ContactDetail): string => {
     return `https://discord.gg/${value}`;
   }
 
-  return value;
+  return sanitizeHref(value);
 };
 
 const formatTimestamp = (timestamp: number | null): string | null => {

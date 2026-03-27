@@ -24,3 +24,24 @@ export const validateAbiValue = (value: string, type: string) => {
   }
   return true;
 };
+
+const ALLOWED_HREF_PROTOCOLS = new Set([
+  "https:",
+  "http:",
+  "ipfs:",
+  "ar:",
+  "mailto:",
+]);
+
+export function sanitizeHref(href: string): string {
+  if (!href) return "";
+  try {
+    const url = new URL(href);
+    if (ALLOWED_HREF_PROTOCOLS.has(url.protocol)) {
+      return href;
+    }
+  } catch {
+    // Unparseable URI — block it
+  }
+  return "";
+}
