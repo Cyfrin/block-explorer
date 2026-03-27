@@ -25,13 +25,7 @@ export const validateAbiValue = (value: string, type: string) => {
   return true;
 };
 
-const ALLOWED_HREF_PROTOCOLS = new Set([
-  "https:",
-  "http:",
-  "ipfs:",
-  "ar:",
-  "mailto:",
-]);
+const ALLOWED_HREF_PROTOCOLS = new Set(["https:", "http:", "ipfs:", "ar:", "mailto:"]);
 
 export function sanitizeHref(href: string): string {
   if (!href) return "";
