@@ -13,6 +13,7 @@ import $testId from "@/plugins/testId";
 
 const router = {
   replace: vi.fn(),
+  resolve: vi.fn(() => ({ href: "/" })),
   currentRoute: {
     value: {},
   },
@@ -110,7 +111,7 @@ describe("MetadataBlock:", () => {
 
     const memoryIndexesContainer = container.querySelector(".page-index-container");
 
-    const memoryIndexes = memoryIndexesContainer!.querySelectorAll(".page-index");
+    const memoryIndexes = memoryIndexesContainer!.querySelectorAll(".tab-badge");
 
     expect(memoryIndexes[1].textContent).toBe("5");
     expect(memoryIndexes[0].textContent).toBe("12");
@@ -119,10 +120,14 @@ describe("MetadataBlock:", () => {
     expect(memoryIndexes[4]).toBe(undefined);
 
     const memoryTabs = container.querySelectorAll(".tab-button");
-    expect(memoryTabs[0].textContent).toBe("stack 12");
-    expect(memoryTabs[1].textContent).toBe("heap 5");
-    expect(memoryTabs[2].textContent).toBe("code 4");
-    expect(memoryTabs[3].textContent).toBe("calldata 3");
+    expect(memoryTabs[0].textContent).toContain("stack");
+    expect(memoryTabs[0].textContent).toContain("12");
+    expect(memoryTabs[1].textContent).toContain("heap");
+    expect(memoryTabs[1].textContent).toContain("5");
+    expect(memoryTabs[2].textContent).toContain("code");
+    expect(memoryTabs[2].textContent).toContain("4");
+    expect(memoryTabs[3].textContent).toContain("calldata");
+    expect(memoryTabs[3].textContent).toContain("3");
     expect(memoryTabs[4]).toBe(undefined);
   });
   it("renders only existing indexes", async () => {
@@ -142,7 +147,7 @@ describe("MetadataBlock:", () => {
 
     await nextTick();
     const memoryIndexesContainer = container.querySelector(".page-index-container");
-    const memoryIndexes = memoryIndexesContainer!.querySelectorAll(".page-index");
+    const memoryIndexes = memoryIndexesContainer!.querySelectorAll(".tab-badge");
     const memoryTabs = container.querySelectorAll(".tab-button");
     expect(memoryIndexes).toHaveLength(3);
     expect(memoryIndexes[1].textContent).toBe("5");
@@ -150,8 +155,11 @@ describe("MetadataBlock:", () => {
     expect(memoryIndexes[2].textContent).toBe("4");
 
     expect(memoryIndexes).toHaveLength(3);
-    expect(memoryTabs[0].textContent).toBe("stack 12");
-    expect(memoryTabs[1].textContent).toBe("heap 5");
-    expect(memoryTabs[2].textContent).toBe("code 4");
+    expect(memoryTabs[0].textContent).toContain("stack");
+    expect(memoryTabs[0].textContent).toContain("12");
+    expect(memoryTabs[1].textContent).toContain("heap");
+    expect(memoryTabs[1].textContent).toContain("5");
+    expect(memoryTabs[2].textContent).toContain("code");
+    expect(memoryTabs[2].textContent).toContain("4");
   });
 });

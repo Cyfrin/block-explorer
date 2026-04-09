@@ -20,6 +20,7 @@ import $testId from "@/plugins/testId";
 
 const router = {
   push: vi.fn(),
+  resolve: vi.fn(() => ({ href: "/" })),
 };
 
 const routeQueryMock = vi.fn(() => ({}));
@@ -135,6 +136,8 @@ describe("Transfers:", () => {
       let renderResult: RenderResult | null;
 
       beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date("2023-06-21T10:00:00.000Z"));
         mockTransactions = useTransactionsMock({
           data: computed(() => [{ ...transaction, status: "committed" }]),
         });
@@ -160,6 +163,8 @@ describe("Transfers:", () => {
       let renderResult: RenderResult | null;
 
       beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date("2023-06-21T10:00:00.000Z"));
         mockTransactions = useTransactionsMock({
           data: computed(() => [{ ...transaction, status: "proved" }]),
         });
@@ -185,6 +190,8 @@ describe("Transfers:", () => {
       let renderResult: RenderResult | null;
 
       beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date("2023-06-21T10:00:00.000Z"));
         mockTransactions = useTransactionsMock({
           data: computed(() => [{ ...transaction, status: "verified" }]),
         });

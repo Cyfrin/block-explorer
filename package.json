@@ -1,11 +1,11 @@
 {
   "name": "block-explorer",
   "version": "0.1.0",
-  "title": "ZKsync Era Block Explorer",
-  "description": "ZKsync Era Block Explorer",
-  "author": "Matter Labs",
+  "title": "BattleChain Block Explorer",
+  "description": "BattleChain Block Explorer",
+  "author": "Cyfrin",
   "license": "MIT",
-  "repository": "https://github.com/matter-labs/block-explorer",
+  "repository": "https://github.com/Cyfrin/block-explorer",
   "private": true,
   "workspaces": [
     "packages/*"

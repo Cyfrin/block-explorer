@@ -94,7 +94,7 @@ describe("ContractNotRegistered", () => {
     });
 
     expect(container.textContent).toContain("Not Registered");
-    expect(container.textContent).toContain("not registered in the attack registry");
+    expect(container.textContent).toContain("not registered in the Attack Registry");
   });
 
   it("renders warning about interaction risks", () => {
@@ -130,7 +130,8 @@ describe("ContractNotRegistered", () => {
       global: { plugins: [i18n] },
     });
 
-    expect(container.textContent).toContain("Request Attackable Mode");
+    expect(container.textContent).toContain("Want to register this contract?");
+    expect(container.textContent).toContain("Request Attack Mode");
   });
 
   describe("wallet not connected", () => {

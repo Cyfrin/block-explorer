@@ -15,6 +15,7 @@ import $testId from "@/plugins/testId";
 
 const router = {
   push: vi.fn(),
+  resolve: vi.fn(() => ({ href: "/" })),
 };
 vi.mock("vue-router", () => ({
   useRouter: () => router,

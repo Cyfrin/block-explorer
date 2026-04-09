@@ -26,6 +26,7 @@ vi.mock("vue-router", () => ({
   }),
   useRouter: () => ({
     push: vi.fn(),
+    resolve: vi.fn(() => ({ href: "/" })),
   }),
 }));
 

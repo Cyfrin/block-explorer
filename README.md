@@ -1,11 +1,11 @@
 <h1 align="center">BattleChain Block Explorer</h1>
 
-<p align="center">Block explorer for the BattleChain network, forked from the <a href="https://github.com/matter-labs/block-explorer">ZKsync Block Explorer</a>.</p>
+<p align="center">Block explorer for the BattleChain network. Originally based on the <a href="https://github.com/matter-labs/block-explorer">ZKsync Era Block Explorer</a> by Matter Labs.</p>
 
 ## Overview
 This repository is a monorepo consisting of 6 packages:
 
-**Core (from upstream ZKsync Block Explorer):**
+**Core:**
 - [Worker](./packages/worker) - an indexer service for blockchain data. Reads blockchain data in real time, transforms it and fills its database in a way that makes it easy to be queried by the [API](./packages/api) service.
 - [Data Fetcher](./packages/data-fetcher) - a service that exposes an HTTP endpoint to retrieve aggregated data for a certain block / range of blocks from the blockchain. Called by the [Worker](./packages/worker) service.
 - [API](./packages/api) - a service providing Web API for retrieving structured blockchain data collected by [Worker](./packages/worker). Also serves the [BattleChain API](#battlechain-api) endpoints.

@@ -10,6 +10,7 @@ import * as validators from "@/utils/validators";
 
 const router = {
   push: vi.fn(),
+  resolve: vi.fn(() => ({ href: "/" })),
 };
 
 vi.mock("vue-router", () => ({

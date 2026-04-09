@@ -1,12 +1,12 @@
 {
   "name": "app",
   "version": "0.0.0",
-  "title": "ZKsync Era Block Explorer App",
-  "description": "ZKsync Era Block Explorer App",
-  "author": "Matter Labs",
+  "title": "BattleChain Block Explorer App",
+  "description": "BattleChain Block Explorer App",
+  "author": "Cyfrin",
   "private": true,
   "license": "MIT",
-  "repository": "https://github.com/matter-labs/block-explorer",
+  "repository": "https://github.com/Cyfrin/block-explorer",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",

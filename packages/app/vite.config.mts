@@ -35,6 +35,7 @@ export default defineConfig({
     env: {
       TZ: "UTC-3",
     },
+    setupFiles: ["./tests/setup.ts"],
     include: ["./tests/**/**.spec.ts"],
     coverage: {
       reporter: ["text", "json", "html"],
