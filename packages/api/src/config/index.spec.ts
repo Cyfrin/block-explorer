@@ -62,6 +62,7 @@ describe("config", () => {
       },
       chainId: 1,
       contractVerificationApiUrl: "http://localhost:5555",
+      signatureDatabaseApiUrl: null,
       featureFlags: expect.objectContaining({
         feature1Enabled: true,
         feature2Enabled: false,
@@ -137,6 +138,7 @@ describe("config", () => {
         },
         chainId: 1,
         contractVerificationApiUrl: "http://localhost:5555",
+        signatureDatabaseApiUrl: null,
         featureFlags: expect.objectContaining({
           feature1Enabled: true,
           feature2Enabled: false,
@@ -204,6 +206,7 @@ describe("config", () => {
           },
           chainId: 1,
           contractVerificationApiUrl: "http://localhost:5555",
+          signatureDatabaseApiUrl: null,
           featureFlags: expect.objectContaining({
             feature1Enabled: true,
             feature2Enabled: false,
@@ -270,6 +273,7 @@ describe("config", () => {
           },
           chainId: 1,
           contractVerificationApiUrl: "http://localhost:5555",
+          signatureDatabaseApiUrl: null,
           featureFlags: expect.objectContaining({
             feature1Enabled: true,
             feature2Enabled: false,
@@ -361,6 +365,7 @@ describe("config", () => {
       },
       chainId: 1,
       contractVerificationApiUrl: "http://localhost:5555",
+      signatureDatabaseApiUrl: null,
       featureFlags: expect.objectContaining({
         feature1Enabled: true,
         feature2Enabled: false,

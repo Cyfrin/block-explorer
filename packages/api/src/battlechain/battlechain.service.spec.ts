@@ -71,7 +71,7 @@ describe("BattlechainService", () => {
     // Mock createQueryBuilder for agreementStateRepository
     const mockQueryBuilder = mock<SelectQueryBuilder<AgreementCurrentState>>();
     mockQueryBuilder.where.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.getOne.mockResolvedValue(null);
+    mockQueryBuilder.getMany.mockResolvedValue([]);
     (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
     // Mock find and createQueryBuilder for agreementAccountRepository (returns empty by default)
@@ -132,7 +132,7 @@ describe("BattlechainService", () => {
     it("returns NOT_REGISTERED when no agreement covers the contract", async () => {
       const mockQueryBuilder = mock<SelectQueryBuilder<AgreementCurrentState>>();
       mockQueryBuilder.where.mockReturnValue(mockQueryBuilder);
-      mockQueryBuilder.getOne.mockResolvedValue(null);
+      mockQueryBuilder.getMany.mockResolvedValue([]);
       (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
       const result = await service.getContractStateInfo(contractAddress);
@@ -154,16 +154,15 @@ describe("BattlechainService", () => {
       const timestamp = new Date("2024-01-01T00:00:00Z");
 
       // Mock finding the agreement that covers this contract
+      const agreementState = makeAgreementState({
+        agreementAddress: agreementAddress.toLowerCase(),
+        coveredScopeContracts: [contractAddress.toLowerCase()],
+        coveredContracts: [contractAddress.toLowerCase()],
+        createdAt: timestamp,
+      });
       const mockQueryBuilder = mock<SelectQueryBuilder<AgreementCurrentState>>();
       mockQueryBuilder.where.mockReturnValue(mockQueryBuilder);
-      mockQueryBuilder.getOne.mockResolvedValue(
-        makeAgreementState({
-          agreementAddress: agreementAddress.toLowerCase(),
-          coveredScopeContracts: [contractAddress.toLowerCase()],
-          coveredContracts: [contractAddress.toLowerCase()],
-          createdAt: timestamp,
-        })
-      );
+      mockQueryBuilder.getMany.mockResolvedValue([agreementState]);
       (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
       // Mock the agreement state changes
@@ -195,16 +194,15 @@ describe("BattlechainService", () => {
       const productionTime = new Date("2024-01-02T00:00:00Z");
 
       // Mock finding the agreement
+      const agreementState = makeAgreementState({
+        agreementAddress: agreementAddress.toLowerCase(),
+        coveredScopeContracts: [contractAddress.toLowerCase()],
+        coveredContracts: [contractAddress.toLowerCase()],
+        createdAt: registeredTime,
+      });
       const mockQueryBuilder = mock<SelectQueryBuilder<AgreementCurrentState>>();
       mockQueryBuilder.where.mockReturnValue(mockQueryBuilder);
-      mockQueryBuilder.getOne.mockResolvedValue(
-        makeAgreementState({
-          agreementAddress: agreementAddress.toLowerCase(),
-          coveredScopeContracts: [contractAddress.toLowerCase()],
-          coveredContracts: [contractAddress.toLowerCase()],
-          createdAt: registeredTime,
-        })
-      );
+      mockQueryBuilder.getMany.mockResolvedValue([agreementState]);
       (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
       (agreementStateChangeRepository.find as jest.Mock).mockResolvedValue([
@@ -239,16 +237,15 @@ describe("BattlechainService", () => {
       const productionTime = new Date("2024-01-03T00:00:00Z");
 
       // Mock finding the agreement
+      const agreementState = makeAgreementState({
+        agreementAddress: agreementAddress.toLowerCase(),
+        coveredScopeContracts: [contractAddress.toLowerCase()],
+        coveredContracts: [contractAddress.toLowerCase()],
+        createdAt: registeredTime,
+      });
       const mockQueryBuilder = mock<SelectQueryBuilder<AgreementCurrentState>>();
       mockQueryBuilder.where.mockReturnValue(mockQueryBuilder);
-      mockQueryBuilder.getOne.mockResolvedValue(
-        makeAgreementState({
-          agreementAddress: agreementAddress.toLowerCase(),
-          coveredScopeContracts: [contractAddress.toLowerCase()],
-          coveredContracts: [contractAddress.toLowerCase()],
-          createdAt: registeredTime,
-        })
-      );
+      mockQueryBuilder.getMany.mockResolvedValue([agreementState]);
       (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
       (agreementStateChangeRepository.find as jest.Mock).mockResolvedValue([

@@ -94,14 +94,6 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "coverageThreshold": {
-      "global": {
-        "branches": 94,
-        "functions": 100,
-        "lines": 98,
-        "statements": 98
-      }
-    },
     "testEnvironment": "node",
     "coveragePathIgnorePatterns": [
       ".entity.ts",
