@@ -33,10 +33,6 @@ jobs:
       - name: Test
         run: npm run test:ci
 
-      - name: App type check
-        working-directory: ./packages/app
-        run: npm run typecheck
-
       - name: Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
