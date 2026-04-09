@@ -97,10 +97,22 @@ describe("AgreementDetails", () => {
     expect(container.textContent).toContain("$5,000,000");
   });
 
-  it("renders allowed indicator when anonymous is true", () => {
+  it("renders not-allowed indicator when retainable is false", () => {
     const { container } = render(AgreementDetails, {
       props: {
         agreement: fullAgreement,
+      },
+      global,
+    });
+
+    expect(container.querySelector(".not-allowed")).toBeTruthy();
+  });
+
+  it("renders allowed indicator when retainable is true", () => {
+    const retainableAgreement: SafeHarborAgreement = { ...fullAgreement, retainable: true };
+    const { container } = render(AgreementDetails, {
+      props: {
+        agreement: retainableAgreement,
       },
       global,
     });
@@ -176,7 +188,7 @@ describe("AgreementDetails", () => {
       global,
     });
 
-    const coveredContracts = container.querySelectorAll(".covered-contract");
+    const coveredContracts = container.querySelectorAll(".covered-contract-link");
     expect(coveredContracts.length).toBe(2);
   });
 

@@ -97,9 +97,8 @@ const tabs = computed(() => [
     .filter((data) => !!data.index)
     .map((data) => {
       return {
-        title: `${t(`debuggerTool.metadataBlock.memoryPageIndex.${data.type}`)} ${
-          data.index ? `<span class="page-index">${data.index}</span>` : ""
-        }`,
+        title: t(`debuggerTool.metadataBlock.memoryPageIndex.${data.type}`),
+        badge: data.index || null,
         hash: `#${data.type.toLowerCase()}`,
       };
     }),
@@ -114,7 +113,8 @@ const tabs = computed(() => [
     .memory-badge-index-container {
       @apply max-w-[42px];
       .memory-badge-index {
-        @apply col-[1] inline-block w-full min-w-[20px] text-ellipsis rounded bg-neutral-200 px-1 py-0 text-center text-sm leading-5;
+        @apply col-[1] inline-block w-full min-w-[20px] text-ellipsis rounded px-1 py-0 text-center text-sm leading-5;
+        background-color: var(--bg-tertiary);
       }
       .index-width {
         @apply table-cell max-w-fit;
@@ -145,9 +145,11 @@ const tabs = computed(() => [
         @apply flex-none;
       }
       .tab-btn {
-        @apply flex items-center px-2 py-1 text-sm font-normal text-neutral-600;
+        @apply flex items-center px-2 py-1 text-sm font-normal;
+        color: var(--text-secondary);
         .page-index {
-          @apply ml-1 min-w-[20px] rounded bg-neutral-200 px-1 font-normal font-normal;
+          @apply ml-1 min-w-[20px] rounded px-1 font-normal;
+          background-color: var(--bg-tertiary);
         }
       }
     }

@@ -423,7 +423,8 @@ watchEffect(() => {
   .hex-decimals-dropdown {
     @apply flex sm:mr-4;
     .toggle-button {
-      @apply h-auto border-none bg-neutral-200 py-0.5 pl-1.5 pr-0 sm:min-w-[3.5rem];
+      @apply h-auto border-none py-0.5 pl-1.5 pr-0 sm:min-w-[3.5rem];
+      background-color: var(--bg-tertiary);
       .toggle-button-icon-wrapper {
         @apply static inline-flex pr-0 align-bottom;
       }
@@ -442,10 +443,13 @@ watchEffect(() => {
 .head-block {
   @apply flex items-center justify-end;
   .upload-file {
-    @apply relative inline-flex items-center justify-center gap-1 rounded-lg border border-dashed border-neutral-500 bg-transparent px-2 py-4 text-sm text-white sm:px-4  sm:text-base;
+    @apply relative inline-flex items-center justify-center gap-1 rounded-lg border border-dashed bg-transparent px-2 py-4 text-sm sm:px-4 sm:text-base;
+    border-color: var(--border-strong);
+    color: var(--text-secondary);
 
     &.active {
-      @apply border-solid bg-neutral-50/20;
+      @apply border-solid;
+      background-color: var(--bg-hover);
     }
   }
 
@@ -453,25 +457,31 @@ watchEffect(() => {
     @apply mr-1.5 h-6 w-6;
   }
   .upload-file-label {
-    @apply cursor-pointer font-medium text-white underline;
+    @apply cursor-pointer font-medium underline;
+    color: var(--accent);
   }
 }
 
 .parent-child-section {
   @apply hidden overflow-auto px-2 4xl:block;
   .parent-child-item {
-    @apply my-2 overflow-hidden rounded-md border bg-white;
+    @apply my-2 overflow-hidden rounded-md border;
+    background-color: var(--bg-primary);
+    border-color: var(--border-default);
     .parent-child-item-header {
       @apply flex justify-between border-b px-2 py-1;
+      border-color: var(--border-default);
       .parent-child-type {
-        @apply font-mono text-neutral-400;
+        @apply font-mono;
+        color: var(--text-muted);
       }
     }
   }
 }
 
 .parent-child-address {
-  @apply block max-w-sm text-left font-mono text-sm text-neutral-600;
+  @apply block max-w-sm text-left font-mono text-sm;
+  color: var(--text-secondary);
 }
 
 .debugger-metadata-block-container {
@@ -489,21 +499,28 @@ watchEffect(() => {
 .parent-child-header {
   @apply flex justify-between;
   .parent-child-type {
-    @apply font-mono text-sm text-neutral-400;
+    @apply font-mono text-sm;
+    color: var(--text-muted);
   }
 }
 
 .debugger {
-  @apply my-2 grid grid-cols-1 grid-rows-[max-content_max-content_max-content] rounded-lg border-r bg-neutral-100 shadow-md md:grid-cols-2;
+  @apply my-2 grid grid-cols-1 grid-rows-[max-content_max-content_max-content] rounded-lg border-r shadow-md md:grid-cols-2;
+  background-color: var(--bg-secondary);
+  border-color: var(--border-default);
   .debugger-header {
-    @apply col-span-3 flex h-[52px] items-center justify-between whitespace-nowrap rounded-t-lg border border-r-0 border-solid border-neutral-200 bg-neutral-100 px-4;
+    @apply col-span-3 flex h-[52px] items-center justify-between whitespace-nowrap rounded-t-lg border border-r-0 border-solid px-4;
+    background-color: var(--bg-secondary);
+    border-color: var(--border-default);
     h2 {
-      @apply font-sans text-base font-medium text-neutral-800;
+      @apply font-sans text-base font-medium;
+      color: var(--text-primary);
     }
     .full-screen-container {
       @apply flex items-center;
       span {
-        @apply mr-4 hidden text-neutral-400 lg:block;
+        @apply mr-4 hidden lg:block;
+        color: var(--text-muted);
       }
       button {
         @apply hidden sm:block;
@@ -529,9 +546,20 @@ watchEffect(() => {
     @apply px-2;
   }
   .file-list-item-data {
-    @apply sticky top-9 z-50 flex h-9 w-full cursor-pointer items-center gap-3 overflow-hidden border-b border-b-neutral-200 bg-white p-[6px] px-4 font-mono text-sm font-normal text-neutral-700 focus:bg-primary-100 focus:outline-0;
+    @apply sticky top-9 z-50 flex h-9 w-full cursor-pointer items-center gap-3 overflow-hidden border-b p-[6px] px-4 font-mono text-sm font-normal focus:outline-0;
+    background-color: var(--bg-primary);
+    border-color: var(--border-default);
+    color: var(--text-secondary);
+
+    &:focus {
+      background-color: var(--accent-muted);
+    }
+
     > label {
-      @apply inline-flex h-5 cursor-pointer items-center justify-center rounded border border-solid border-neutral-200 bg-neutral-100 px-1 font-sans text-sm font-normal text-neutral-700;
+      @apply inline-flex h-5 cursor-pointer items-center justify-center rounded border border-solid px-1 font-sans text-sm font-normal;
+      border-color: var(--border-default);
+      background-color: var(--bg-secondary);
+      color: var(--text-secondary);
     }
 
     .file-list-item-data-hash-label {
@@ -539,7 +567,8 @@ watchEffect(() => {
     }
 
     .toggle-button {
-      @apply ml-auto h-5 w-5 min-w-[20px] text-neutral-700;
+      @apply ml-auto h-5 w-5 min-w-[20px];
+      color: var(--text-secondary);
     }
 
     &.disabled {

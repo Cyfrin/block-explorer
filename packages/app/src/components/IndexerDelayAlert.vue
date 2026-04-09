@@ -1,10 +1,9 @@
 <template>
   <SystemAlert v-if="isIndexerDelayed">
-    <span
-      v-if="latestTPS > MIN_TPS_TO_SHOW_HEAVY_LOAD_ALERT"
-      v-html="t('systemAlert.indexerDelayedDueToHeavyLoad', { indexerDelayInHours })"
-    />
-    <span v-else v-html="t('systemAlert.indexerDelayed', { indexerDelayInHours })" />
+    <span v-if="latestTPS > MIN_TPS_TO_SHOW_HEAVY_LOAD_ALERT">
+      {{ t("systemAlert.indexerDelayedDueToHeavyLoad", { indexerDelayInHours }) }}
+    </span>
+    <span v-else>{{ t("systemAlert.indexerDelayed", { indexerDelayInHours }) }}</span>
   </SystemAlert>
 </template>
 

@@ -173,7 +173,7 @@
               </span>
               <a
                 v-if="isEmailContact(contact.contact)"
-                :href="`mailto:${contact.contact}`"
+                :href="sanitizeHref(`mailto:${contact.contact}`)"
                 class="detail-value link contact-value"
                 :title="contact.contact.length > 50 ? contact.contact : undefined"
               >

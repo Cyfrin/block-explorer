@@ -2,22 +2,12 @@
   "branches": [
     "+([0-9])?(.{+([0-9]),x}).x",
     "main",
-    "next",
-    "next-major",
     {
       "name": "beta",
       "prerelease": true
     },
     {
       "name": "alpha",
-      "prerelease": true
-    },
-    {
-      "name": "prividium",
-      "prerelease": true
-    },
-        {
-      "name": "zksync-os",
       "prerelease": true
     }
   ],
@@ -31,50 +21,6 @@
         "npmPublish": false
       }
     ],
-    [
-      "@semantic-release/exec",
-      {
-        "prepareCmd": "npm run build-storybook",
-        "publishCmd": "zip -r storybook-static.zip storybook-static",
-        "execCwd": "packages/app"
-      }
-    ],
-    [
-      "@semantic-release/exec",
-      {
-        "prepareCmd": "VITE_VERSION=${nextRelease.version} npm run build",
-        "publishCmd": "zip -r dist.zip dist",
-        "execCwd": "packages/app"
-      }
-    ],
-    [
-      "@semantic-release/exec",
-      {
-        "prepareCmd": "./node_modules/.bin/sentry-cli releases new ${nextRelease.version}",
-        "publishCmd": "./node_modules/.bin/sentry-cli releases files ${nextRelease.version} upload-sourcemaps packages/app/dist",
-        "successCmd": "./node_modules/.bin/sentry-cli releases finalize ${nextRelease.version}"
-      }
-    ],
-    [
-      "@semantic-release/github",
-      {
-        "assets": [
-          {
-            "path": "packages/app/dist.zip",
-            "label": "App dist package"
-          },
-          {
-            "path": "packages/app/storybook-static.zip",
-            "label": "Storybook package"
-          }
-        ]
-      }
-    ],
-    [
-      "@semantic-release/exec",
-      {
-        "successCmd": "echo '::set-output name=releaseVersion::${nextRelease.version}'"
-      }
-    ]
+    "@semantic-release/github"
   ]
 }

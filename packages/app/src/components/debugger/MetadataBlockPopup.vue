@@ -38,7 +38,7 @@
           :active-index="index"
           :data-format="dataFormat"
         />
-        <div class="bg-white">
+        <div class="metadata-popup-slot">
           <slot name="parent-child"></slot>
         </div>
       </div>
@@ -119,10 +119,16 @@ function closeModal() {
 <style scoped lang="scss">
 .metadata-popup-container {
   @apply z-10 overflow-hidden rounded;
+  .metadata-popup-slot {
+    background-color: var(--bg-primary);
+  }
   .metadata-popup-header-container {
-    @apply grid grid-cols-[1fr_minmax(0,_144px)_max-content] items-center justify-between border-b bg-neutral-50;
+    @apply grid grid-cols-[1fr_minmax(0,_144px)_max-content] items-center justify-between border-b;
+    background-color: var(--bg-secondary);
+    border-color: var(--border-default);
     .metadata-popup-active-code {
-      @apply mx-3 truncate font-mono text-neutral-600;
+      @apply mx-3 truncate font-mono;
+      color: var(--text-secondary);
     }
     .metadata-popup-nav-container {
       @apply col-start-2 flex;

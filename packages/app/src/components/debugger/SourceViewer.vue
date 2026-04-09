@@ -254,14 +254,18 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .instruction-list {
-  @apply relative overflow-hidden border-b border-solid border-b-neutral-200 bg-neutral-100;
+  @apply relative overflow-hidden border-b border-solid;
+  border-color: var(--border-default);
+  background-color: var(--bg-secondary);
 }
 
 .instruction-list-item {
-  @apply absolute grid h-[v-bind('ITEM_HEIGHT+"px"')] w-full grid-cols-[50px_minmax(0,_1fr)_max-content] items-center gap-4 whitespace-pre px-4 font-mono text-sm font-normal leading-6 text-neutral-600;
+  @apply absolute grid h-[v-bind('ITEM_HEIGHT+"px"')] w-full grid-cols-[50px_minmax(0,_1fr)_max-content] items-center gap-4 whitespace-pre px-4 font-mono text-sm font-normal leading-6;
+  color: var(--text-secondary);
 
   .toggle-button {
-    @apply ml-auto h-5 w-5 text-neutral-700;
+    @apply ml-auto h-5 w-5;
+    color: var(--text-secondary);
   }
   > .instruction-list-item-text-container {
     @apply overflow-hidden text-ellipsis whitespace-pre;
@@ -297,6 +301,7 @@ onUnmounted(() => {
 
 <style lang="scss">
 .mark {
-  @apply bg-transparent text-primary-500;
+  @apply bg-transparent;
+  color: var(--accent);
 }
 </style>

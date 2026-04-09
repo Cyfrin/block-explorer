@@ -6,9 +6,9 @@
           {{ item.label }}
         </a>
       </div>
-      <!-- <div class="version-text-container">
+      <div class="version-text-container">
         <p>{{ config.version }}</p>
-      </div> -->
+      </div>
     </div>
   </footer>
 </template>
