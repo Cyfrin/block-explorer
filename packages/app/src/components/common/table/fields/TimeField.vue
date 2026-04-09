@@ -72,7 +72,8 @@ const isoString = computed(() => {
   return props.value;
 });
 
-const timeAgo = useTimeAgo(isoString.value, { messages: messages.value });
+const dateValue = computed(() => new Date(isoString.value));
+const timeAgo = useTimeAgo(dateValue, { messages: messages.value });
 </script>
 
 <style lang="scss">
