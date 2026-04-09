@@ -55,7 +55,7 @@ The API exposes BattleChain endpoints under `/battlechain/*`:
 |----------|-------------|
 | `GET /battlechain/contract-state/:address` | Get the current AttackRegistry state for a contract |
 | `GET /battlechain/agreement/:address` | Get agreement details by agreement address |
-| `GET /battlechain/agreement/by-contract/:address` | Find the agreement covering a specific contract |
+| `GET /battlechain/agreement/by-contract/:address` | Find agreements covering a specific contract |
 | `GET /battlechain/agreements` | List all agreements (paginated, sortable, filterable by state) |
 | `GET /battlechain/authorized-owner/:address` | Check if a contract was deployed via BattleChainDeployer |
 | `POST /battlechain/authorized-owners` | Batch check authorized owners for multiple contracts |
