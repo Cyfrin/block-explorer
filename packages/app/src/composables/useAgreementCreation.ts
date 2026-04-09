@@ -142,6 +142,7 @@ export default function useAgreementCreation(context = useContext()) {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const adoptSafeHarbor = async (contractAddress: string) => {
     const registryAddress = context.currentNetwork.value.safeHarborRegistryAddress;
 

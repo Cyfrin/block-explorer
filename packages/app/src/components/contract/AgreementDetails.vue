@@ -453,16 +453,6 @@ const showStateBanner = computed(
     isCorrupted.value
 );
 
-// Banner styling based on state
-const stateBannerClass = computed(() => ({
-  "state-registered": isRegistered.value,
-  "state-pending": isPendingApproval.value,
-  "state-active": isUnderAttack.value,
-  "state-promotion": isPromotionPending.value,
-  "state-production": isProduction.value,
-  "state-corrupted": isCorrupted.value,
-}));
-
 // Header styling based on state
 const headerStateClass = computed(() => ({
   "state-registered": isRegistered.value,
@@ -531,10 +521,7 @@ const isOwner = computed(() => {
 // Attack moderator check (for promote/cancel promotion actions)
 const agreementAddressRef = computed(() => props.agreement.agreementAddress);
 const walletAddressRef = computed(() => props.walletAddress);
-const { isAttackModerator, isLoading: isAttackModeratorLoading } = useAttackModerator(
-  agreementAddressRef,
-  walletAddressRef
-);
+const { isAttackModerator } = useAttackModerator(agreementAddressRef, walletAddressRef);
 
 // Check if terms are currently locked (in commitment window)
 const isTermsLocked = computed(() => {
@@ -850,7 +837,8 @@ const getChildScopeLabel = (scope: number): string => {
 };
 
 // Badge color based on scope - use neutral for consistency with parent component
-const getChildScopeBadgeColor = (_scope: number): "neutral" | "success" | "accent" => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const getChildScopeBadgeColor = (scope: number): "neutral" | "success" | "accent" => {
   return "neutral";
 };
 

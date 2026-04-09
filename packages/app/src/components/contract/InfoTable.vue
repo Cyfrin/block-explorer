@@ -190,7 +190,6 @@ const { t } = useI18n();
 const contractAddress = computed(() => props.contract?.address || "");
 const {
   agreements,
-  agreement,
   hasAgreement,
   isLoading: isAgreementLoading,
   isFetched: isAgreementFetched,

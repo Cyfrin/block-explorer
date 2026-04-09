@@ -13,6 +13,7 @@ import { AttackModeratorTransferred } from "../src/battlechain/attackModeratorTr
 
 // Time constants (matching battlechain.constants.ts)
 const PROMOTION_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PROMOTION_DELAY_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
 
 // Test addresses
@@ -824,6 +825,7 @@ describe("BattleChain API (e2e)", () => {
 
     it("calculates promotionWindowEnds as promotionRequestedAt + 3 days for PROMOTION_REQUESTED", async () => {
       // Query the agreement directly
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const response = await request(app.getHttpServer())
         .get(`/battlechain/agreement/${TEST_ADDRESSES.AGREEMENT_PROMOTION_REQUESTED}`)
         .expect(200);

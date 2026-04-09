@@ -17,7 +17,10 @@ const entityName = "stats";
 export class StatsController {
   private readonly ethTokenAddress: string;
 
-  constructor(private readonly tokenService: TokenService, private readonly configService: ConfigService) {
+  constructor(
+    private readonly tokenService: TokenService,
+    private readonly configService: ConfigService
+  ) {
     this.ethTokenAddress = this.configService.get<BaseToken>("ethToken").l2Address;
   }
 

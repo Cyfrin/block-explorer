@@ -65,8 +65,6 @@ import useAgreementCreation from "@/composables/useAgreementCreation";
 import useContext from "@/composables/useContext";
 import useContractAuthorization from "@/composables/useContractAuthorization";
 
-import type { PropType } from "vue";
-
 const { t } = useI18n();
 const context = useContext();
 

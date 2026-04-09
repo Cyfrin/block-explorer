@@ -166,15 +166,6 @@ const identityOptions = computed(() => {
   return options;
 });
 
-// Check if retainable can be changed (can only go true -> true or false -> true when locked)
-const canChangeRetainable = computed(() => {
-  if (!props.isLocked || !props.originalValues) return true;
-  // If original was true, can stay true
-  // If original was false, can change to true
-  // Cannot go from true to false when locked
-  return props.originalValues.retainable === false || form.retainable === true;
-});
-
 // Validate and emit on change
 watch(
   form,

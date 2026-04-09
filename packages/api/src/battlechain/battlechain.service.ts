@@ -559,9 +559,7 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       CORRUPTED: 7,
     };
 
-    const results = await Promise.all(
-      agreements.map((a) => this.getAgreementStateInfoInternal(a.agreementAddress, a))
-    );
+    const results = await Promise.all(agreements.map((a) => this.getAgreementStateInfoInternal(a.agreementAddress, a)));
 
     return results.reduce((best, current) => {
       const bestRank = stateRank[best.state] ?? 0;
@@ -1054,9 +1052,9 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
    */
   async getAllAgreements(
     stateFilter?: string,
-    page: number = 1,
-    limit: number = 10,
-    sortBy: string = "createdAt",
+    page = 1,
+    limit = 10,
+    sortBy = "createdAt",
     sortOrder: "ASC" | "DESC" = "DESC"
   ): Promise<PaginatedAgreementsDto> {
     // Clamp limit to max 100
@@ -1139,10 +1137,13 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       if (!accountsByAgreement.has(key)) {
         accountsByAgreement.set(key, []);
       }
-      accountsByAgreement.get(key)!.push({
-        accountAddress: account.accountAddress,
-        childContractScope: account.childContractScope,
-      });
+      const list = accountsByAgreement.get(key);
+      if (list) {
+        list.push({
+          accountAddress: account.accountAddress,
+          childContractScope: account.childContractScope,
+        });
+      }
     }
 
     return accountsByAgreement;

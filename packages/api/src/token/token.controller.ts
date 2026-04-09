@@ -28,7 +28,10 @@ const entityName = "tokens";
 @ApiExcludeController(!swagger.bffEnabled)
 @Controller(entityName)
 export class TokenController {
-  constructor(private readonly tokenService: TokenService, private readonly transferService: TransferService) {}
+  constructor(
+    private readonly tokenService: TokenService,
+    private readonly transferService: TransferService
+  ) {}
 
   @Get("")
   @ApiListPageOkResponse(TokenDto, { description: "Successfully returned token list" })

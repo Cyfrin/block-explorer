@@ -50,7 +50,7 @@
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { CheckCircleIcon, ExclamationCircleIcon } from "@heroicons/vue/outline";
+import { ExclamationCircleIcon } from "@heroicons/vue/outline";
 
 import useContext from "@/composables/useContext";
 import useContractRegistration from "@/composables/useContractRegistration";
@@ -101,23 +101,6 @@ const isMetamaskInstalled = computed(() =>
 const isConnectPending = computed(() =>
   props.overrideConnectPending !== undefined ? props.overrideConnectPending : registration.isConnectPending.value
 );
-const isRegistering = computed(() =>
-  props.overrideRegistering !== undefined ? props.overrideRegistering : registration.isRegistering.value
-);
-const registrationError = computed(() =>
-  props.overrideError !== undefined ? props.overrideError : registration.registrationError.value
-);
-const registrationTxHash = computed(() =>
-  props.overrideTxHash !== undefined ? props.overrideTxHash : registration.registrationTxHash.value
-);
-
-// Check if connected wallet is the contract owner/deployer
-const isOwner = computed(() => {
-  if (props.overrideIsOwner !== undefined) return props.overrideIsOwner;
-  if (!registration.walletAddress.value || !props.creatorAddress) return true; // Assume owner if we can't check
-  return registration.walletAddress.value.toLowerCase() === props.creatorAddress.toLowerCase();
-});
-
 const connectButtonText = computed(() => {
   if (isConnectPending.value) {
     return t("contractRegistration.connecting");
@@ -128,21 +111,8 @@ const connectButtonText = computed(() => {
   return t("contractRegistration.connectWallet");
 });
 
-const txLink = computed(() => {
-  if (!registrationTxHash.value) return "";
-  return `/tx/${registrationTxHash.value}`;
-});
-
-const handleRegister = () => {
-  registration.registerContract(props.contractAddress);
-};
-
 const handleRequestAttackableMode = () => {
   emit("request-attackable-mode");
-};
-
-const refreshPage = () => {
-  window.location.reload();
 };
 
 onMounted(async () => {

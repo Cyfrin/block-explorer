@@ -11,7 +11,10 @@ const entityName = "stats";
 @ApiExcludeController(!swagger.bffEnabled)
 @Controller(entityName)
 export class StatsController {
-  constructor(private readonly blocksService: BlockService, private readonly transactionService: TransactionService) {}
+  constructor(
+    private readonly blocksService: BlockService,
+    private readonly transactionService: TransactionService
+  ) {}
 
   @Get()
   @ApiOkResponse({ description: "Blockchain stats", type: StatsDto })

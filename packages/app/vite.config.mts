@@ -3,8 +3,8 @@ import tailwindAutoReference from "vite-plugin-vue-tailwind-auto-reference";
 
 import tailwindcss from "@tailwindcss/vite";
 import vue from "@vitejs/plugin-vue";
-import { fileURLToPath, URL } from "url";
 import { readFileSync } from "fs";
+import { fileURLToPath, URL } from "url";
 
 const rootPkg = JSON.parse(readFileSync(fileURLToPath(new URL("../../package.json", import.meta.url)), "utf-8"));
 

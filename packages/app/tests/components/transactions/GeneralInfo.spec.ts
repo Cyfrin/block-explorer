@@ -176,6 +176,7 @@ const transaction: TransactionItem = {
 
 vi.mock("vue-router", () => ({
   useRouter: () => ({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     resolve: (to: unknown) => ({ href: "#" }),
   }),
   useRoute: () => ({}),
