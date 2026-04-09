@@ -18,6 +18,7 @@ import {
   PaginatedAgreementsDto,
 } from "./battlechain.dto";
 import { PROMOTION_WINDOW_MS, PROMOTION_DELAY_MS } from "./battlechain.constants";
+import { ValueEstimationService } from "./valueEstimation/valueEstimation.service";
 
 const AGREEMENT_ABI = [
   "function getDetails() view returns (tuple(string protocolName, tuple(string name, string contact)[] contactDetails, tuple(string assetRecoveryAddress, tuple(string accountAddress, uint8 childContractScope)[] accounts, string caip2ChainId)[] chains, tuple(uint256 bountyPercentage, uint256 bountyCapUsd, bool retainable, uint8 identity, string diligenceRequirements, uint256 aggregateBountyCapUsd) bountyTerms, string agreementURI))",
@@ -40,11 +41,14 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
   private static readonly RPC_POLL_BATCH_SIZE = 10;
   private static readonly CHILD_RESOLUTION_INTERVAL_MS = 15_000;
   private static readonly STATE_TRANSITION_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+  private static readonly VALUE_ESTIMATION_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
   private stateTransitionTimer: NodeJS.Timer = null;
+  private valueEstimationTimer: NodeJS.Timer = null;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
+    private readonly valueEstimationService: ValueEstimationService,
     @InjectRepository(AgreementStateChange)
     private readonly agreementStateChangeRepository: Repository<AgreementStateChange>,
     @InjectRepository(AgreementCurrentState)
@@ -85,6 +89,14 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       BattlechainService.STATE_TRANSITION_INTERVAL_MS
     );
     this.logger.log(`State transition polling started (every ${BattlechainService.STATE_TRANSITION_INTERVAL_MS}ms)`);
+
+    this.valueEstimationTimer = setInterval(
+      () => this.valueEstimationService.estimateAllAgreements(),
+      BattlechainService.VALUE_ESTIMATION_INTERVAL_MS
+    );
+    this.logger.log(
+      `Value estimation polling started (every ${BattlechainService.VALUE_ESTIMATION_INTERVAL_MS}ms)`
+    );
   }
 
   onModuleDestroy() {
@@ -96,6 +108,9 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
     }
     if (this.stateTransitionTimer) {
       clearInterval(this.stateTransitionTimer);
+    }
+    if (this.valueEstimationTimer) {
+      clearInterval(this.valueEstimationTimer);
     }
   }
 
@@ -797,6 +812,13 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       coveredAccounts,
       createdAtBlock: state.createdAtBlock,
       createdAt: state.createdAt ? state.createdAt.getTime() : null,
+      valueBand: state.valueBand ?? undefined,
+      valuePricedUsd: state.valuePricedUsd ?? undefined,
+      valueNativeUsd: state.valueNativeUsd ?? undefined,
+      valuePricedTokens: state.valuePricedTokens ?? undefined,
+      valueUnpricedTokens: state.valueUnpricedTokens ?? undefined,
+      valueConfidence: state.valueConfidence ?? undefined,
+      valueEstimatedAt: state.valueEstimatedAt ? state.valueEstimatedAt.getTime() : undefined,
     };
   }
 
@@ -1044,6 +1066,7 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       bountyPercentage: "agreement.bountyPercentage",
       bountyCapUsd: "agreement.bountyCapUsd",
       createdAt: "agreement.createdAt",
+      valuePricedUsd: "agreement.valuePricedUsd",
     };
     return sortColumnMap[sortBy] || "agreement.createdAt";
   }

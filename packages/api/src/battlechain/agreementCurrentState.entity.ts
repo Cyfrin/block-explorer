@@ -106,4 +106,26 @@ export class AgreementCurrentState {
 
   @Column({ name: "rpc_fetched_at", type: "timestamptz", nullable: true })
   rpcFetchedAt: Date | null;
+
+  // Value estimation (populated by background job)
+  @Column({ name: "value_band", type: "varchar", length: 20, nullable: true })
+  valueBand: string | null;
+
+  @Column({ name: "value_priced_usd", type: "numeric", nullable: true })
+  valuePricedUsd: string | null;
+
+  @Column({ name: "value_native_usd", type: "numeric", nullable: true })
+  valueNativeUsd: string | null;
+
+  @Column({ name: "value_priced_tokens", type: "jsonb", nullable: true })
+  valuePricedTokens: Array<{ symbol: string; address: string; usd: number }> | null;
+
+  @Column({ name: "value_unpriced_tokens", type: "jsonb", nullable: true })
+  valueUnpricedTokens: Array<{ symbol: string | null; address: string }> | null;
+
+  @Column({ name: "value_confidence", type: "varchar", length: 10, nullable: true })
+  valueConfidence: string | null;
+
+  @Column({ name: "value_estimated_at", type: "timestamptz", nullable: true })
+  valueEstimatedAt: Date | null;
 }

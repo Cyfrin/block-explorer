@@ -934,5 +934,38 @@ WHERE
   AND registered_at IS NOT NULL
   AND NOW() >= registered_at + INTERVAL '14 days';
 
+-- ============================================
+-- Value estimation columns (for exploit value estimation feature)
+-- ============================================
+ALTER TABLE
+  battlechainindexer_agreement.agreement_current_state
+ADD
+  COLUMN IF NOT EXISTS value_band VARCHAR(20),
+ADD
+  COLUMN IF NOT EXISTS value_priced_usd NUMERIC,
+ADD
+  COLUMN IF NOT EXISTS value_native_usd NUMERIC,
+ADD
+  COLUMN IF NOT EXISTS value_priced_tokens JSONB,
+ADD
+  COLUMN IF NOT EXISTS value_unpriced_tokens JSONB,
+ADD
+  COLUMN IF NOT EXISTS value_confidence VARCHAR(10),
+ADD
+  COLUMN IF NOT EXISTS value_estimated_at TIMESTAMPTZ;
+
+-- ============================================
+-- Token decomposition cache (for local token type detection)
+-- ============================================
+CREATE TABLE IF NOT EXISTS battlechainindexer_agreement.token_decomposition (
+  token_address CHAR(42) PRIMARY KEY,
+  decomposition_type VARCHAR(20) NOT NULL, -- erc4626 / uniswap_v2 / compound / aave / wrapper / unknown
+  underlying_tokens JSONB, -- [{address, decimals}]
+  source VARCHAR(20) NOT NULL DEFAULT 'auto_detected', -- auto_detected / admin_override
+  detected_at TIMESTAMPTZ DEFAULT NOW(),
+  last_ratio_update TIMESTAMPTZ,
+  cached_ratios JSONB -- [{underlyingAddress, ratio}]
+);
+
 SELECT
   'Agreement current state and accounts tables created successfully!' AS status;

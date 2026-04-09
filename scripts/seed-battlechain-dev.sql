@@ -25,6 +25,19 @@
 -- 0x...0009: CORRUPTED ("Compromised"), has agreement
 
 -- ============================================
+-- 0. Prerequisite rows (block + transaction for FK constraints)
+-- ============================================
+-- The tokens and balances tables have FK constraints on blocks and transactions.
+-- Insert a seed block and transaction so we can reference them.
+INSERT INTO blocks (number, nonce, difficulty, "gasLimit", "gasUsed", "baseFeePerGas", "l1TxCount", "l2TxCount", hash, miner, "extraData", "timestamp")
+VALUES (100, '0', 0, '0', '0', '0', 0, 0, '\xfeed000000000000000000000000000000000000000000000000000000000001', '\x0000000000000000000000000000000000000000', '\x', NOW())
+ON CONFLICT (number) DO NOTHING;
+
+INSERT INTO transactions (nonce, "transactionIndex", "gasLimit", "gasPrice", value, "blockNumber", type, fee, "isL1Originated", "receivedAt", hash, "from", data, "blockHash")
+VALUES (0, 0, '0', '0', '0', 100, 0, '0', false, NOW(), '\xfeed000000000000000000000000000000000000000000000000000000000002', '\x0000000000000000000000000000000000000000', '\x', '\xfeed000000000000000000000000000000000000000000000000000000000001')
+ON CONFLICT (hash) DO NOTHING;
+
+-- ============================================
 -- 1. Insert contract addresses into addresses table
 -- ============================================
 -- Note: bytecode must be >2 bytes for address to be recognized as a contract
@@ -58,17 +71,7 @@ ON CONFLICT (address) DO UPDATE SET bytecode = EXCLUDED.bytecode;
 -- Note: This table tracks state changes indexed by AGREEMENT address (not contract address)
 -- The API queries this table to get state info for agreements
 
--- Create the table if it doesn't exist (normally created by rindexer)
-CREATE TABLE IF NOT EXISTS battlechainindexer_attack_registry.agreement_state_changed (
-  rindexer_id INT PRIMARY KEY,
-  agreement_address CHAR(42),
-  new_state SMALLINT,
-  tx_hash CHAR(66) NOT NULL,
-  block_number NUMERIC NOT NULL,
-  log_index VARCHAR(78) NOT NULL,
-  block_timestamp TIMESTAMPTZ
-);
-
+-- Table is created by rindexer; just ensure the index exists
 CREATE INDEX IF NOT EXISTS idx_agreement_state_changed_address
   ON battlechainindexer_attack_registry.agreement_state_changed(agreement_address);
 
@@ -89,60 +92,59 @@ WHERE agreement_address IN (
 
 -- 0xaaaa...0003: NEW_DEPLOYMENT only
 INSERT INTO battlechainindexer_attack_registry.agreement_state_changed
-  (rindexer_id, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp)
+  (rindexer_id, contract_address, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp, block_hash, network, tx_index)
 VALUES
-  (1003, '0xaaaa000000000000000000000000000000000003', 1, '0x' || repeat('c', 64), 101, '0', NOW() - INTERVAL '6 days');
+  (1003, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000003', 1, '0x' || repeat('c', 64), 101, '0', NOW() - INTERVAL '6 days', '0x' || repeat('a', 64), 'local', 0);
 
 -- 0xaaaa...0004: NEW_DEPLOYMENT -> ATTACK_REQUESTED ("Warming Up")
--- The tx_hash for ATTACK_REQUESTED (state=2) will be shown as "View transaction" link
 INSERT INTO battlechainindexer_attack_registry.agreement_state_changed
-  (rindexer_id, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp)
+  (rindexer_id, contract_address, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp, block_hash, network, tx_index)
 VALUES
-  (1004, '0xaaaa000000000000000000000000000000000004', 1, '0x' || repeat('e', 64), 102, '0', NOW() - INTERVAL '5 days'),
-  (1005, '0xaaaa000000000000000000000000000000000004', 2, '0xabcd1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab', 103, '0', NOW() - INTERVAL '4 days');
+  (1004, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000004', 1, '0x' || repeat('e', 64), 102, '0', NOW() - INTERVAL '5 days', '0x' || repeat('a', 64), 'local', 0),
+  (1005, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000004', 2, '0xabcd1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab', 103, '0', NOW() - INTERVAL '4 days', '0x' || repeat('a', 64), 'local', 0);
 
 -- 0xaaaa...0005: NEW_DEPLOYMENT -> ATTACK_REQUESTED -> UNDER_ATTACK ("Attackable")
 INSERT INTO battlechainindexer_attack_registry.agreement_state_changed
-  (rindexer_id, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp)
+  (rindexer_id, contract_address, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp, block_hash, network, tx_index)
 VALUES
-  (1006, '0xaaaa000000000000000000000000000000000005', 1, '0x' || repeat('3', 64), 104, '0', NOW() - INTERVAL '10 days'),
-  (1007, '0xaaaa000000000000000000000000000000000005', 2, '0x' || repeat('5', 64), 105, '0', NOW() - INTERVAL '8 days'),
-  (1008, '0xaaaa000000000000000000000000000000000005', 3, '0x5' || repeat('0', 63), 106, '0', NOW() - INTERVAL '3 days');
+  (1006, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000005', 1, '0x' || repeat('3', 64), 104, '0', NOW() - INTERVAL '10 days', '0x' || repeat('a', 64), 'local', 0),
+  (1007, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000005', 2, '0x' || repeat('5', 64), 105, '0', NOW() - INTERVAL '8 days', '0x' || repeat('a', 64), 'local', 0),
+  (1008, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000005', 3, '0x5' || repeat('0', 63), 106, '0', NOW() - INTERVAL '3 days', '0x' || repeat('a', 64), 'local', 0);
 
 -- 0xaaaa...0006: NEW_DEPLOYMENT -> ATTACK_REQUESTED -> UNDER_ATTACK -> PROMOTION_REQUESTED ("Promotion Pending")
 INSERT INTO battlechainindexer_attack_registry.agreement_state_changed
-  (rindexer_id, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp)
+  (rindexer_id, contract_address, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp, block_hash, network, tx_index)
 VALUES
-  (1009, '0xaaaa000000000000000000000000000000000006', 1, '0x' || repeat('7', 64), 107, '0', NOW() - INTERVAL '20 days'),
-  (1010, '0xaaaa000000000000000000000000000000000006', 2, '0x' || repeat('9', 64), 108, '0', NOW() - INTERVAL '18 days'),
-  (1011, '0xaaaa000000000000000000000000000000000006', 3, '0x91' || repeat('0', 62), 109, '0', NOW() - INTERVAL '10 days'),
-  (1012, '0xaaaa000000000000000000000000000000000006', 4, '0x' || repeat('b', 64), 110, '0', NOW() - INTERVAL '2 days');
+  (1009, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000006', 1, '0x' || repeat('7', 64), 107, '0', NOW() - INTERVAL '20 days', '0x' || repeat('a', 64), 'local', 0),
+  (1010, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000006', 2, '0x' || repeat('9', 64), 108, '0', NOW() - INTERVAL '18 days', '0x' || repeat('a', 64), 'local', 0),
+  (1011, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000006', 3, '0x91' || repeat('0', 62), 109, '0', NOW() - INTERVAL '10 days', '0x' || repeat('a', 64), 'local', 0),
+  (1012, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000006', 4, '0x' || repeat('b', 64), 110, '0', NOW() - INTERVAL '2 days', '0x' || repeat('a', 64), 'local', 0);
 
 -- 0xaaaa...0007: Full lifecycle -> PRODUCTION (was under attack)
 INSERT INTO battlechainindexer_attack_registry.agreement_state_changed
-  (rindexer_id, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp)
+  (rindexer_id, contract_address, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp, block_hash, network, tx_index)
 VALUES
-  (1013, '0xaaaa000000000000000000000000000000000007', 1, '0x' || repeat('d', 64), 111, '0', NOW() - INTERVAL '30 days'),
-  (1014, '0xaaaa000000000000000000000000000000000007', 2, '0xd1' || repeat('0', 62), 112, '0', NOW() - INTERVAL '28 days'),
-  (1015, '0xaaaa000000000000000000000000000000000007', 3, '0xd2' || repeat('0', 62), 113, '0', NOW() - INTERVAL '21 days'),
-  (1016, '0xaaaa000000000000000000000000000000000007', 4, '0xd3' || repeat('0', 62), 114, '0', NOW() - INTERVAL '10 days'),
-  (1017, '0xaaaa000000000000000000000000000000000007', 5, '0x' || repeat('f', 64), 115, '0', NOW() - INTERVAL '7 days');
+  (1013, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000007', 1, '0x' || repeat('d', 64), 111, '0', NOW() - INTERVAL '30 days', '0x' || repeat('a', 64), 'local', 0),
+  (1014, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000007', 2, '0xd1' || repeat('0', 62), 112, '0', NOW() - INTERVAL '28 days', '0x' || repeat('a', 64), 'local', 0),
+  (1015, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000007', 3, '0xd2' || repeat('0', 62), 113, '0', NOW() - INTERVAL '21 days', '0x' || repeat('a', 64), 'local', 0),
+  (1016, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000007', 4, '0xd3' || repeat('0', 62), 114, '0', NOW() - INTERVAL '10 days', '0x' || repeat('a', 64), 'local', 0),
+  (1017, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000007', 5, '0x' || repeat('f', 64), 115, '0', NOW() - INTERVAL '7 days', '0x' || repeat('a', 64), 'local', 0);
 
 -- 0xaaaa...0008: Direct to PRODUCTION (no attack history - used goToProduction())
 INSERT INTO battlechainindexer_attack_registry.agreement_state_changed
-  (rindexer_id, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp)
+  (rindexer_id, contract_address, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp, block_hash, network, tx_index)
 VALUES
-  (1018, '0xaaaa000000000000000000000000000000000008', 1, '0xf1' || repeat('0', 62), 116, '0', NOW() - INTERVAL '14 days'),
-  (1019, '0xaaaa000000000000000000000000000000000008', 5, '0xf2' || repeat('0', 62), 117, '0', NOW() - INTERVAL '7 days');
+  (1018, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000008', 1, '0xf1' || repeat('0', 62), 116, '0', NOW() - INTERVAL '14 days', '0x' || repeat('a', 64), 'local', 0),
+  (1019, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000008', 5, '0xf2' || repeat('0', 62), 117, '0', NOW() - INTERVAL '7 days', '0x' || repeat('a', 64), 'local', 0);
 
 -- 0xaaaa...0009: CORRUPTED ("Compromised") - agreement was successfully attacked
 INSERT INTO battlechainindexer_attack_registry.agreement_state_changed
-  (rindexer_id, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp)
+  (rindexer_id, contract_address, agreement_address, new_state, tx_hash, block_number, log_index, block_timestamp, block_hash, network, tx_index)
 VALUES
-  (1020, '0xaaaa000000000000000000000000000000000009', 1, '0xf3' || repeat('0', 62), 118, '0', NOW() - INTERVAL '15 days'),
-  (1021, '0xaaaa000000000000000000000000000000000009', 2, '0xf4' || repeat('0', 62), 119, '0', NOW() - INTERVAL '13 days'),
-  (1022, '0xaaaa000000000000000000000000000000000009', 3, '0xf5' || repeat('0', 62), 120, '0', NOW() - INTERVAL '10 days'),
-  (1023, '0xaaaa000000000000000000000000000000000009', 6, '0xf6' || repeat('0', 62), 121, '0', NOW() - INTERVAL '5 days');
+  (1020, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000009', 1, '0xf3' || repeat('0', 62), 118, '0', NOW() - INTERVAL '15 days', '0x' || repeat('a', 64), 'local', 0),
+  (1021, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000009', 2, '0xf4' || repeat('0', 62), 119, '0', NOW() - INTERVAL '13 days', '0x' || repeat('a', 64), 'local', 0),
+  (1022, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000009', 3, '0xf5' || repeat('0', 62), 120, '0', NOW() - INTERVAL '10 days', '0x' || repeat('a', 64), 'local', 0),
+  (1023, '0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000009', 6, '0xf6' || repeat('0', 62), 121, '0', NOW() - INTERVAL '5 days', '0x' || repeat('a', 64), 'local', 0);
 
 -- ============================================
 -- 3. Create agreement accounts table (for covered contracts with child scopes)
@@ -177,16 +179,19 @@ WHERE agreement_address IN (
 );
 
 -- Using Anvil test address as owner so it becomes the attack moderator
+-- Note: The trg_agreement_created trigger will fire and try to INSERT into agreement_current_state,
+-- but we INSERT our own rows in section 5 (which will conflict and be ignored by the trigger's ON CONFLICT).
+-- We insert into agreement_created mainly so the API can look up agreement metadata.
 INSERT INTO battlechainindexer_agreement_factory.agreement_created
-  (agreement_address, owner, salt, tx_hash, block_number, log_index, block_timestamp, contract_address, block_hash, network, tx_index)
+  (contract_address, agreement_address, owner, salt, tx_hash, block_number, log_index, block_timestamp, block_hash, network, tx_index)
 VALUES
-  ('0xaaaa000000000000000000000000000000000003', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x00', '0x' || repeat('1', 64), 101, '1', NOW() - INTERVAL '6 days', '0x' || repeat('0', 40), '0x' || repeat('d', 64), 'local', 1),
-  ('0xaaaa000000000000000000000000000000000004', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x01', '0x' || repeat('2', 64), 102, '1', NOW() - INTERVAL '5 days', '0x' || repeat('0', 40), '0x' || repeat('f', 64), 'local', 1),
-  ('0xaaaa000000000000000000000000000000000005', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x02', '0x' || repeat('3', 64), 104, '1', NOW() - INTERVAL '10 days', '0x' || repeat('0', 40), '0x' || repeat('4', 64), 'local', 1),
-  ('0xaaaa000000000000000000000000000000000006', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x03', '0x' || repeat('4', 64), 107, '1', NOW() - INTERVAL '20 days', '0x' || repeat('0', 40), '0x' || repeat('8', 64), 'local', 1),
-  ('0xaaaa000000000000000000000000000000000007', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x04', '0x' || repeat('5', 64), 111, '1', NOW() - INTERVAL '30 days', '0x' || repeat('0', 40), '0x' || repeat('e', 64), 'local', 1),
-  ('0xaaaa000000000000000000000000000000000008', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x05', '0x' || repeat('6', 64), 116, '1', NOW() - INTERVAL '14 days', '0x' || repeat('0', 40), '0x01' || repeat('0', 62), 'local', 1),
-  ('0xaaaa000000000000000000000000000000000009', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x06', '0x' || repeat('7', 64), 118, '1', NOW() - INTERVAL '15 days', '0x' || repeat('0', 40), '0x03' || repeat('0', 62), 'local', 1);
+  ('0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000003', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x00', '0x' || repeat('1', 64), 101, '1', NOW() - INTERVAL '6 days', '0x' || repeat('d', 64), 'local', 1),
+  ('0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000004', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x01', '0x' || repeat('2', 64), 102, '1', NOW() - INTERVAL '5 days', '0x' || repeat('f', 64), 'local', 1),
+  ('0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000005', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x02', '0x' || repeat('3', 64), 104, '1', NOW() - INTERVAL '10 days', '0x' || repeat('4', 64), 'local', 1),
+  ('0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000006', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x03', '0x' || repeat('4', 64), 107, '1', NOW() - INTERVAL '20 days', '0x' || repeat('8', 64), 'local', 1),
+  ('0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000007', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x04', '0x' || repeat('5', 64), 111, '1', NOW() - INTERVAL '30 days', '0x' || repeat('e', 64), 'local', 1),
+  ('0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000008', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x05', '0x' || repeat('6', 64), 116, '1', NOW() - INTERVAL '14 days', '0x01' || repeat('0', 62), 'local', 1),
+  ('0x0000000000000000000000000000000000000099', '0xaaaa000000000000000000000000000000000009', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '\x06', '0x' || repeat('7', 64), 118, '1', NOW() - INTERVAL '15 days', '0x03' || repeat('0', 62), 'local', 1);
 
 -- ============================================
 -- 4. Create agreement current state table (materialized view)
@@ -263,7 +268,8 @@ INSERT INTO battlechainindexer_agreement.agreement_current_state (
   protocol_name, agreement_uri, bounty_percentage, bounty_cap_usd,
   retainable, identity_requirement, diligence_requirements, aggregate_bounty_cap_usd,
   contact_details, commitment_deadline,
-  covered_contracts, last_updated_at
+  covered_scope_contracts, covered_contracts,
+  computed_state, registered_at, last_updated_at
 )
 VALUES (
   '0xaaaa000000000000000000000000000000000003',
@@ -274,7 +280,8 @@ VALUES (
   '[{"name":"Security Team","contact":"security@testprotocol.com"},{"name":"Discord","contact":"discord.gg/testprotocol"}]'::jsonb,
   EXTRACT(EPOCH FROM NOW() + INTERVAL '30 days'),
   ARRAY['0x0000000000000000000000000000000000000003', '0xaaaa111111111111111111111111111111111111', '0xaaaa222222222222222222222222222222222222', '0xaaaa333333333333333333333333333333333333'],
-  NOW()
+  ARRAY['0x0000000000000000000000000000000000000003', '0xaaaa111111111111111111111111111111111111', '0xaaaa222222222222222222222222222222222222', '0xaaaa333333333333333333333333333333333333'],
+  'NEW_DEPLOYMENT', NOW() - INTERVAL '6 days', NOW()
 );
 
 -- Agreement for 0x04: ATTACK_REQUESTED ("Warming Up") with terms locked
@@ -283,7 +290,8 @@ INSERT INTO battlechainindexer_agreement.agreement_current_state (
   protocol_name, agreement_uri, bounty_percentage, bounty_cap_usd,
   retainable, identity_requirement, diligence_requirements, aggregate_bounty_cap_usd,
   contact_details, commitment_deadline,
-  covered_contracts, last_updated_at
+  covered_scope_contracts, covered_contracts,
+  computed_state, registered_at, last_updated_at
 )
 VALUES (
   '0xaaaa000000000000000000000000000000000004',
@@ -294,7 +302,8 @@ VALUES (
   '[{"name":"Telegram","contact":"@vaultfinance_security"}]'::jsonb,
   EXTRACT(EPOCH FROM NOW() + INTERVAL '90 days'),
   ARRAY['0x0000000000000000000000000000000000000004'],
-  NOW()
+  ARRAY['0x0000000000000000000000000000000000000004'],
+  'ATTACK_REQUESTED', NOW() - INTERVAL '5 days', NOW()
 );
 
 -- Agreement for 0x05: UNDER_ATTACK ("Attackable") with Named identity requirement
@@ -303,7 +312,8 @@ INSERT INTO battlechainindexer_agreement.agreement_current_state (
   protocol_name, agreement_uri, bounty_percentage, bounty_cap_usd,
   retainable, identity_requirement, diligence_requirements, aggregate_bounty_cap_usd,
   contact_details, commitment_deadline,
-  covered_contracts, last_updated_at
+  covered_scope_contracts, covered_contracts,
+  computed_state, registered_at, last_updated_at
 )
 VALUES (
   '0xaaaa000000000000000000000000000000000005',
@@ -314,7 +324,8 @@ VALUES (
   '[{"name":"Emergency Contact","contact":"emergency@defilending.io"},{"name":"Legal Team","contact":"legal@defilending.io"}]'::jsonb,
   EXTRACT(EPOCH FROM NOW() + INTERVAL '180 days'),
   ARRAY['0x0000000000000000000000000000000000000005'],
-  NOW()
+  ARRAY['0x0000000000000000000000000000000000000005'],
+  'UNDER_ATTACK', NOW() - INTERVAL '10 days', NOW()
 );
 
 -- Agreement for 0x06: PROMOTION_REQUESTED ("Promotion Pending") - 3-day countdown active
@@ -323,7 +334,8 @@ INSERT INTO battlechainindexer_agreement.agreement_current_state (
   protocol_name, agreement_uri, bounty_percentage, bounty_cap_usd,
   retainable, identity_requirement, diligence_requirements, aggregate_bounty_cap_usd,
   contact_details, commitment_deadline,
-  covered_contracts, last_updated_at
+  covered_scope_contracts, covered_contracts,
+  computed_state, registered_at, promotion_requested_at, last_updated_at
 )
 VALUES (
   '0xaaaa000000000000000000000000000000000006',
@@ -334,7 +346,8 @@ VALUES (
   '[{"name":"Security","contact":"security@stakingprotocol.xyz"}]'::jsonb,
   EXTRACT(EPOCH FROM NOW() + INTERVAL '60 days'),
   ARRAY['0x0000000000000000000000000000000000000006'],
-  NOW()
+  ARRAY['0x0000000000000000000000000000000000000006'],
+  'PROMOTION_REQUESTED', NOW() - INTERVAL '20 days', NOW() - INTERVAL '2 days', NOW()
 );
 
 -- Agreement for 0x07: PRODUCTION (was under attack) - full lifecycle completed
@@ -343,7 +356,8 @@ INSERT INTO battlechainindexer_agreement.agreement_current_state (
   protocol_name, agreement_uri, bounty_percentage, bounty_cap_usd,
   retainable, identity_requirement, diligence_requirements, aggregate_bounty_cap_usd,
   contact_details, commitment_deadline,
-  covered_contracts, last_updated_at
+  covered_scope_contracts, covered_contracts,
+  computed_state, registered_at, last_updated_at
 )
 VALUES (
   '0xaaaa000000000000000000000000000000000007',
@@ -354,7 +368,8 @@ VALUES (
   '[{"name":"Security Team","contact":"security@battletested.io"},{"name":"Bug Bounty","contact":"bounty@battletested.io"}]'::jsonb,
   EXTRACT(EPOCH FROM NOW() + INTERVAL '365 days'),
   ARRAY['0x0000000000000000000000000000000000000007'],
-  NOW()
+  ARRAY['0x0000000000000000000000000000000000000007'],
+  'PRODUCTION', NOW() - INTERVAL '30 days', NOW()
 );
 
 -- Agreement for 0x08: PRODUCTION (no attack history - used goToProduction())
@@ -363,7 +378,8 @@ INSERT INTO battlechainindexer_agreement.agreement_current_state (
   protocol_name, agreement_uri, bounty_percentage, bounty_cap_usd,
   retainable, identity_requirement, diligence_requirements, aggregate_bounty_cap_usd,
   contact_details, commitment_deadline,
-  covered_contracts, last_updated_at
+  covered_scope_contracts, covered_contracts,
+  computed_state, registered_at, last_updated_at
 )
 VALUES (
   '0xaaaa000000000000000000000000000000000008',
@@ -374,7 +390,8 @@ VALUES (
   '[{"name":"Treasury Team","contact":"treasury@multisig.org"}]'::jsonb,
   EXTRACT(EPOCH FROM NOW() + INTERVAL '365 days'),
   ARRAY['0x0000000000000000000000000000000000000008'],
-  NOW()
+  ARRAY['0x0000000000000000000000000000000000000008'],
+  'PRODUCTION', NOW() - INTERVAL '14 days', NOW()
 );
 
 -- Agreement for 0x09: CORRUPTED ("Compromised") - contract was successfully attacked
@@ -383,7 +400,8 @@ INSERT INTO battlechainindexer_agreement.agreement_current_state (
   protocol_name, agreement_uri, bounty_percentage, bounty_cap_usd,
   retainable, identity_requirement, diligence_requirements, aggregate_bounty_cap_usd,
   contact_details, commitment_deadline,
-  covered_contracts, last_updated_at
+  covered_scope_contracts, covered_contracts,
+  computed_state, registered_at, last_updated_at
 )
 VALUES (
   '0xaaaa000000000000000000000000000000000009',
@@ -394,7 +412,8 @@ VALUES (
   '[{"name":"Security Team","contact":"security@vulnerable.io"}]'::jsonb,
   EXTRACT(EPOCH FROM NOW() - INTERVAL '5 days'),
   ARRAY['0x0000000000000000000000000000000000000009'],
-  NOW()
+  ARRAY['0x0000000000000000000000000000000000000009'],
+  'CORRUPTED', NOW() - INTERVAL '15 days', NOW()
 );
 
 -- ============================================
@@ -462,21 +481,25 @@ VALUES
   ('0xaaaa000000000000000000000000000000000009', 'eip155:270', '0x0000000000000000000000000000000000000009', 0),
   ('0xaaaa000000000000000000000000000000000009', 'eip155:270', '0x5555555555555555555555555555555555555555', 1);
 
--- Update covered_contracts array in agreement_current_state to match accounts
+-- Update covered_contracts arrays in agreement_current_state to match accounts
 UPDATE battlechainindexer_agreement.agreement_current_state
-SET covered_contracts = ARRAY['0x0000000000000000000000000000000000000005', '0x1111111111111111111111111111111111111111', '0x2222222222222222222222222222222222222222']
+SET covered_scope_contracts = ARRAY['0x0000000000000000000000000000000000000005', '0x1111111111111111111111111111111111111111', '0x2222222222222222222222222222222222222222'],
+    covered_contracts = ARRAY['0x0000000000000000000000000000000000000005', '0x1111111111111111111111111111111111111111', '0x2222222222222222222222222222222222222222']
 WHERE agreement_address = '0xaaaa000000000000000000000000000000000005';
 
 UPDATE battlechainindexer_agreement.agreement_current_state
-SET covered_contracts = ARRAY['0x0000000000000000000000000000000000000006', '0x3333333333333333333333333333333333333333']
+SET covered_scope_contracts = ARRAY['0x0000000000000000000000000000000000000006', '0x3333333333333333333333333333333333333333'],
+    covered_contracts = ARRAY['0x0000000000000000000000000000000000000006', '0x3333333333333333333333333333333333333333']
 WHERE agreement_address = '0xaaaa000000000000000000000000000000000006';
 
 UPDATE battlechainindexer_agreement.agreement_current_state
-SET covered_contracts = ARRAY['0x0000000000000000000000000000000000000007', '0x4444444444444444444444444444444444444444']
+SET covered_scope_contracts = ARRAY['0x0000000000000000000000000000000000000007', '0x4444444444444444444444444444444444444444'],
+    covered_contracts = ARRAY['0x0000000000000000000000000000000000000007', '0x4444444444444444444444444444444444444444']
 WHERE agreement_address = '0xaaaa000000000000000000000000000000000007';
 
 UPDATE battlechainindexer_agreement.agreement_current_state
-SET covered_contracts = ARRAY['0x0000000000000000000000000000000000000009', '0x5555555555555555555555555555555555555555']
+SET covered_scope_contracts = ARRAY['0x0000000000000000000000000000000000000009', '0x5555555555555555555555555555555555555555'],
+    covered_contracts = ARRAY['0x0000000000000000000000000000000000000009', '0x5555555555555555555555555555555555555555']
 WHERE agreement_address = '0xaaaa000000000000000000000000000000000009';
 
 -- ============================================
@@ -520,12 +543,12 @@ WHERE registered_contract_address IN (
 -- All using first default Anvil address: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 -- This tests the "fully authorized" scenario - Go to Production button should be ENABLED
 INSERT INTO battlechainindexer_attack_registry.agreement_owner_authorized
-  (rindexer_id, contract_address, registered_contract_address, authorized_owner, tx_hash, block_number, log_index, block_timestamp)
+  (rindexer_id, contract_address, registered_contract_address, authorized_owner, tx_hash, block_number, log_index, block_timestamp, block_hash, network, tx_index)
 VALUES
-  (2001, '0x0000000000000000000000000000000000000099', '0x0000000000000000000000000000000000000003', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('a', 64), 100, '0', NOW() - INTERVAL '6 days'),
-  (2002, '0x0000000000000000000000000000000000000099', '0xaaaa111111111111111111111111111111111111', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('a', 64), 100, '1', NOW() - INTERVAL '6 days'),
-  (2003, '0x0000000000000000000000000000000000000099', '0xaaaa222222222222222222222222222222222222', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('a', 64), 100, '2', NOW() - INTERVAL '6 days'),
-  (2004, '0x0000000000000000000000000000000000000099', '0xaaaa333333333333333333333333333333333333', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('a', 64), 100, '3', NOW() - INTERVAL '6 days');
+  (2001, '0x0000000000000000000000000000000000000099', '0x0000000000000000000000000000000000000003', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('a', 64), 100, '0', NOW() - INTERVAL '6 days', '0x' || repeat('a', 64), 'local', 0),
+  (2002, '0x0000000000000000000000000000000000000099', '0xaaaa111111111111111111111111111111111111', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('a', 64), 100, '1', NOW() - INTERVAL '6 days', '0x' || repeat('a', 64), 'local', 0),
+  (2003, '0x0000000000000000000000000000000000000099', '0xaaaa222222222222222222222222222222222222', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('a', 64), 100, '2', NOW() - INTERVAL '6 days', '0x' || repeat('a', 64), 'local', 0),
+  (2004, '0x0000000000000000000000000000000000000099', '0xaaaa333333333333333333333333333333333333', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('a', 64), 100, '3', NOW() - INTERVAL '6 days', '0x' || repeat('a', 64), 'local', 0);
 
 -- Seed authorized owner for contract 0x05 ONLY (partial authorization)
 -- Agreement 0xaaaa...0005 covers these 3 contracts:
@@ -535,13 +558,13 @@ VALUES
 -- This tests the "partially authorized" scenario - Go to Production button should be DISABLED
 -- with messaging showing which contracts the user is not authorized for
 INSERT INTO battlechainindexer_attack_registry.agreement_owner_authorized
-  (rindexer_id, contract_address, registered_contract_address, authorized_owner, tx_hash, block_number, log_index, block_timestamp)
+  (rindexer_id, contract_address, registered_contract_address, authorized_owner, tx_hash, block_number, log_index, block_timestamp, block_hash, network, tx_index)
 VALUES
   -- Only 0x05 is authorized to the Anvil test address
-  (2005, '0x0000000000000000000000000000000000000099', '0x0000000000000000000000000000000000000005', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('b', 64), 101, '0', NOW() - INTERVAL '5 days'),
+  (2005, '0x0000000000000000000000000000000000000099', '0x0000000000000000000000000000000000000005', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', '0x' || repeat('b', 64), 101, '0', NOW() - INTERVAL '5 days', '0x' || repeat('a', 64), 'local', 0),
   -- The other contracts in scope are authorized to a different address
-  (2006, '0x0000000000000000000000000000000000000099', '0x1111111111111111111111111111111111111111', '0x70997970c51812dc3a010c7d01b50e0d17dc79c8', '0x' || repeat('b', 64), 101, '1', NOW() - INTERVAL '5 days'),
-  (2007, '0x0000000000000000000000000000000000000099', '0x2222222222222222222222222222222222222222', '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc', '0x' || repeat('b', 64), 101, '2', NOW() - INTERVAL '5 days');
+  (2006, '0x0000000000000000000000000000000000000099', '0x1111111111111111111111111111111111111111', '0x70997970c51812dc3a010c7d01b50e0d17dc79c8', '0x' || repeat('b', 64), 101, '1', NOW() - INTERVAL '5 days', '0x' || repeat('a', 64), 'local', 0),
+  (2007, '0x0000000000000000000000000000000000000099', '0x2222222222222222222222222222222222222222', '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc', '0x' || repeat('b', 64), 101, '2', NOW() - INTERVAL '5 days', '0x' || repeat('a', 64), 'local', 0);
 
 -- ============================================
 -- 8. Create attack_moderator_transferred table (for tracking moderator transfers)
@@ -567,7 +590,84 @@ CREATE INDEX IF NOT EXISTS idx_attack_moderator_transferred_agreement
 -- which is the correct initial attack moderator
 
 -- ============================================
--- 9. Summary output
+-- 9. Seed tokens and balances for value estimation testing
+-- ============================================
+-- Create test tokens with USD prices so the value estimation service can price them.
+-- The UNDER_ATTACK agreement (0xaaaa...0005) has covered contracts:
+--   0x0000...0005, 0x1111...1111, 0x2222...2222
+-- We seed token balances across these contracts.
+
+-- Base token (ETH) at the system address 0x...800A
+INSERT INTO tokens ("l2Address", symbol, name, decimals, "blockNumber", "logIndex", "usdPrice", "transactionHash")
+VALUES
+  ('\x000000000000000000000000000000000000800a', 'ETH', 'Ether', 18, 100, 0, 3500.00, '\xfeed000000000000000000000000000000000000000000000000000000000002')
+ON CONFLICT ("l2Address") DO UPDATE SET "usdPrice" = 3500.00;
+
+-- Bridged USDC (with l1Address pointing to mainnet USDC for DeFiLlama testing)
+INSERT INTO tokens ("l2Address", "l1Address", symbol, name, decimals, "blockNumber", "logIndex", "usdPrice", "transactionHash")
+VALUES
+  ('\xbbbb000000000000000000000000000000000001', '\xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', 'USDC', 'USD Coin', 6, 100, 1, 1.00, '\xfeed000000000000000000000000000000000000000000000000000000000002')
+ON CONFLICT ("l2Address") DO UPDATE SET "usdPrice" = 1.00, "l1Address" = '\xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+
+-- WBTC (bridged)
+INSERT INTO tokens ("l2Address", "l1Address", symbol, name, decimals, "blockNumber", "logIndex", "usdPrice", "transactionHash")
+VALUES
+  ('\xbbbb000000000000000000000000000000000002', '\x2260fac5e5542a773aa44fbcfedf7c193bc2c599', 'WBTC', 'Wrapped Bitcoin', 8, 100, 2, 97000.00, '\xfeed000000000000000000000000000000000000000000000000000000000002')
+ON CONFLICT ("l2Address") DO UPDATE SET "usdPrice" = 97000.00;
+
+-- DAI (bridged)
+INSERT INTO tokens ("l2Address", "l1Address", symbol, name, decimals, "blockNumber", "logIndex", "usdPrice", "transactionHash")
+VALUES
+  ('\xbbbb000000000000000000000000000000000003', '\x6b175474e89094c44da98b954eedeac495271d0f', 'DAI', 'Dai Stablecoin', 18, 100, 3, 1.00, '\xfeed000000000000000000000000000000000000000000000000000000000002')
+ON CONFLICT ("l2Address") DO UPDATE SET "usdPrice" = 1.00;
+
+-- Native L2 token with no l1Address and no price (will be "unpriced")
+INSERT INTO tokens ("l2Address", symbol, name, decimals, "blockNumber", "logIndex", "transactionHash")
+VALUES
+  ('\xcccc000000000000000000000000000000000001', 'xDAO', 'Governance Token', 18, 100, 4, '\xfeed000000000000000000000000000000000000000000000000000000000002')
+ON CONFLICT ("l2Address") DO NOTHING;
+
+-- Another unpriced native token
+INSERT INTO tokens ("l2Address", symbol, name, decimals, "blockNumber", "logIndex", "transactionHash")
+VALUES
+  ('\xcccc000000000000000000000000000000000002', 'vLP', 'Vault LP Token', 18, 100, 5, '\xfeed000000000000000000000000000000000000000000000000000000000002')
+ON CONFLICT ("l2Address") DO NOTHING;
+
+-- Seed balances for the covered contracts of the UNDER_ATTACK agreement
+-- Contract 0x0000...0005 holds ETH and USDC
+INSERT INTO balances (address, "tokenAddress", "blockNumber", balance)
+VALUES
+  ('\x0000000000000000000000000000000000000005', '\x000000000000000000000000000000000000800a', 100, '5000000000000000000'),   -- 5 ETH = $17,500
+  ('\x0000000000000000000000000000000000000005', '\xbbbb000000000000000000000000000000000001', 100, '250000000000'),           -- 250,000 USDC
+  ('\x0000000000000000000000000000000000000005', '\xcccc000000000000000000000000000000000001', 100, '1000000000000000000000')  -- 1000 xDAO (unpriced)
+ON CONFLICT (address, "tokenAddress", "blockNumber") DO NOTHING;
+
+-- Contract 0x1111...1111 holds WBTC and DAI
+INSERT INTO balances (address, "tokenAddress", "blockNumber", balance)
+VALUES
+  ('\x1111111111111111111111111111111111111111', '\xbbbb000000000000000000000000000000000002', 100, '150000000'),               -- 1.5 WBTC = $145,500
+  ('\x1111111111111111111111111111111111111111', '\xbbbb000000000000000000000000000000000003', 100, '100000000000000000000000'), -- 100,000 DAI
+  ('\x1111111111111111111111111111111111111111', '\xcccc000000000000000000000000000000000002', 100, '5000000000000000000000')   -- 5000 vLP (unpriced)
+ON CONFLICT (address, "tokenAddress", "blockNumber") DO NOTHING;
+
+-- Contract 0x2222...2222 holds ETH and USDC
+INSERT INTO balances (address, "tokenAddress", "blockNumber", balance)
+VALUES
+  ('\x2222222222222222222222222222222222222222', '\x000000000000000000000000000000000000800a', 100, '10000000000000000000'),    -- 10 ETH = $35,000
+  ('\x2222222222222222222222222222222222222222', '\xbbbb000000000000000000000000000000000001', 100, '500000000000')             -- 500,000 USDC
+ON CONFLICT (address, "tokenAddress", "blockNumber") DO NOTHING;
+
+-- Total priced value: $17,500 + $250,000 + $145,500 + $100,000 + $35,000 + $500,000 = $1,048,000
+-- Band: "$1M - $10M"
+-- Unpriced: 2 tokens (xDAO, vLP) -> Confidence: MEDIUM
+
+SELECT 'Token and balance seeding complete' AS status;
+SELECT '  Priced tokens: ETH ($3,500), USDC ($1), WBTC ($97,000), DAI ($1)' AS tokens_priced;
+SELECT '  Unpriced tokens: xDAO, vLP (no USD price, no l1Address)' AS tokens_unpriced;
+SELECT '  Expected band for agreement 0x05: $1M - $10M (MEDIUM confidence)' AS expected;
+
+-- ============================================
+-- 10. Summary output
 -- ============================================
 SELECT 'Seeding complete!' AS status;
 SELECT 'Contracts seeded:' AS info;

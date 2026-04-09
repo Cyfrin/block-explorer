@@ -266,6 +266,50 @@ export class AgreementDto {
     example: 1704067200000,
   })
   createdAt: number | null;
+
+  // Value estimation fields
+  @ApiPropertyOptional({
+    description: "Estimated value band (e.g. '$1M - $10M', '< $10K', 'Unknown')",
+    example: "$1M - $10M",
+  })
+  valueBand?: string;
+
+  @ApiPropertyOptional({
+    description: "Total USD value of priced token balances in covered contracts",
+    example: "1234567.89",
+  })
+  valuePricedUsd?: string;
+
+  @ApiPropertyOptional({
+    description: "USD value of native/base token holdings only (confidence floor)",
+    example: "120000",
+  })
+  valueNativeUsd?: string;
+
+  @ApiPropertyOptional({
+    description: "Tokens with known USD prices, sorted by value descending",
+    example: [{ symbol: "WETH", address: "0x...", usd: 12000 }],
+  })
+  valuePricedTokens?: Array<{ symbol: string; address: string; usd: number }>;
+
+  @ApiPropertyOptional({
+    description: "Tokens that could not be priced",
+    example: [{ symbol: "VAULT-LP", address: "0x..." }],
+  })
+  valueUnpricedTokens?: Array<{ symbol: string | null; address: string }>;
+
+  @ApiPropertyOptional({
+    description: "Confidence level of the estimate (HIGH, MEDIUM, LOW)",
+    enum: ["HIGH", "MEDIUM", "LOW"],
+    example: "MEDIUM",
+  })
+  valueConfidence?: string;
+
+  @ApiPropertyOptional({
+    description: "Timestamp in milliseconds when the value was last estimated",
+    example: 1704067200000,
+  })
+  valueEstimatedAt?: number;
 }
 
 export class AgreementByContractDto {
