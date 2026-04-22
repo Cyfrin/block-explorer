@@ -312,16 +312,19 @@ function getValueTooltip(item: AgreementListItem): string {
   const lines: string[] = [];
   if (item.valuePricedTokens?.length) {
     for (const token of item.valuePricedTokens) {
-      lines.push(`${token.symbol}: $${token.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}`);
+      const usd = token.usd.toLocaleString(undefined, { maximumFractionDigits: 0 });
+      lines.push(`${token.symbol}  —  $${usd}`);
     }
   }
   if (item.valueUnpricedTokens?.length) {
     const names = item.valueUnpricedTokens.map((t) => t.symbol || t.address.slice(0, 10) + "…").join(", ");
+    if (lines.length) lines.push("");
     lines.push(`Unpriced: ${names}`);
   }
   if (item.valueEstimatedAt) {
     const ago = getTimeAgo(item.valueEstimatedAt);
-    lines.push(`Updated: ${ago}`);
+    if (lines.length) lines.push("");
+    lines.push(`Updated ${ago}`);
   }
   return lines.join("\n");
 }

@@ -67,17 +67,15 @@ export class ValueEstimationService {
 
   /**
    * Main entry point — called by the 30-minute timer.
-   * Estimates value for all UNDER_ATTACK agreements.
+   * Estimates locked value for all safe harbor agreements.
    */
   async estimateAllAgreements(): Promise<void> {
     try {
-      const agreements = await this.agreementStateRepository.find({
-        where: { computedState: "UNDER_ATTACK" },
-      });
+      const agreements = await this.agreementStateRepository.find();
 
       if (agreements.length === 0) return;
 
-      this.logger.log(`Estimating value for ${agreements.length} attackable agreements`);
+      this.logger.log(`Estimating value for ${agreements.length} agreements`);
 
       // Collect all unique token balances across all agreements
       const allTokenBalances = new Map<string, Map<string, TokenBalance>>();
@@ -365,7 +363,7 @@ export class ValueEstimationService {
     if (decomposition.decompositionType === "compound") {
       // Compound exchangeRate = underlyingAmount * 1e18 / cTokenAmount
       const ratioBN = BigInt(ratioEntry.ratio);
-      const underlyingAmount = (balance * ratioBN) / (BigInt(10) ** BigInt(18));
+      const underlyingAmount = (balance * ratioBN) / BigInt(10) ** BigInt(18);
       return (Number(underlyingAmount) / Math.pow(10, underlying.decimals)) * underlyingPrice;
     }
 

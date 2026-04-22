@@ -718,7 +718,7 @@
       "bountyPercentage": "Bounty",
       "bountyCapUsd": "Cap",
       "coveredContracts": "Contracts",
-      "estValue": "Est. Value",
+      "estValue": "Est. TVL",
       "createdAt": "Created",
       "noAgreements": "No agreements found"
     },
@@ -980,8 +980,8 @@
       "futureOnly": "+ future children",
       "futureOnlyTooltip": "Only includes child contracts created after the agreement"
     },
-    "valueAtRisk": {
-      "title": "Estimated Value at Risk",
+    "tvl": {
+      "title": "Estimated Total Value Locked",
       "couldNotBePriced": "Could not be priced",
       "confidence": {
         "high": "High confidence",

@@ -76,7 +76,7 @@
       <div class="header-meta">
         <!-- Value at Risk (read-only estimation) -->
         <div v-if="agreement.valueBand" class="value-at-risk-inline">
-          <h4 class="meta-label">{{ t("safeHarbor.valueAtRisk.title") }}</h4>
+          <h4 class="meta-label">{{ t("safeHarbor.tvl.title") }}</h4>
           <div class="value-band-row">
             <Badge :color="valueBandColor" size="md">
               <template #icon>
@@ -92,7 +92,7 @@
               {{ agreement.valueBand }}
             </Badge>
             <span class="confidence-label">
-              {{ t(`safeHarbor.valueAtRisk.confidence.${(agreement.valueConfidence || "LOW").toLowerCase()}`) }}
+              {{ t(`safeHarbor.tvl.confidence.${(agreement.valueConfidence || "LOW").toLowerCase()}`) }}
             </span>
           </div>
           <div v-if="agreement.valuePricedTokens?.length" class="token-breakdown">
@@ -103,7 +103,7 @@
             </div>
           </div>
           <div v-if="agreement.valueUnpricedTokens?.length" class="token-breakdown unpriced">
-            <span class="unpriced-label">{{ t("safeHarbor.valueAtRisk.couldNotBePriced") }}:</span>
+            <span class="unpriced-label">{{ t("safeHarbor.tvl.couldNotBePriced") }}:</span>
             <span class="unpriced-tokens">
               {{ agreement.valueUnpricedTokens.map((t) => t.symbol || shortValue(t.address)).join(", ") }}
             </span>
