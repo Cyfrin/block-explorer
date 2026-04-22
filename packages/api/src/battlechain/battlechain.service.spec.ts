@@ -45,7 +45,7 @@ const makeAgreementState = (overrides: Partial<AgreementCurrentState> = {}): Agr
     lastUpdatedAt: null,
     rpcFetchedAt: null,
     ...overrides,
-  } as AgreementCurrentState);
+  }) as AgreementCurrentState;
 
 describe("BattlechainService", () => {
   let service: BattlechainService;

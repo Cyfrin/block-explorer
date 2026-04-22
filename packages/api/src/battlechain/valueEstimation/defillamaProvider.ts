@@ -19,9 +19,7 @@ const logger = new Logger("DefillamaProvider");
  * @param l1Addresses Map of l1Address → l2Address for reverse lookup
  * @returns Map of l2Address → price data
  */
-export async function fetchDefillamaPrices(
-  l1ToL2Map: Map<string, string>
-): Promise<Map<string, DefillamaPrice>> {
+export async function fetchDefillamaPrices(l1ToL2Map: Map<string, string>): Promise<Map<string, DefillamaPrice>> {
   const result = new Map<string, DefillamaPrice>();
 
   if (l1ToL2Map.size === 0) return result;

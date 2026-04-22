@@ -30,10 +30,7 @@ const AAVE_ABI = ["function UNDERLYING_ASSET_ADDRESS() view returns (address)"];
 
 const ERC20_DECIMALS_ABI = ["function decimals() view returns (uint8)"];
 
-const WRAPPER_ABI = [
-  "function underlying() view returns (address)",
-  "function token() view returns (address)",
-];
+const WRAPPER_ABI = ["function underlying() view returns (address)", "function token() view returns (address)"];
 
 const RPC_CALL_TIMEOUT_MS = 3000;
 
@@ -160,10 +157,7 @@ export async function detectCompound(
  * Detect Aave aToken-style tokens.
  * aTokens are 1:1 with their underlying (balance includes accrued interest).
  */
-export async function detectAave(
-  tokenAddress: string,
-  provider: JsonRpcProvider
-): Promise<DecompositionResult | null> {
+export async function detectAave(tokenAddress: string, provider: JsonRpcProvider): Promise<DecompositionResult | null> {
   const contract = new Contract(tokenAddress, AAVE_ABI, provider);
 
   const underlying = await safeCall(contract.UNDERLYING_ASSET_ADDRESS());
@@ -212,10 +206,7 @@ export async function detectWrapper(
  * Run all detectors in cascade order. Returns the first match, or { type: "unknown" }.
  * Order matters: ERC4626 is the most specific standard, then V2, then protocol-specific.
  */
-export async function detectTokenType(
-  tokenAddress: string,
-  provider: JsonRpcProvider
-): Promise<DecompositionResult> {
+export async function detectTokenType(tokenAddress: string, provider: JsonRpcProvider): Promise<DecompositionResult> {
   const detectors = [detectERC4626, detectUniswapV2, detectCompound, detectAave, detectWrapper];
 
   for (const detector of detectors) {

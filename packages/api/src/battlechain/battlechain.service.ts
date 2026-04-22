@@ -94,9 +94,7 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       () => this.valueEstimationService.estimateAllAgreements(),
       BattlechainService.VALUE_ESTIMATION_INTERVAL_MS
     );
-    this.logger.log(
-      `Value estimation polling started (every ${BattlechainService.VALUE_ESTIMATION_INTERVAL_MS}ms)`
-    );
+    this.logger.log(`Value estimation polling started (every ${BattlechainService.VALUE_ESTIMATION_INTERVAL_MS}ms)`);
   }
 
   onModuleDestroy() {
@@ -574,9 +572,7 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       CORRUPTED: 7,
     };
 
-    const results = await Promise.all(
-      agreements.map((a) => this.getAgreementStateInfoInternal(a.agreementAddress, a))
-    );
+    const results = await Promise.all(agreements.map((a) => this.getAgreementStateInfoInternal(a.agreementAddress, a)));
 
     return results.reduce((best, current) => {
       const bestRank = stateRank[best.state] ?? 0;
@@ -1077,9 +1073,9 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
    */
   async getAllAgreements(
     stateFilter?: string,
-    page: number = 1,
-    limit: number = 10,
-    sortBy: string = "createdAt",
+    page = 1,
+    limit = 10,
+    sortBy = "createdAt",
     sortOrder: "ASC" | "DESC" = "DESC"
   ): Promise<PaginatedAgreementsDto> {
     // Clamp limit to max 100

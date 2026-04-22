@@ -108,7 +108,8 @@ export class ContractStateInfoDto {
   productionTxHash?: string | null;
 
   @ApiPropertyOptional({
-    description: "Unix timestamp in milliseconds when auto-promotion will occur (14-day window from registration, or 3-day delay from promotion request)",
+    description:
+      "Unix timestamp in milliseconds when auto-promotion will occur (14-day window from registration, or 3-day delay from promotion request)",
     example: null,
   })
   promotionWindowEnds?: number | null;
@@ -175,7 +176,15 @@ export class AgreementDto {
 
   @ApiPropertyOptional({
     description: "Current state of the agreement (from AttackRegistry)",
-    enum: ["NOT_REGISTERED", "NEW_DEPLOYMENT", "ATTACK_REQUESTED", "UNDER_ATTACK", "PROMOTION_REQUESTED", "PRODUCTION", "CORRUPTED"],
+    enum: [
+      "NOT_REGISTERED",
+      "NEW_DEPLOYMENT",
+      "ATTACK_REQUESTED",
+      "UNDER_ATTACK",
+      "PROMOTION_REQUESTED",
+      "PRODUCTION",
+      "CORRUPTED",
+    ],
     example: "NEW_DEPLOYMENT",
   })
   state?: string;
