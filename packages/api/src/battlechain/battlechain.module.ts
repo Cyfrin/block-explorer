@@ -8,6 +8,8 @@ import { AgreementCurrentState } from "./agreementCurrentState.entity";
 import { AgreementAccount } from "./agreementAccount.entity";
 import { AgreementOwnerAuthorized } from "./agreementOwnerAuthorized.entity";
 import { AttackModeratorTransferred } from "./attackModeratorTransferred.entity";
+import { TokenDecomposition } from "./tokenDecomposition.entity";
+import { ValueEstimationService } from "./valueEstimation/valueEstimation.service";
 
 @Module({
   imports: [
@@ -18,10 +20,11 @@ import { AttackModeratorTransferred } from "./attackModeratorTransferred.entity"
       AgreementAccount,
       AgreementOwnerAuthorized,
       AttackModeratorTransferred,
+      TokenDecomposition,
     ]),
   ],
   controllers: [BattlechainController],
-  providers: [BattlechainService],
+  providers: [BattlechainService, ValueEstimationService],
   exports: [BattlechainService],
 })
 export class BattlechainModule {}
