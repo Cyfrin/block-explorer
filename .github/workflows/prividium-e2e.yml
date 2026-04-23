@@ -10,6 +10,12 @@ on:
 
 jobs:
   prividium-e2e:
+    # Disabled: the MetaMask-extension-driven Dappwright tests are currently
+    # broken by MetaMask auto-updating past the version Dappwright supports,
+    # producing perma-red runs that block PRs without providing signal.
+    # Re-enable once the suite is refactored to use a simulated wallet
+    # (e.g. @defiwonderland/walletless) instead of driving a real extension.
+    if: false
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.54.1-noble
