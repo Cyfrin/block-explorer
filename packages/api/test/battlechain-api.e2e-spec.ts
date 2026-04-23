@@ -122,6 +122,7 @@ describe("BattleChain API (e2e)", () => {
       commitmentDeadline: String(Math.floor(now / 1000) + 30 * 24 * 60 * 60),
       createdAt: sixDaysAgo,
       createdAtBlock: 100,
+      computedState: "NEW_DEPLOYMENT",
     });
 
     // Agreement in ATTACK_REQUESTED state
@@ -136,6 +137,7 @@ describe("BattleChain API (e2e)", () => {
       coveredContracts: [],
       createdAt: tenDaysAgo,
       createdAtBlock: 90,
+      computedState: "ATTACK_REQUESTED",
     });
 
     // Agreement in UNDER_ATTACK state
@@ -153,6 +155,7 @@ describe("BattleChain API (e2e)", () => {
       contactDetails: [{ name: "Security Team", contact: "security@gamma.com" }],
       createdAt: tenDaysAgo,
       createdAtBlock: 85,
+      computedState: "UNDER_ATTACK",
     });
 
     // Agreement in PROMOTION_REQUESTED state
@@ -166,6 +169,7 @@ describe("BattleChain API (e2e)", () => {
       coveredContracts: [],
       createdAt: twentyDaysAgo,
       createdAtBlock: 70,
+      computedState: "PROMOTION_REQUESTED",
     });
 
     // Agreement in PRODUCTION state
@@ -179,6 +183,7 @@ describe("BattleChain API (e2e)", () => {
       coveredContracts: [TEST_ADDRESSES.PRODUCTION_CONTRACT],
       createdAt: twentyDaysAgo,
       createdAtBlock: 60,
+      computedState: "PRODUCTION",
     });
 
     // Agreement in CORRUPTED state
@@ -192,6 +197,7 @@ describe("BattleChain API (e2e)", () => {
       coveredContracts: [],
       createdAt: twentyDaysAgo,
       createdAtBlock: 50,
+      computedState: "CORRUPTED",
     });
 
     // Agreement with moderator transfer
@@ -205,6 +211,7 @@ describe("BattleChain API (e2e)", () => {
       coveredContracts: [],
       createdAt: tenDaysAgo,
       createdAtBlock: 80,
+      computedState: "NEW_DEPLOYMENT",
     });
 
     // 2. Seed AgreementStateChange records
@@ -569,8 +576,8 @@ describe("BattleChain API (e2e)", () => {
         .expect((res) => {
           expect(res.body.hasCoverage).toBe(true);
           expect(res.body.isAgreementContract).toBe(false);
-          expect(res.body.agreement).toBeDefined();
-          expect(res.body.agreement.agreementAddress).toBe(TEST_ADDRESSES.AGREEMENT_NEW_DEPLOYMENT);
+          expect(res.body.agreements).toHaveLength(1);
+          expect(res.body.agreements[0].agreementAddress).toBe(TEST_ADDRESSES.AGREEMENT_NEW_DEPLOYMENT);
         });
     });
 
@@ -581,7 +588,7 @@ describe("BattleChain API (e2e)", () => {
         .expect((res) => {
           expect(res.body.hasCoverage).toBe(true);
           expect(res.body.isAgreementContract).toBe(true);
-          expect(res.body.agreement.agreementAddress).toBe(TEST_ADDRESSES.AGREEMENT_NEW_DEPLOYMENT);
+          expect(res.body.agreements[0].agreementAddress).toBe(TEST_ADDRESSES.AGREEMENT_NEW_DEPLOYMENT);
         });
     });
 
@@ -592,7 +599,7 @@ describe("BattleChain API (e2e)", () => {
         .expect((res) => {
           expect(res.body.hasCoverage).toBe(false);
           expect(res.body.isAgreementContract).toBe(false);
-          expect(res.body.agreement).toBeNull();
+          expect(res.body.agreements).toEqual([]);
         });
     });
 
@@ -602,7 +609,7 @@ describe("BattleChain API (e2e)", () => {
         .expect(200)
         .expect((res) => {
           expect(res.body.isAgreementContract).toBe(true);
-          expect(res.body.agreement.state).toBe("UNDER_ATTACK");
+          expect(res.body.agreements[0].state).toBe("UNDER_ATTACK");
         });
     });
   });
@@ -835,7 +842,7 @@ describe("BattleChain API (e2e)", () => {
         .get(`/battlechain/agreement/by-contract/${TEST_ADDRESSES.AGREEMENT_PROMOTION_REQUESTED}`)
         .expect(200);
 
-      expect(stateResponse.body.agreement.state).toBe("PROMOTION_REQUESTED");
+      expect(stateResponse.body.agreements[0].state).toBe("PROMOTION_REQUESTED");
     });
 
     it("returns null promotionWindowEnds for PRODUCTION state", () => {
