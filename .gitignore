@@ -1,6 +1,8 @@
 .env
 .env.*
 !.env.example
+!packages/api/.env.test
+!packages/api/.env.prividium-test
 junit.xml
 e2e-junit.xml
 prividium-e2e-junit.xml

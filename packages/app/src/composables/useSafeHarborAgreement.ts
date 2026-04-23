@@ -36,6 +36,13 @@ interface AgreementResponse {
   }[];
   createdAtBlock: number;
   createdAt: number | null;
+  valueBand?: string;
+  valuePricedUsd?: string;
+  valueNativeUsd?: string;
+  valuePricedTokens?: Array<{ symbol: string; address: string; usd: number }>;
+  valueUnpricedTokens?: Array<{ symbol: string | null; address: string }>;
+  valueConfidence?: string;
+  valueEstimatedAt?: number;
 }
 
 // Response type from the API
@@ -72,6 +79,13 @@ function mapAgreementResponse(resp: AgreementResponse): AgreementWithState {
       })) as CoveredAccount[] | undefined,
       createdAtBlock: resp.createdAtBlock,
       registeredAt: resp.createdAt,
+      valueBand: resp.valueBand,
+      valuePricedUsd: resp.valuePricedUsd,
+      valueNativeUsd: resp.valueNativeUsd,
+      valuePricedTokens: resp.valuePricedTokens,
+      valueUnpricedTokens: resp.valueUnpricedTokens,
+      valueConfidence: resp.valueConfidence,
+      valueEstimatedAt: resp.valueEstimatedAt,
     },
     state: resp.state ?? null,
   };

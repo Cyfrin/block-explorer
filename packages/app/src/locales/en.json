@@ -718,6 +718,7 @@
       "bountyPercentage": "Bounty",
       "bountyCapUsd": "Cap",
       "coveredContracts": "Contracts",
+      "estValue": "Est. TVL",
       "createdAt": "Created",
       "noAgreements": "No agreements found"
     },
@@ -978,6 +979,15 @@
       "allTooltip": "Includes all child contracts created by this contract (past and future)",
       "futureOnly": "+ future children",
       "futureOnlyTooltip": "Only includes child contracts created after the agreement"
+    },
+    "tvl": {
+      "title": "Estimated Total Value Locked",
+      "couldNotBePriced": "Could not be priced",
+      "confidence": {
+        "high": "High confidence",
+        "medium": "Medium confidence — some tokens unpriced",
+        "low": "Low confidence — several tokens unpriced"
+      }
     },
     "createAgreement": {
       "title": "Create Safe Harbor Agreement",

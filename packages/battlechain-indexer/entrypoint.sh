@@ -107,64 +107,76 @@ fi
 # ========================================
 # SQL Setup + Rindexer Startup
 # ========================================
-# Strategy: Run SQL setup in background after rindexer creates event tables.
-# rindexer is the foreground process (exec) so the container stays alive.
-# The background job waits for event tables, runs SQL, then backfills.
+# Strategy:
+#   1. Start rindexer in the background (creates event tables on startup)
+#   2. Wait for event tables to appear, then run SQL setup
+#   3. Keep rindexer running as the main process
+#
+# We intentionally avoid `exec` so the shell survives a rindexer panic
+# and the SQL setup can complete even if rindexer crashes on first run.
 
 cd "${SCRIPT_DIR}"
-
-# Background job: wait for event tables, run SQL setup, backfill materialized table
-(
-    echo "[sql-setup] Background SQL setup starting..."
-
-    # Wait for all 3 schemas' event tables to exist
-    echo "[sql-setup] Waiting for rindexer to create event tables..."
-    sleep 15
-    max_attempts=60
-    attempt=0
-    while [ $attempt -lt $max_attempts ]; do
-        factory_ok=false
-        agreement_ok=false
-        registry_ok=false
-
-        psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement_factory.agreement_created LIMIT 0" 2>/dev/null && factory_ok=true
-        psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement.protocol_name_updated LIMIT 0" 2>/dev/null && agreement_ok=true
-        psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_attack_registry.agreement_state_changed LIMIT 0" 2>/dev/null && registry_ok=true
-
-        if [ "$factory_ok" = true ] && [ "$agreement_ok" = true ] && [ "$registry_ok" = true ]; then
-            echo "[sql-setup] All event tables exist!"
-            break
-        fi
-
-        # Once factory exists, only wait 60s more for agreement/registry
-        if [ "$factory_ok" = true ] && [ $attempt -gt 30 ]; then
-            echo "[sql-setup] Factory exists but agreement/registry tables not found after 30 extra attempts."
-            echo "[sql-setup] Proceeding with partial setup (triggers for missing tables will fail)."
-            break
-        fi
-
-        attempt=$((attempt + 1))
-        if [ $((attempt % 5)) -eq 0 ]; then
-            echo "[sql-setup] Waiting... ($attempt/$max_attempts) [factory=$factory_ok agreement=$agreement_ok registry=$registry_ok]"
-        fi
-        sleep 5
-    done
-
-    # Run SQL setup
-    if [ -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql" ]; then
-        echo "[sql-setup] Running create-agreement-current-state.sql..."
-        psql "$DATABASE_URL" -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql" 2>&1
-        echo "[sql-setup] SQL exit code: $?"
-    else
-        echo "[sql-setup] ERROR: SQL file not found!"
-    fi
-
-    echo "[sql-setup] Done."
-) &
 
 echo ""
 echo "========================================"
 echo "Starting rindexer"
 echo "========================================"
 echo ""
-exec /app/rindexer "$@"
+
+# Start rindexer in the background
+/app/rindexer "$@" &
+RINDEXER_PID=$!
+
+# Wait for event tables (rindexer creates them within ~1s of startup)
+echo "[sql-setup] Waiting for rindexer to create event tables..."
+max_attempts=60
+attempt=0
+while [ $attempt -lt $max_attempts ]; do
+    factory_ok=false
+    agreement_ok=false
+    registry_ok=false
+
+    psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement_factory.agreement_created LIMIT 0" 2>/dev/null && factory_ok=true
+    psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement.protocol_name_updated LIMIT 0" 2>/dev/null && agreement_ok=true
+    psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_attack_registry.agreement_state_changed LIMIT 0" 2>/dev/null && registry_ok=true
+
+    if [ "$factory_ok" = true ] && [ "$agreement_ok" = true ] && [ "$registry_ok" = true ]; then
+        echo "[sql-setup] All event tables exist!"
+        break
+    fi
+
+    # Once factory exists, only wait 60s more for agreement/registry
+    if [ "$factory_ok" = true ] && [ $attempt -gt 30 ]; then
+        echo "[sql-setup] Factory exists but agreement/registry tables not found after 30 extra attempts."
+        echo "[sql-setup] Proceeding with partial setup (triggers for missing tables will fail)."
+        break
+    fi
+
+    attempt=$((attempt + 1))
+    if [ $((attempt % 5)) -eq 0 ]; then
+        echo "[sql-setup] Waiting... ($attempt/$max_attempts) [factory=$factory_ok agreement=$agreement_ok registry=$registry_ok]"
+    fi
+    sleep 2
+done
+
+# Run SQL setup
+if [ -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql" ]; then
+    echo "[sql-setup] Running create-agreement-current-state.sql..."
+    psql "$DATABASE_URL" -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql" 2>&1
+    echo "[sql-setup] SQL exit code: $?"
+else
+    echo "[sql-setup] ERROR: SQL file not found!"
+fi
+
+echo "[sql-setup] Done."
+
+# If rindexer is still running, wait for it (keeps container alive).
+# If it already crashed, restart it — the SQL setup is now complete
+# so the triggers and materialized table are in place.
+if kill -0 $RINDEXER_PID 2>/dev/null; then
+    echo "[entrypoint] Rindexer is running (PID $RINDEXER_PID), waiting..."
+    wait $RINDEXER_PID
+else
+    echo "[entrypoint] Rindexer exited before SQL setup finished. Restarting..."
+    exec /app/rindexer "$@"
+fi

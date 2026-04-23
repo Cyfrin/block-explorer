@@ -26,10 +26,18 @@ export interface AgreementListItem {
   coveredAccounts?: CoveredAccount[];
   createdAtBlock: number;
   createdAt: number | null;
+  // Value estimation
+  valueBand?: string;
+  valuePricedUsd?: string;
+  valueNativeUsd?: string;
+  valuePricedTokens?: Array<{ symbol: string; address: string; usd: number }>;
+  valueUnpricedTokens?: Array<{ symbol: string | null; address: string }>;
+  valueConfidence?: string;
+  valueEstimatedAt?: number;
 }
 
 export type AgreementStateFilter = ContractState | "ALL";
-export type SortKey = "protocolName" | "state" | "bountyPercentage" | "bountyCapUsd" | "createdAt";
+export type SortKey = "protocolName" | "state" | "bountyPercentage" | "bountyCapUsd" | "createdAt" | "valuePricedUsd";
 export type SortDirection = "asc" | "desc" | null;
 
 export interface AgreementSearchParams {

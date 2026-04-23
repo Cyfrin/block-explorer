@@ -44,6 +44,7 @@ defineProps({
 
   .tippy-content {
     @apply px-2 py-1;
+    white-space: pre-line;
   }
 }
 </style>

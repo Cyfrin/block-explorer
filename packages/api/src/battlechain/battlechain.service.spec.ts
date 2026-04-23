@@ -11,6 +11,7 @@ import { AgreementOwnerAuthorized } from "./agreementOwnerAuthorized.entity";
 import { AttackModeratorTransferred } from "./attackModeratorTransferred.entity";
 import { ContractState } from "./battlechain.dto";
 import { PROMOTION_WINDOW_MS, PROMOTION_DELAY_MS } from "./battlechain.constants";
+import { ValueEstimationService } from "./valueEstimation/valueEstimation.service";
 
 // Helper to build a minimal AgreementCurrentState mock
 const makeAgreementState = (overrides: Partial<AgreementCurrentState> = {}): AgreementCurrentState =>
@@ -114,6 +115,10 @@ describe("BattlechainService", () => {
         {
           provide: getRepositoryToken(AttackModeratorTransferred),
           useValue: attackModeratorTransferredRepository,
+        },
+        {
+          provide: ValueEstimationService,
+          useValue: mock<ValueEstimationService>(),
         },
       ],
     }).compile();
@@ -970,6 +975,10 @@ describe("BattlechainService", () => {
           {
             provide: getRepositoryToken(AttackModeratorTransferred),
             useValue: mock<Repository<AttackModeratorTransferred>>(),
+          },
+          {
+            provide: ValueEstimationService,
+            useValue: mock<ValueEstimationService>(),
           },
         ],
       }).compile();

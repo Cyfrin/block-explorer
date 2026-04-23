@@ -73,8 +73,47 @@
         {{ t("safeHarbor.cancelPromotionButton") }}
       </button>
 
-      <!-- Commitment Window Status (inline) -->
       <div class="header-meta">
+        <!-- Value at Risk (read-only estimation) -->
+        <div v-if="agreement.valueBand" class="value-at-risk-inline">
+          <h4 class="meta-label">{{ t("safeHarbor.tvl.title") }}</h4>
+          <div class="value-band-row">
+            <Badge :color="valueBandColor" size="md">
+              <template #icon>
+                <svg viewBox="0 0 10 10" class="confidence-icon">
+                  <circle v-if="agreement.valueConfidence === 'HIGH'" cx="5" cy="5" r="4" fill="currentColor" />
+                  <template v-else-if="agreement.valueConfidence === 'MEDIUM'">
+                    <circle cx="5" cy="5" r="4" fill="none" stroke="currentColor" stroke-width="1" />
+                    <path d="M5 1 A4 4 0 0 1 5 9 Z" fill="currentColor" />
+                  </template>
+                  <circle v-else cx="5" cy="5" r="3.5" fill="none" stroke="currentColor" stroke-width="1" />
+                </svg>
+              </template>
+              {{ agreement.valueBand }}
+            </Badge>
+            <span class="confidence-label">
+              {{ t(`safeHarbor.tvl.confidence.${(agreement.valueConfidence || "LOW").toLowerCase()}`) }}
+            </span>
+          </div>
+          <div v-if="agreement.valuePricedTokens?.length" class="token-breakdown">
+            <div v-for="token in agreement.valuePricedTokens" :key="token.address" class="token-line">
+              <span class="token-symbol">{{ token.symbol }}</span>
+              <span class="token-separator" />
+              <span class="token-usd">${{ token.usd.toLocaleString(undefined, { maximumFractionDigits: 0 }) }}</span>
+            </div>
+          </div>
+          <div v-if="agreement.valueUnpricedTokens?.length" class="token-breakdown unpriced">
+            <span class="unpriced-label">{{ t("safeHarbor.tvl.couldNotBePriced") }}:</span>
+            <span class="unpriced-tokens">
+              {{ agreement.valueUnpricedTokens.map((t) => t.symbol || shortValue(t.address)).join(", ") }}
+            </span>
+          </div>
+          <div v-if="agreement.valueEstimatedAt" class="value-detail muted">
+            <TimeField :value="new Date(agreement.valueEstimatedAt).toISOString()" :format="TimeFormat.TIME_AGO" />
+          </div>
+        </div>
+
+        <!-- Commitment Window Status (inline) -->
         <EditableSection
           class="commitment-section-inline"
           :title="t('safeHarbor.commitmentWindow')"
@@ -823,6 +862,21 @@ const coveredAccountsWithScope = computed((): CoveredAccount[] => {
   }));
 });
 
+// Value at Risk band color
+const valueBandColor = computed((): "neutral" | "success" | "warning" | "accent" => {
+  switch (props.agreement.valueBand) {
+    case "$10M+":
+    case "$1M - $10M":
+      return "accent";
+    case "$100K - $1M":
+      return "success";
+    case "$10K - $100K":
+      return "warning";
+    default:
+      return "neutral";
+  }
+});
+
 const contractsExpanded = ref(false);
 
 // Scope label helper
@@ -930,6 +984,77 @@ const getChildScopeTooltip = (scope: number): string => {
 
       :deep(.section-title) {
         @apply mb-1;
+      }
+    }
+
+    .value-at-risk-inline + .commitment-section-inline {
+      @apply mt-3;
+    }
+
+    .value-at-risk-inline {
+      .meta-label {
+        @apply text-xs font-semibold uppercase tracking-wide mb-1.5;
+        color: var(--text-muted);
+      }
+
+      .value-band-row {
+        @apply flex items-center gap-2 mb-1;
+      }
+
+      .confidence-icon {
+        @apply w-3 h-3;
+      }
+
+      .confidence-label {
+        @apply text-xs;
+        color: var(--text-muted);
+      }
+
+      .value-detail {
+        @apply text-sm;
+        color: var(--text-secondary);
+
+        &.muted {
+          @apply text-xs;
+          color: var(--text-muted);
+        }
+      }
+
+      .token-breakdown {
+        @apply mt-1.5 text-sm max-w-48;
+
+        .token-line {
+          @apply flex items-center gap-2 py-0.5;
+
+          .token-symbol {
+            @apply font-medium text-xs shrink-0;
+            color: var(--text-secondary);
+          }
+
+          .token-separator {
+            @apply flex-1 border-b border-dotted;
+            border-color: var(--border-subtle);
+            min-width: 1rem;
+          }
+
+          .token-usd {
+            @apply text-xs tabular-nums shrink-0;
+            color: var(--text-muted);
+          }
+        }
+
+        &.unpriced {
+          @apply text-xs mt-1;
+          color: var(--warning-text);
+
+          .unpriced-label {
+            @apply font-medium;
+          }
+
+          .unpriced-tokens {
+            @apply ml-1;
+          }
+        }
       }
     }
 

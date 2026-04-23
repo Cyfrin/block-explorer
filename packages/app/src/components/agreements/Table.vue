@@ -26,6 +26,12 @@
           <SortIcon :direction="getSortDirection('bountyCapUsd')" />
         </span>
       </TableHeadColumn>
+      <TableHeadColumn class="sortable-column" @click="toggleSort('valuePricedUsd')">
+        <span class="column-header">
+          {{ t("agreementsView.table.estValue") }}
+          <SortIcon :direction="getSortDirection('valuePricedUsd')" />
+        </span>
+      </TableHeadColumn>
       <TableHeadColumn class="sortable-column" @click="toggleSort('createdAt')">
         <span class="column-header">
           {{ t("agreementsView.table.createdAt") }}
@@ -49,6 +55,9 @@
         </TableBodyColumn>
         <TableBodyColumn>
           <ContentLoader class="h-4 w-16" />
+        </TableBodyColumn>
+        <TableBodyColumn>
+          <ContentLoader class="h-5 w-20" />
         </TableBodyColumn>
         <TableBodyColumn>
           <ContentLoader class="h-4 w-24" />
@@ -79,6 +88,22 @@
           <ContentLoader v-if="isDetailsPending(item)" class="h-4 w-16" />
           <span v-else>{{ formatBountyCap(item.bountyCapUsd) }}</span>
         </TableBodyColumn>
+        <TableBodyColumn :data-heading="t('agreementsView.table.estValue')" class="est-value-column">
+          <Badge v-if="item.valueBand" :color="getBandColor(item.valueBand)" :tooltip="getValueTooltip(item)">
+            <template #icon>
+              <svg viewBox="0 0 10 10" class="confidence-icon">
+                <circle v-if="item.valueConfidence === 'HIGH'" cx="5" cy="5" r="4" fill="currentColor" />
+                <template v-else-if="item.valueConfidence === 'MEDIUM'">
+                  <circle cx="5" cy="5" r="4" fill="none" stroke="currentColor" stroke-width="1" />
+                  <path d="M5 1 A4 4 0 0 1 5 9 Z" fill="currentColor" />
+                </template>
+                <circle v-else cx="5" cy="5" r="3.5" fill="none" stroke="currentColor" stroke-width="1" />
+              </svg>
+            </template>
+            {{ item.valueBand }}
+          </Badge>
+          <span v-else class="text-muted">-</span>
+        </TableBodyColumn>
         <TableBodyColumn :data-heading="t('agreementsView.table.createdAt')" class="created-column">
           <CopyButton v-if="item.createdAt" :value="new Date(item.createdAt).toISOString()" @click.stop>
             <TimeField :value="new Date(item.createdAt).toISOString()" :format="TimeFormat.TIME_AGO" />
@@ -87,13 +112,13 @@
         </TableBodyColumn>
       </tr>
       <tr v-if="expandedRows.has(item.agreementAddress)" class="expanded-row">
-        <td :colspan="6" class="expanded-content">
+        <td :colspan="7" class="expanded-content">
           <AgreementDetails :agreement="toSafeHarborAgreement(item)" :contract-state="item.state" readonly />
         </td>
       </tr>
     </template>
     <template #empty>
-      <TableBodyColumn class="agreements-not-found" :colspan="6">
+      <TableBodyColumn class="agreements-not-found" :colspan="7">
         <slot name="not-found">{{ t("agreementsView.table.noAgreements") }}</slot>
       </TableBodyColumn>
     </template>
@@ -267,6 +292,52 @@ function formatBountyCap(bountyCapUsd?: string): string {
   if (value === 0) return "No cap";
   return `$${value.toLocaleString()}`;
 }
+
+function getBandColor(band?: string): "neutral" | "success" | "warning" | "error" | "accent" {
+  switch (band) {
+    case "$10M+":
+      return "accent";
+    case "$1M - $10M":
+      return "accent";
+    case "$100K - $1M":
+      return "success";
+    case "$10K - $100K":
+      return "warning";
+    default:
+      return "neutral";
+  }
+}
+
+function getValueTooltip(item: AgreementListItem): string {
+  const lines: string[] = [];
+  if (item.valuePricedTokens?.length) {
+    for (const token of item.valuePricedTokens) {
+      const usd = token.usd.toLocaleString(undefined, { maximumFractionDigits: 0 });
+      lines.push(`${token.symbol}  —  $${usd}`);
+    }
+  }
+  if (item.valueUnpricedTokens?.length) {
+    const names = item.valueUnpricedTokens.map((t) => t.symbol || t.address.slice(0, 10) + "…").join(", ");
+    if (lines.length) lines.push("");
+    lines.push(`Unpriced: ${names}`);
+  }
+  if (item.valueEstimatedAt) {
+    const ago = getTimeAgo(item.valueEstimatedAt);
+    if (lines.length) lines.push("");
+    lines.push(`Updated ${ago}`);
+  }
+  return lines.join("\n");
+}
+
+function getTimeAgo(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 </script>
 
 <style lang="scss">
@@ -360,6 +431,17 @@ function formatBountyCap(bountyCapUsd?: string): string {
     &:nth-child(4),
     &:nth-child(5) {
       @apply text-right;
+    }
+  }
+
+  // Est. Value column
+  .est-value-column {
+    .confidence-icon {
+      @apply w-2.5 h-2.5;
+    }
+
+    .text-muted {
+      color: var(--text-muted);
     }
   }
 

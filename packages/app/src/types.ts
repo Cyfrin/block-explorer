@@ -103,6 +103,15 @@ export interface SafeHarborAgreement {
   createdAtBlock?: number;
   registeredAt?: number | null;
   lastModified?: number;
+
+  // Value estimation
+  valueBand?: string;
+  valuePricedUsd?: string;
+  valueNativeUsd?: string;
+  valuePricedTokens?: Array<{ symbol: string; address: string; usd: number }>;
+  valueUnpricedTokens?: Array<{ symbol: string | null; address: string }>;
+  valueConfidence?: string;
+  valueEstimatedAt?: number;
 }
 
 export interface AgreementDocument {
