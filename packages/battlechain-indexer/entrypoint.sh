@@ -127,6 +127,11 @@ echo ""
 /app/rindexer "$@" &
 RINDEXER_PID=$!
 
+# Forward SIGTERM/SIGINT from the container runtime to rindexer so it can shut
+# down cleanly. Without this, `docker stop` only signals the shell (PID 1) and
+# rindexer gets SIGKILL after the grace period.
+trap 'kill -TERM $RINDEXER_PID 2>/dev/null; wait $RINDEXER_PID' TERM INT
+
 # Wait for event tables (rindexer creates them within ~1s of startup)
 echo "[sql-setup] Waiting for rindexer to create event tables..."
 max_attempts=60
