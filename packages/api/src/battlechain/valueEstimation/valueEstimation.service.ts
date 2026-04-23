@@ -232,7 +232,7 @@ export class ValueEstimationService {
     pricedTokens.sort((a, b) => b.usd - a.usd);
 
     const valueBand = this.computeBand(totalPricedUsd);
-    const valueConfidence = this.computeConfidence(unpricedTokens.length);
+    const valueConfidence = this.computeConfidence(pricedTokens.length, unpricedTokens.length);
 
     return {
       valueBand,
@@ -440,10 +440,11 @@ export class ValueEstimationService {
     return "< $10K";
   }
 
-  private computeConfidence(unpricedTokenCount: number): string {
+  private computeConfidence(pricedTokenCount: number, unpricedTokenCount: number): string {
     if (unpricedTokenCount === 0) return "HIGH";
-    if (unpricedTokenCount <= 2) return "MEDIUM";
-    return "LOW";
+    const total = pricedTokenCount + unpricedTokenCount;
+    if (total === 0) return "LOW";
+    return unpricedTokenCount / total <= 0.25 ? "MEDIUM" : "LOW";
   }
 
   private async storeResult(agreementAddress: string, result: EstimationResult): Promise<void> {
