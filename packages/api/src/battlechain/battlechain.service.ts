@@ -41,6 +41,10 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
   private static readonly RPC_POLL_BATCH_SIZE = 10;
   private static readonly CHILD_RESOLUTION_INTERVAL_MS = 15_000;
   private static readonly STATE_TRANSITION_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+  // Recompute TVL for every agreement and write valueBand / valuePricedUsd /
+  // valuePricedTokens / valueUnpricedTokens / valueConfidence / valueEstimatedAt
+  // back onto agreement_current_state. Freshly-registered agreements show "-"
+  // in the UI until the next tick fires.
   private static readonly VALUE_ESTIMATION_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
   private stateTransitionTimer: NodeJS.Timer = null;
   private valueEstimationTimer: NodeJS.Timer = null;

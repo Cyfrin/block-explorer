@@ -87,6 +87,24 @@ For networks with a custom base token, there are a number of environment variabl
 - `ETH_TOKEN_ICON_URL` - optional, default (ETH icon) is: `https://assets.coingecko.com/coins/images/279/large/ethereum.png?1698873266`
 - `ETH_TOKEN_USDPRICE` - optional, example: `3300.30`.
 
+## Value estimation (Est. TVL)
+
+Each Safe Harbor agreement exposes an estimated TVL — a value band (`< $10K`, `$10K - $100K`, `$100K - $1M`, `$1M - $10M`, `$10M+`), a per-token breakdown, and a `HIGH` / `MEDIUM` / `LOW` confidence label derived from the share of tokens that could be priced.
+
+The estimate is recomputed by `ValueEstimationService.estimateAllAgreements()` on a **30-minute timer** started by `BattlechainService.onModuleInit`. Freshly-registered agreements show `-` in the UI until the next tick fires.
+
+For each agreement the job reads the latest non-zero balance per token across its covered contracts, then resolves a USD price through a three-layer cascade:
+
+1. **DeFiLlama** — batched `coins/prices/current` call keyed by canonical L1 address. Used only for tokens whose CoinGecko cache is empty.
+2. **CoinGecko cache** — `tokens.usdPrice` column, populated by the worker's off-chain data service.
+3. **On-chain decomposition** — for wrappers / yield-bearing tokens / Uniswap V2 LPs, the service classifies the token (`ERC4626`, `Compound`, `Aave`, `wrapper`, `uniswap_v2`) and values it via its underlyings. Classifications and exchange-rate ratios are cached in `token_decomposition`.
+
+Results are written back onto `agreement_current_state` (`valueBand`, `valuePricedUsd`, `valueNativeUsd`, `valuePricedTokens`, `valueUnpricedTokens`, `valueConfidence`, `valueEstimatedAt`) and returned on every `AgreementDto`.
+
+Layer 3 requires `BATTLECHAIN_RPC_URL` to be set. Without it, decomposition is skipped and wrapped / LP tokens that aren't priced by DeFiLlama or the CoinGecko cache appear in `valueUnpricedTokens`.
+
+To double-count-proof the estimate, tokens whose address is itself one of the agreement's covered contracts are excluded, and Uniswap V2 LP tokens whose pool is in scope are skipped (the pool's reserves are already counted directly).
+
 ## Running the app
 
 ```bash
