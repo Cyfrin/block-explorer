@@ -1,12 +1,12 @@
 {
   "name": "worker",
   "version": "0.0.0",
-  "title": "ZKsync Era Block Explorer Worker",
-  "description": "ZKsync Era Block Explorer Worker",
-  "author": "Matter Labs",
+  "title": "BattleChain Block Explorer Worker",
+  "description": "BattleChain Block Explorer Worker",
+  "author": "Cyfrin",
   "private": true,
   "license": "MIT",
-  "repository": "https://github.com/matter-labs/block-explorer",
+  "repository": "https://github.com/Cyfrin/block-explorer",
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",

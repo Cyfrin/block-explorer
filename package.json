@@ -1,11 +1,11 @@
 {
   "name": "block-explorer",
-  "version": "0.1.0",
-  "title": "ZKsync Era Block Explorer",
-  "description": "ZKsync Era Block Explorer",
-  "author": "Matter Labs",
+  "version": "0.2.1",
+  "title": "BattleChain Block Explorer",
+  "description": "BattleChain Block Explorer",
+  "author": "Cyfrin",
   "license": "MIT",
-  "repository": "https://github.com/matter-labs/block-explorer",
+  "repository": "https://github.com/Cyfrin/block-explorer",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -28,6 +28,7 @@
     "@matterlabs/prettier-config": "^1.0.2",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/commit-analyzer": "^9.0.2",
+    "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^8.0.2",
     "@semantic-release/npm": "^9.0.0",
     "@semantic-release/release-notes-generator": "^10.0.3",

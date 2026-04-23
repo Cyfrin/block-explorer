@@ -1,12 +1,12 @@
 {
   "name": "api",
   "version": "0.0.0",
-  "title": "ZKsync Era Block Explorer API",
-  "description": "ZKsync Era Block Explorer API",
-  "author": "Matter Labs",
+  "title": "BattleChain Block Explorer API",
+  "description": "BattleChain Block Explorer API",
+  "author": "Cyfrin",
   "private": true,
   "license": "MIT",
-  "repository": "https://github.com/matter-labs/block-explorer",
+  "repository": "https://github.com/Cyfrin/block-explorer",
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",

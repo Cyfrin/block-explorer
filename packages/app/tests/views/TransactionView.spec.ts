@@ -13,9 +13,8 @@ import $testId from "@/plugins/testId";
 import routes from "@/router/routes";
 import TransactionView from "@/views/TransactionView.vue";
 
-const notFoundRoute = { name: "not-found", meta: { title: "404 Not Found" } };
 const router = {
-  resolve: vi.fn(() => notFoundRoute),
+  resolve: vi.fn(() => ({ name: "not-found", meta: { title: "404 Not Found" } })),
   replace: vi.fn(),
   currentRoute: {
     value: {},
@@ -61,14 +60,14 @@ describe("TransactionView:", () => {
     expect(i18n.global.t(routes.find((e) => e.name === "transaction")?.meta?.title as string)).toBe("Transaction");
   });
 
-  it("route is replaced with not found view on request 404 error", async () => {
-    const isRequestPending = ref(true);
+  it("shows transaction not found when request returns 404", async () => {
+    const isTransactionNotFound = ref(false);
 
     const mock = useTransactionMock({
-      isRequestFailed: isRequestPending,
+      isTransactionNotFound,
     });
 
-    mount(TransactionView, {
+    const wrapper = mount(TransactionView, {
       props: {
         hash: "0x4d282bfaa673c686041a2e93ab0c1ca8ffc937a212b069669cd62c1725afc43d",
       },
@@ -78,10 +77,12 @@ describe("TransactionView:", () => {
       },
     });
 
-    isRequestPending.value = false;
+    // Simulate 404 by setting isTransactionNotFound to true
+    isTransactionNotFound.value = true;
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(router.replace).toHaveBeenCalledWith(notFoundRoute);
+    // The component should render the TransactionNotFound component
+    expect(wrapper.html()).toContain("Transaction Not Found");
     mock.mockRestore();
   });
 });

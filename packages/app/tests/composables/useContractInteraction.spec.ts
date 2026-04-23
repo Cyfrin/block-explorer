@@ -124,6 +124,7 @@ describe("useContractInteraction:", () => {
           value: ethers.parseEther("0.1"),
           from: "0x000000000000000000000000000000000000800A",
           type: 0,
+          gasLimit: 10_000_000n,
         },
       ]);
       mock.mockRestore();
@@ -149,6 +150,7 @@ describe("useContractInteraction:", () => {
           value: ethers.parseEther("0.1"),
           from: "0x000000000000000000000000000000000000800A",
           type: 0,
+          gasLimit: 10_000_000n,
         },
       ]);
       mock.mockRestore();
@@ -176,6 +178,7 @@ describe("useContractInteraction:", () => {
           value: ethers.parseEther("0.1"),
           from: "0x000000000000000000000000000000000000800A",
           type: 0,
+          gasLimit: 10_000_000n,
         },
       ]);
       mock.mockRestore();

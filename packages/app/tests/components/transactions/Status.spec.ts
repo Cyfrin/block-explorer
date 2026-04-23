@@ -47,19 +47,22 @@ describe("Status", () => {
         status: "included",
       },
     });
+
+    // Labels are now <span> elements, not Badge components
+    const labels = wrapper.findAll(".status-label");
+    expect(labels[0].text()).toBe(i18n.global.t("general.execution"));
+    expect(labels[1].text()).toBe(i18n.global.t("general.finality"));
+
+    // Badge components: Processed badge + finality desktop badge + finality mobile badge
     const badges = wrapper.findAllComponents(Badge);
-    expect(badges.length).toBe(5);
+    expect(badges.length).toBe(3);
 
-    const [l2StatusBadgeTitle, l2StatusBadgeValue, l1StatusBadgeTitle] = badges;
-
-    expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
-    expect(l2StatusBadgeTitle.props().color).toBe("success");
+    const [l2StatusBadgeValue, l1StatusBadgeValueDesktop] = badges;
 
     expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
     expect(l2StatusBadgeValue.props().color).toBe("success");
 
-    expect(l1StatusBadgeTitle.text()).toBe(i18n.global.t("general.finality"));
-    expect(l1StatusBadgeTitle.props().color).toBe("neutral");
+    expect(l1StatusBadgeValueDesktop.props().color).toBe("neutral");
   });
   it("shows execution and finality badges for 'committed' status", async () => {
     const wrapper = mount(Status, {
@@ -68,19 +71,18 @@ describe("Status", () => {
         status: "committed",
       },
     });
+
+    const labels = wrapper.findAll(".status-label");
+    expect(labels[0].text()).toBe(i18n.global.t("general.execution"));
+    expect(labels[1].text()).toBe(i18n.global.t("general.finality"));
+
     const badges = wrapper.findAllComponents(Badge);
-    expect(badges.length).toBe(5);
+    expect(badges.length).toBe(3);
 
-    const [l2StatusBadgeTitle, l2StatusBadgeValue, l1StatusBadgeTitle, l1StatusBadgeValueDesktop] = badges;
-
-    expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
-    expect(l2StatusBadgeTitle.props().color).toBe("success");
+    const [l2StatusBadgeValue, l1StatusBadgeValueDesktop] = badges;
 
     expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
     expect(l2StatusBadgeValue.props().color).toBe("success");
-
-    expect(l1StatusBadgeTitle.text()).toBe(i18n.global.t("general.finality"));
-    expect(l1StatusBadgeTitle.props().color).toBe("neutral");
 
     expect(l1StatusBadgeValueDesktop.props().color).toBe("neutral");
   });
@@ -91,19 +93,18 @@ describe("Status", () => {
         status: "proved",
       },
     });
+
+    const labels = wrapper.findAll(".status-label");
+    expect(labels[0].text()).toBe(i18n.global.t("general.execution"));
+    expect(labels[1].text()).toBe(i18n.global.t("general.finality"));
+
     const badges = wrapper.findAllComponents(Badge);
-    expect(badges.length).toBe(5);
+    expect(badges.length).toBe(3);
 
-    const [l2StatusBadgeTitle, l2StatusBadgeValue, l1StatusBadgeTitle, l1StatusBadgeValueDesktop] = badges;
-
-    expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
-    expect(l2StatusBadgeTitle.props().color).toBe("success");
+    const [l2StatusBadgeValue, l1StatusBadgeValueDesktop] = badges;
 
     expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
     expect(l2StatusBadgeValue.props().color).toBe("success");
-
-    expect(l1StatusBadgeTitle.text()).toBe(i18n.global.t("general.finality"));
-    expect(l1StatusBadgeTitle.props().color).toBe("neutral");
 
     expect(l1StatusBadgeValueDesktop.props().color).toBe("neutral");
   });
@@ -114,19 +115,18 @@ describe("Status", () => {
         status: "verified",
       },
     });
+
+    const labels = wrapper.findAll(".status-label");
+    expect(labels[0].text()).toBe(i18n.global.t("general.execution"));
+    expect(labels[1].text()).toBe(i18n.global.t("general.finality"));
+
     const badges = wrapper.findAllComponents(Badge);
-    expect(badges.length).toBe(5);
+    expect(badges.length).toBe(3);
 
-    const [l2StatusBadgeTitle, l2StatusBadgeValue, l1StatusBadgeTitle, l1StatusBadgeValueDesktop] = badges;
-
-    expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
-    expect(l2StatusBadgeTitle.props().color).toBe("success");
+    const [l2StatusBadgeValue, l1StatusBadgeValueDesktop] = badges;
 
     expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
     expect(l2StatusBadgeValue.props().color).toBe("success");
-
-    expect(l1StatusBadgeTitle.text()).toBe(i18n.global.t("general.finality"));
-    expect(l1StatusBadgeTitle.props().color).toBe("success");
 
     expect(l1StatusBadgeValueDesktop.props().color).toBe("success");
   });
@@ -138,13 +138,15 @@ describe("Status", () => {
       },
     });
 
+    // Execution label
+    const labels = wrapper.findAll(".status-label");
+    expect(labels[0].text()).toBe(i18n.global.t("general.execution"));
+
+    // Badge components: Processed badge + Indexing badge
     const badges = wrapper.findAllComponents(Badge);
-    expect(badges.length).toBe(3);
+    expect(badges.length).toBe(2);
 
-    const [l2StatusBadgeTitle, l2StatusBadgeValue, indexingBadge] = badges;
-
-    expect(l2StatusBadgeTitle.text()).toBe(i18n.global.t("general.execution"));
-    expect(l2StatusBadgeTitle.props().color).toBe("success");
+    const [l2StatusBadgeValue, indexingBadge] = badges;
 
     expect(l2StatusBadgeValue.text()).toBe(i18n.global.t("transactions.statusComponent.processed"));
     expect(l2StatusBadgeValue.props().color).toBe("success");

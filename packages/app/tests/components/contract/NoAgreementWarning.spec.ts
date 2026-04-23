@@ -67,6 +67,32 @@ vi.mock("@/composables/useWallet", () => {
   };
 });
 
+// Mock useContractAuthorization so the component doesn't make API calls
+const mockAuthState = {
+  authorizedOwner: ref<string | null>(null),
+  isDeployedViaBattleChain: ref(false),
+  isLoading: ref(false),
+  error: ref<string | null>(null),
+};
+
+vi.mock("@/composables/useContractAuthorization", () => {
+  return {
+    default: () => ({
+      authorizedOwner: mockAuthState.authorizedOwner,
+      isAuthorized: computed(
+        () =>
+          !!mockCreationState.walletAddress.value &&
+          !!mockAuthState.authorizedOwner.value &&
+          mockCreationState.walletAddress.value.toLowerCase() === mockAuthState.authorizedOwner.value.toLowerCase()
+      ),
+      isDeployedViaBattleChain: mockAuthState.isDeployedViaBattleChain,
+      isLoading: mockAuthState.isLoading,
+      error: mockAuthState.error,
+      refetch: vi.fn(),
+    }),
+  };
+});
+
 describe("NoAgreementWarning", () => {
   const i18n = createI18n({
     locale: "en",
@@ -83,6 +109,10 @@ describe("NoAgreementWarning", () => {
     mockCreationState.walletAddress.value = null;
     mockCreationState.isMetamaskInstalled.value = true;
     mockCreationState.isConnectPending.value = false;
+    mockAuthState.authorizedOwner.value = null;
+    mockAuthState.isDeployedViaBattleChain.value = false;
+    mockAuthState.isLoading.value = false;
+    mockAuthState.error.value = null;
   });
 
   afterEach(() => {
@@ -177,6 +207,10 @@ describe("NoAgreementWarning", () => {
     });
 
     it("shows not owner message when wallet is not the contract deployer", () => {
+      // BC-deployed contract where current wallet is not the authorized owner
+      mockAuthState.isDeployedViaBattleChain.value = true;
+      mockAuthState.authorizedOwner.value = "0x2222222222222222222222222222222222222222";
+
       const { container } = render(NoAgreementWarning, {
         props: {
           ...defaultProps,

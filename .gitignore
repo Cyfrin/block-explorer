@@ -1,4 +1,6 @@
 .env
+.env.*
+!.env.example
 junit.xml
 e2e-junit.xml
 prividium-e2e-junit.xml

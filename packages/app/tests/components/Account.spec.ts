@@ -13,6 +13,7 @@ import $testId from "@/plugins/testId";
 
 const router = {
   replace: vi.fn(),
+  resolve: vi.fn(() => ({ href: "/" })),
   currentRoute: {
     value: {},
   },

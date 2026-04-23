@@ -6,6 +6,7 @@ import Tabs from "@/components/common/Tabs.vue";
 
 const router = {
   push: vi.fn(),
+  resolve: vi.fn(() => ({ href: "/" })),
 };
 
 vi.mock("vue-router", () => ({

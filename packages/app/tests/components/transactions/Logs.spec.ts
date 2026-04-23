@@ -47,6 +47,7 @@ const log = {
 
 const router = {
   push: vi.fn(),
+  resolve: vi.fn(() => ({ href: "/" })),
 };
 const routeQueryMock = vi.fn(() => ({}));
 vi.mock("vue-router", () => ({

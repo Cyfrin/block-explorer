@@ -21,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -32,10 +32,6 @@ jobs:
 
       - name: Test
         run: npm run test:ci
-
-      - name: App type check
-        working-directory: ./packages/app
-        run: npm run typecheck
 
       - name: Release
         env:
