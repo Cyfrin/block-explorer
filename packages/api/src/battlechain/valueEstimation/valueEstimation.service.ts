@@ -31,8 +31,8 @@ export interface UnpricedToken {
 
 interface EstimationResult {
   valueBand: string;
-  valuePricedUsd: number;
-  valueNativeUsd: number;
+  valuePricedUsd: number | null;
+  valueNativeUsd: number | null;
   valuePricedTokens: PricedToken[];
   valueUnpricedTokens: UnpricedToken[];
   valueConfidence: string;
@@ -103,8 +103,8 @@ export class ValueEstimationService {
         if (!balanceMap || balanceMap.size === 0) {
           await this.storeResult(agreement.agreementAddress, {
             valueBand: "Unknown",
-            valuePricedUsd: 0,
-            valueNativeUsd: 0,
+            valuePricedUsd: null,
+            valueNativeUsd: null,
             valuePricedTokens: [],
             valueUnpricedTokens: [],
             valueConfidence: "LOW",
@@ -452,8 +452,8 @@ export class ValueEstimationService {
       { agreementAddress },
       {
         valueBand: result.valueBand,
-        valuePricedUsd: result.valuePricedUsd.toString(),
-        valueNativeUsd: result.valueNativeUsd.toString(),
+        valuePricedUsd: result.valuePricedUsd === null ? null : result.valuePricedUsd.toString(),
+        valueNativeUsd: result.valueNativeUsd === null ? null : result.valueNativeUsd.toString(),
         valuePricedTokens: result.valuePricedTokens,
         valueUnpricedTokens: result.valueUnpricedTokens,
         valueConfidence: result.valueConfidence,

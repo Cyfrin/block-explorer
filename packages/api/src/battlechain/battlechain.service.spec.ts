@@ -739,6 +739,7 @@ describe("BattlechainService", () => {
       const mockQb = mock<SelectQueryBuilder<AgreementCurrentState>>();
       mockQb.where.mockReturnValue(mockQb);
       mockQb.orderBy.mockReturnValue(mockQb);
+      mockQb.addOrderBy.mockReturnValue(mockQb);
       mockQb.skip.mockReturnValue(mockQb);
       mockQb.take.mockReturnValue(mockQb);
       mockQb.getManyAndCount.mockResolvedValue([[state1, state2], 5]);
@@ -760,6 +761,7 @@ describe("BattlechainService", () => {
       const mockQb = mock<SelectQueryBuilder<AgreementCurrentState>>();
       mockQb.where.mockReturnValue(mockQb);
       mockQb.orderBy.mockReturnValue(mockQb);
+      mockQb.addOrderBy.mockReturnValue(mockQb);
       mockQb.skip.mockReturnValue(mockQb);
       mockQb.take.mockReturnValue(mockQb);
       mockQb.getManyAndCount.mockResolvedValue([[], 0]);
@@ -774,6 +776,7 @@ describe("BattlechainService", () => {
       const mockQb = mock<SelectQueryBuilder<AgreementCurrentState>>();
       mockQb.where.mockReturnValue(mockQb);
       mockQb.orderBy.mockReturnValue(mockQb);
+      mockQb.addOrderBy.mockReturnValue(mockQb);
       mockQb.skip.mockReturnValue(mockQb);
       mockQb.take.mockReturnValue(mockQb);
       mockQb.getManyAndCount.mockResolvedValue([[], 0]);
@@ -788,6 +791,7 @@ describe("BattlechainService", () => {
       const mockQb = mock<SelectQueryBuilder<AgreementCurrentState>>();
       mockQb.where.mockReturnValue(mockQb);
       mockQb.orderBy.mockReturnValue(mockQb);
+      mockQb.addOrderBy.mockReturnValue(mockQb);
       mockQb.skip.mockReturnValue(mockQb);
       mockQb.take.mockReturnValue(mockQb);
       mockQb.getManyAndCount.mockResolvedValue([[], 0]);
@@ -802,6 +806,7 @@ describe("BattlechainService", () => {
       const mockQb = mock<SelectQueryBuilder<AgreementCurrentState>>();
       mockQb.where.mockReturnValue(mockQb);
       mockQb.orderBy.mockReturnValue(mockQb);
+      mockQb.addOrderBy.mockReturnValue(mockQb);
       mockQb.skip.mockReturnValue(mockQb);
       mockQb.take.mockReturnValue(mockQb);
       mockQb.getManyAndCount.mockResolvedValue([[], 0]);
@@ -812,10 +817,41 @@ describe("BattlechainService", () => {
       expect(mockQb.orderBy).toHaveBeenCalledWith("agreement.protocolName", "ASC", "NULLS LAST");
     });
 
+    it("adds createdAt as a tiebreaker so equal primary-sort values are stably ordered", async () => {
+      const mockQb = mock<SelectQueryBuilder<AgreementCurrentState>>();
+      mockQb.where.mockReturnValue(mockQb);
+      mockQb.orderBy.mockReturnValue(mockQb);
+      mockQb.addOrderBy.mockReturnValue(mockQb);
+      mockQb.skip.mockReturnValue(mockQb);
+      mockQb.take.mockReturnValue(mockQb);
+      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQb);
+
+      await service.getAllAgreements(undefined, 1, 10, "valuePricedUsd", "ASC");
+
+      expect(mockQb.addOrderBy).toHaveBeenCalledWith("agreement.createdAt", "DESC", "NULLS LAST");
+    });
+
+    it("does not add a redundant tiebreaker when sorting by createdAt itself", async () => {
+      const mockQb = mock<SelectQueryBuilder<AgreementCurrentState>>();
+      mockQb.where.mockReturnValue(mockQb);
+      mockQb.orderBy.mockReturnValue(mockQb);
+      mockQb.addOrderBy.mockReturnValue(mockQb);
+      mockQb.skip.mockReturnValue(mockQb);
+      mockQb.take.mockReturnValue(mockQb);
+      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+      (agreementStateRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockQb);
+
+      await service.getAllAgreements(undefined, 1, 10, "createdAt", "DESC");
+
+      expect(mockQb.addOrderBy).not.toHaveBeenCalled();
+    });
+
     it("clamps limit to max 100", async () => {
       const mockQb = mock<SelectQueryBuilder<AgreementCurrentState>>();
       mockQb.where.mockReturnValue(mockQb);
       mockQb.orderBy.mockReturnValue(mockQb);
+      mockQb.addOrderBy.mockReturnValue(mockQb);
       mockQb.skip.mockReturnValue(mockQb);
       mockQb.take.mockReturnValue(mockQb);
       mockQb.getManyAndCount.mockResolvedValue([[], 0]);
@@ -836,6 +872,7 @@ describe("BattlechainService", () => {
       const mockQb = mock<SelectQueryBuilder<AgreementCurrentState>>();
       mockQb.where.mockReturnValue(mockQb);
       mockQb.orderBy.mockReturnValue(mockQb);
+      mockQb.addOrderBy.mockReturnValue(mockQb);
       mockQb.skip.mockReturnValue(mockQb);
       mockQb.take.mockReturnValue(mockQb);
       mockQb.getManyAndCount.mockResolvedValue([[state], 1]);
@@ -855,6 +892,7 @@ describe("BattlechainService", () => {
       const mockQb = mock<SelectQueryBuilder<AgreementCurrentState>>();
       mockQb.where.mockReturnValue(mockQb);
       mockQb.orderBy.mockReturnValue(mockQb);
+      mockQb.addOrderBy.mockReturnValue(mockQb);
       mockQb.skip.mockReturnValue(mockQb);
       mockQb.take.mockReturnValue(mockQb);
       mockQb.getManyAndCount.mockResolvedValue([[state], 1]);
