@@ -33,7 +33,26 @@ jobs:
       - name: Test
         run: npm run test:ci
 
+      - name: Skip release if no API changes
+        id: api-diff
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous tag found — proceeding with release"
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED_API_FILES=$(git diff --name-only "$LAST_TAG"..HEAD -- packages/api/)
+          if [ -n "$CHANGED_API_FILES" ]; then
+            echo "API changes detected since $LAST_TAG — proceeding with release"
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No API changes since $LAST_TAG — skipping release"
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Release
+        if: steps.api-diff.outputs.should_release == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: npx semantic-release
