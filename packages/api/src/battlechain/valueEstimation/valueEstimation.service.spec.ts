@@ -445,7 +445,8 @@ describe("ValueEstimationService", () => {
       const patch = getStoredResult();
       expect(patch.valueBand).toBe("Unknown");
       expect(patch.valueConfidence).toBe("LOW");
-      expect(Number(patch.valuePricedUsd)).toBe(0);
+      expect(patch.valuePricedUsd).toBeNull();
+      expect(patch.valueNativeUsd).toBeNull();
     });
 
     it("skips agreements with empty coveredContracts without issuing a balance query", async () => {

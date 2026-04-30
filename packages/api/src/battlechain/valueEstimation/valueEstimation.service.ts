@@ -4,7 +4,7 @@ import { Repository, DataSource } from "typeorm";
 import { JsonRpcProvider } from "ethers";
 import { ConfigService } from "@nestjs/config";
 import { AgreementCurrentState } from "../agreementCurrentState.entity";
-import { TokenDecomposition, DecompositionType } from "../tokenDecomposition.entity";
+import { TokenDecomposition } from "../tokenDecomposition.entity";
 import { detectTokenType, refreshRatios } from "./tokenDetectors";
 import { fetchDefillamaPrices, DefillamaPrice } from "./defillamaProvider";
 import { BASE_TOKEN_L2_ADDRESS } from "../../common/constants";
@@ -31,8 +31,8 @@ export interface UnpricedToken {
 
 interface EstimationResult {
   valueBand: string;
-  valuePricedUsd: number;
-  valueNativeUsd: number;
+  valuePricedUsd: number | null;
+  valueNativeUsd: number | null;
   valuePricedTokens: PricedToken[];
   valueUnpricedTokens: UnpricedToken[];
   valueConfidence: string;
@@ -103,8 +103,8 @@ export class ValueEstimationService {
         if (!balanceMap || balanceMap.size === 0) {
           await this.storeResult(agreement.agreementAddress, {
             valueBand: "Unknown",
-            valuePricedUsd: 0,
-            valueNativeUsd: 0,
+            valuePricedUsd: null,
+            valueNativeUsd: null,
             valuePricedTokens: [],
             valueUnpricedTokens: [],
             valueConfidence: "LOW",
@@ -113,7 +113,7 @@ export class ValueEstimationService {
         }
 
         const coveredSet = new Set((agreement.coveredContracts ?? []).map((c) => c.toLowerCase().trim()));
-        const result = await this.estimateAgreementValue(balanceMap, coveredSet, defillamaPrices, agreement);
+        const result = await this.estimateAgreementValue(balanceMap, coveredSet, defillamaPrices);
         await this.storeResult(agreement.agreementAddress, result);
       }
 
@@ -190,8 +190,7 @@ export class ValueEstimationService {
   private async estimateAgreementValue(
     tokenBalances: Map<string, TokenBalance>,
     coveredContracts: Set<string>,
-    defillamaPrices: Map<string, DefillamaPrice>,
-    agreement: AgreementCurrentState
+    defillamaPrices: Map<string, DefillamaPrice>
   ): Promise<EstimationResult> {
     let totalPricedUsd = 0;
     let nativeUsd = 0;
@@ -452,8 +451,8 @@ export class ValueEstimationService {
       { agreementAddress },
       {
         valueBand: result.valueBand,
-        valuePricedUsd: result.valuePricedUsd.toString(),
-        valueNativeUsd: result.valueNativeUsd.toString(),
+        valuePricedUsd: result.valuePricedUsd === null ? null : result.valuePricedUsd.toString(),
+        valueNativeUsd: result.valueNativeUsd === null ? null : result.valueNativeUsd.toString(),
         valuePricedTokens: result.valuePricedTokens,
         valueUnpricedTokens: result.valueUnpricedTokens,
         valueConfidence: result.valueConfidence,

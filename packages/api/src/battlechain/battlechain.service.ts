@@ -1113,6 +1113,10 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       const sortColumn = this.mapSortColumn(sortBy);
       query = query.orderBy(sortColumn, sortOrder, "NULLS LAST");
     }
+    // Stable tiebreaker so equal primary-sort values (e.g. valuePricedUsd=0) don't appear randomly ordered.
+    if (sortBy !== "createdAt") {
+      query = query.addOrderBy("agreement.createdAt", "DESC", "NULLS LAST");
+    }
 
     // Get total count + paginated results in a single SQL query
     const [paginatedStates, total] = await query.skip(offset).take(safeLimit).getManyAndCount();
