@@ -9,7 +9,7 @@
   "repository": "https://github.com/Cyfrin/block-explorer",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && VITE_VERSION=\"${VITE_VERSION:-$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')}\" && VITE_VERSION=\"${VITE_VERSION:-dev}\" vite build",
+    "build": "vue-tsc --noEmit && vite build",
     "start": "vite preview --port 3010",
     "test": "TZ=UTC-3 vitest --environment jsdom --run",
     "test:watch": "TZ=UTC-3 vitest --environment jsdom",
