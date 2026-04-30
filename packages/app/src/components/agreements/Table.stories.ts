@@ -212,10 +212,20 @@ SortedByValue.args = {
 SortedByValue.decorators = [routes];
 
 // Agreements without any value estimation data (before first estimation run)
-const noValueAgreements: AgreementListItem[] = agreements.map(
-  ({ valueBand, valuePricedUsd, valuePricedTokens, valueUnpricedTokens, valueConfidence, valueEstimatedAt, ...rest }) =>
-    rest
-);
+const noValueAgreements: AgreementListItem[] = agreements.map((agreement) => {
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  const {
+    valueBand,
+    valuePricedUsd,
+    valuePricedTokens,
+    valueUnpricedTokens,
+    valueConfidence,
+    valueEstimatedAt,
+    ...rest
+  } = agreement;
+  /* eslint-enable @typescript-eslint/no-unused-vars */
+  return rest;
+});
 
 export const NoValueEstimation = Template.bind({}) as unknown as { args: Args; decorators: unknown[] };
 NoValueEstimation.args = {

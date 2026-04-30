@@ -4,7 +4,7 @@ import { Repository, DataSource } from "typeorm";
 import { JsonRpcProvider } from "ethers";
 import { ConfigService } from "@nestjs/config";
 import { AgreementCurrentState } from "../agreementCurrentState.entity";
-import { TokenDecomposition, DecompositionType } from "../tokenDecomposition.entity";
+import { TokenDecomposition } from "../tokenDecomposition.entity";
 import { detectTokenType, refreshRatios } from "./tokenDetectors";
 import { fetchDefillamaPrices, DefillamaPrice } from "./defillamaProvider";
 import { BASE_TOKEN_L2_ADDRESS } from "../../common/constants";
@@ -113,7 +113,7 @@ export class ValueEstimationService {
         }
 
         const coveredSet = new Set((agreement.coveredContracts ?? []).map((c) => c.toLowerCase().trim()));
-        const result = await this.estimateAgreementValue(balanceMap, coveredSet, defillamaPrices, agreement);
+        const result = await this.estimateAgreementValue(balanceMap, coveredSet, defillamaPrices);
         await this.storeResult(agreement.agreementAddress, result);
       }
 
@@ -190,8 +190,7 @@ export class ValueEstimationService {
   private async estimateAgreementValue(
     tokenBalances: Map<string, TokenBalance>,
     coveredContracts: Set<string>,
-    defillamaPrices: Map<string, DefillamaPrice>,
-    agreement: AgreementCurrentState
+    defillamaPrices: Map<string, DefillamaPrice>
   ): Promise<EstimationResult> {
     let totalPricedUsd = 0;
     let nativeUsd = 0;
