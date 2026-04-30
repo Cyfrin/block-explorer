@@ -37,7 +37,7 @@ async function bootstrap() {
     const swaggerConfig = new DocumentBuilder()
       .setTitle("Block explorer API")
       .setDescription("ZkSync Block Explorer API")
-      .setVersion("1.0")
+      .setVersion(process.env.API_VERSION ?? "0.0.0")
       .build();
     const document = SwaggerModule.createDocument(app, swaggerConfig);
     SwaggerModule.setup("docs", app, document);

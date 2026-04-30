@@ -2,6 +2,7 @@ import { Module, Logger, MiddlewareConsumer, NestModule, DynamicModule, Inject }
 import { TypeOrmModule, TypeOrmModuleOptions } from "@nestjs/typeorm";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { HealthModule } from "./health/health.module";
+import { VersionModule } from "./version/version.module";
 import { ApiModule } from "./api/api.module";
 import { ApiBlockModule } from "./api/block/block.module";
 import { ApiAccountModule } from "./api/account/account.module";
@@ -50,6 +51,7 @@ interface AppModuleConfig {
     StatsModule,
     BattlechainModule,
     HealthModule,
+    VersionModule,
   ],
   providers: [Logger, ...metricProviders, DbMetricsService],
 })
