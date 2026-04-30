@@ -159,6 +159,8 @@
           :contract-state="item.state ?? agreementState"
           @agreement-updated="handleAgreementUpdated"
           @connect-wallet="connectWallet"
+          @request-promotion="openRequestPromotionModal"
+          @cancel-promotion="openCancelPromotionModal"
         />
       </template>
     </div>
