@@ -354,9 +354,10 @@
 
     <!-- Footer -->
     <div class="modal-footer">
-      <!-- Cancel/Done button (hidden in embedded mode) -->
+      <!-- Cancel/Done button (hidden in embedded mode and on step 2, where Skip handles the
+           "exit without adopting" path with proper success-event propagation) -->
       <button
-        v-if="!embedded"
+        v-if="!embedded && currentStep !== 2"
         type="button"
         class="btn-secondary"
         @click="$emit('close')"
