@@ -486,8 +486,11 @@ const {
   reset,
 } = useAgreementCreation();
 
+// Local override used to advance to step 3 manually (e.g. skip-adopt flow).
+const localStepOverride = ref<number | null>(null);
+
 // Use overrides or real values
-const currentStep = computed(() => props.overrideStep ?? creationStep.value);
+const currentStep = computed(() => props.overrideStep ?? localStepOverride.value ?? creationStep.value);
 const isCreatingAgreement = computed(() => props.overrideCreating ?? creating.value);
 const createAgreementError = computed(() => props.overrideCreateError ?? createError.value);
 const agreementAddress = computed(() => props.overrideAgreementAddress ?? createdAddress.value);
@@ -701,7 +704,7 @@ const handleAdoptAgreement = async () => {
     });
     // In embedded mode, parent handles the completion - don't show step 3
     if (!props.embedded) {
-      creationStep.value = 3;
+      localStepOverride.value = 3;
     }
   }
 };
@@ -714,7 +717,7 @@ const handleSkipAdopt = () => {
   });
   // In embedded mode, parent handles the completion - don't show step 3
   if (!props.embedded) {
-    creationStep.value = 3;
+    localStepOverride.value = 3;
   }
 };
 
@@ -722,6 +725,7 @@ const handleSkipAdopt = () => {
 const resetAll = () => {
   reset();
   didAdopt.value = false;
+  localStepOverride.value = null;
 };
 
 // Expose reset for parent component

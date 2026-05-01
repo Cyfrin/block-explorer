@@ -1,7 +1,7 @@
 import { ref } from "vue";
 import { createI18n } from "vue-i18n";
 
-import { afterEach, beforeEach, describe, expect, it, type SpyInstance, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 
 import { mount, RouterLinkStub } from "@vue/test-utils";
 
@@ -42,8 +42,8 @@ describe("BlocksView:", () => {
     },
   });
 
-  let mockContext: SpyInstance;
-  let mockBlockCollection: SpyInstance;
+  let mockContext: MockInstance;
+  let mockBlockCollection: MockInstance;
   beforeEach(() => {
     routeQueryMock.mockRestore();
     mockContext = useContextMock();

@@ -7,6 +7,7 @@ import { fireEvent, render } from "@testing-library/vue";
 import { mount, RouterLinkStub } from "@vue/test-utils";
 
 import { useContractEventsMock } from "../../mocks";
+import { linkTo } from "../../utils/routerLink";
 
 import ContractEvents from "@/components/event/ContractEvents.vue";
 
@@ -217,24 +218,24 @@ describe("ContractEvents", () => {
 
     expect(routerLinks).toHaveLength(5);
 
-    expect(routerLinks[0].props().to.name).toBe("transaction");
-    expect(routerLinks[0].props().to.params.hash).toBe(
+    expect(linkTo(routerLinks[0]!).name).toBe("transaction");
+    expect(linkTo(routerLinks[0]!).params!.hash).toBe(
       "0x7ca934c36aec488cdfacaf660a9257f471d5207a73467849f677e6d0502696e7"
     );
 
-    expect(routerLinks[1].props().to.name).toBe("block");
-    expect(routerLinks[1].props().to.params.id).toBe(12);
+    expect(linkTo(routerLinks[1]!).name).toBe("block");
+    expect(linkTo(routerLinks[1]!).params!.id).toBe(12);
 
-    expect(routerLinks[2].props().to.name).toBe("transaction");
-    expect(routerLinks[2].props().to.params.hash).toBe(
+    expect(linkTo(routerLinks[2]!).name).toBe("transaction");
+    expect(linkTo(routerLinks[2]!).params!.hash).toBe(
       "0x7ca934c36aec488cdfacaf660a9257f471d5207a73467849f677e6d0502696e7"
     );
 
-    expect(routerLinks[3].props().to.name).toBe("address");
-    expect(routerLinks[3].props().to.params.address).toBe("0x6cC8cf7f6b488C58AA909B77E6e65c631c204784");
+    expect(linkTo(routerLinks[3]!).name).toBe("address");
+    expect(linkTo(routerLinks[3]!).params!.address).toBe("0x6cC8cf7f6b488C58AA909B77E6e65c631c204784");
 
-    expect(routerLinks[4].props().to.name).toBe("address");
-    expect(routerLinks[4].props().to.params.address).toBe("0xa1cf087DB965Ab02Fb3CFaCe1f5c63935815f044");
+    expect(linkTo(routerLinks[4]!).name).toBe("address");
+    expect(linkTo(routerLinks[4]!).params!.address).toBe("0xa1cf087DB965Ab02Fb3CFaCe1f5c63935815f044");
 
     mockContractEvents.mockRestore();
   });

@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from "vite
 
 import { mount, RouterLinkStub } from "@vue/test-utils";
 
+import { linkTo } from "../utils/routerLink";
+
 import AddressLink from "@/components/AddressLink.vue";
 
 const l1ExplorerUrlMock = vi.fn((): string | null => "https://sepolia.etherscan.io/");
@@ -52,8 +54,8 @@ describe("Address Link", () => {
       },
     });
     await wrapper.vm.$nextTick();
-    expect(wrapper.findComponent(RouterLinkStub).props().to.name).toBe("address");
-    expect(wrapper.findComponent(RouterLinkStub).props().to.params.address).toBe(
+    expect(linkTo(wrapper.findComponent(RouterLinkStub)).name).toBe("address");
+    expect(linkTo(wrapper.findComponent(RouterLinkStub)).params?.address).toBe(
       "0x0000000000000000000000000000000000000001"
     );
   });

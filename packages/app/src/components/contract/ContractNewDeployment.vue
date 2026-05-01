@@ -159,28 +159,27 @@ onMounted(async () => {
   if (props.overrideWalletConnected !== undefined) return;
 
   // Initialize wallet state on mount
-  walletModule = await import("@/composables/useWallet").then((m) => {
+  const wm = await import("@/composables/useWallet").then((m) => {
     return m.default({
-      isReady: context.isReady,
       currentNetwork: computed(() => ({
         ...context.currentNetwork.value,
         explorerUrl: context.currentNetwork.value.rpcUrl,
         chainName: context.currentNetwork.value.l2NetworkName,
         l1ChainId: null as unknown as number,
       })),
-      networks: context.networks,
       getL2Provider: () => context.getL2Provider(),
     });
   });
+  walletModule = wm;
 
   // Check if MetaMask is installed
   internalMetamaskInstalled.value =
     typeof window !== "undefined" && !!(window as unknown as { ethereum?: unknown }).ethereum;
 
   // Initialize and check current connection
-  walletModule.initialize();
-  internalWalletConnected.value = !!walletModule.address.value;
-  internalWalletAddress.value = walletModule.address.value;
+  wm.initialize();
+  internalWalletConnected.value = !!wm.address.value;
+  internalWalletAddress.value = wm.address.value;
 });
 </script>
 

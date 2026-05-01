@@ -122,14 +122,12 @@ onMounted(async () => {
   // Initialize wallet state on mount
   const { initialize } = await import("@/composables/useWallet").then((m) => {
     return m.default({
-      isReady: context.isReady,
       currentNetwork: computed(() => ({
         ...context.currentNetwork.value,
         explorerUrl: context.currentNetwork.value.rpcUrl,
         chainName: context.currentNetwork.value.l2NetworkName,
         l1ChainId: null as unknown as number,
       })),
-      networks: context.networks,
       getL2Provider: () => context.getL2Provider(),
     });
   });

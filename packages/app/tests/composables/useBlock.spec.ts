@@ -4,13 +4,13 @@ import { $fetch, FetchError } from "ohmyfetch";
 
 import useBlock from "@/composables/useBlock";
 
-import type { SpyInstance } from "vitest";
+import type { MockInstance } from "vitest";
 
 vi.mock("ohmyfetch", () => {
   const fetchSpy = vi.fn(() =>
     Promise.resolve({ transactionHash: "0xc3867cd967e3a577e02e0c9afa6a4845a252e276b94a2244d57123a6e509829e" })
   );
-  (fetchSpy as unknown as { create: SpyInstance }).create = vi.fn(() => fetchSpy);
+  (fetchSpy as unknown as { create: MockInstance }).create = vi.fn(() => fetchSpy);
   return {
     $fetch: fetchSpy,
     FetchError: function error() {

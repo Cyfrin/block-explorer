@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/vue";
 import { mount, RouterLinkStub } from "@vue/test-utils";
 
+import { linkTo } from "../utils/routerLink";
+
 import PageError from "@/components/PageError.vue";
 
 import enUS from "@/locales/en.json";
@@ -36,6 +38,6 @@ describe("PageError:", () => {
         stubs: { RouterLink: RouterLinkStub },
       },
     });
-    expect(wrapper.findComponent(RouterLinkStub).props().to.name).toBe("home");
+    expect(linkTo(wrapper.findComponent(RouterLinkStub)).name).toBe("home");
   });
 });

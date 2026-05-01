@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.app.json",
   "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "tests/**/*.*"],
-  "exclude": [],
+  "exclude": ["tests/e2e/**/*"],
   "compilerOptions": {
     "composite": true,
     "lib": ["DOM.Iterable"],

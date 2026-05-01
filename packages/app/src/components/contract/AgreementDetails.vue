@@ -834,12 +834,12 @@ const formatContactLink = (contact: ContactDetail): string => {
   return sanitizeHref(value);
 };
 
-const formatTimestamp = (timestamp: number | null): string | null => {
+const formatTimestamp = (timestamp: number | null | undefined): string | null => {
   if (!timestamp) return null;
   return localDateFromUnixTimestamp(Math.floor(timestamp / 1000));
 };
 
-const toISOString = (timestamp: number | null): string => {
+const toISOString = (timestamp: number | null | undefined): string => {
   if (!timestamp) return "";
   return ISOStringFromUnixTimestamp(Math.floor(timestamp / 1000));
 };

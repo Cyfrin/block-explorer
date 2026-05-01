@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 
 import { mount, RouterLinkStub } from "@vue/test-utils";
 
+import { linkTo } from "../../../utils/routerLink";
+
 import SuccessScreen from "@/components/contract/verification/SuccessScreen.vue";
 
 import enUS from "@/locales/en.json";
@@ -28,9 +30,9 @@ describe("SuccessScreen", () => {
     });
     const routerArray = wrapper.findAllComponents(RouterLinkStub);
 
-    expect(routerArray[0].props().to.name).toBe("address");
-    expect(routerArray[0].props().to.params.address).toBe("0x0150673c86121237ac004DbD3371C03f481e4Dc3");
-    expect(routerArray[1].props().to.name).toBe("address");
-    expect(routerArray[1].props().to.params.address).toBe("0x0150673c86121237ac004DbD3371C03f481e4Dc3");
+    expect(linkTo(routerArray[0]!).name).toBe("address");
+    expect(linkTo(routerArray[0]!).params!.address).toBe("0x0150673c86121237ac004DbD3371C03f481e4Dc3");
+    expect(linkTo(routerArray[1]!).name).toBe("address");
+    expect(linkTo(routerArray[1]!).params!.address).toBe("0x0150673c86121237ac004DbD3371C03f481e4Dc3");
   });
 });
