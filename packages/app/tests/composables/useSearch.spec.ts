@@ -4,7 +4,7 @@ import { $fetch } from "ohmyfetch";
 
 import useSearch from "@/composables/useSearch";
 
-import type { SpyInstance } from "vitest";
+import type { MockInstance } from "vitest";
 
 import * as validators from "@/utils/validators";
 
@@ -19,7 +19,7 @@ vi.mock("vue-router", () => ({
 
 vi.mock("ohmyfetch", () => {
   const fetchSpy = vi.fn(() => ({}));
-  (fetchSpy as unknown as { create: SpyInstance }).create = vi.fn(() => fetchSpy);
+  (fetchSpy as unknown as { create: MockInstance }).create = vi.fn(() => fetchSpy);
   return {
     $fetch: fetchSpy,
   };

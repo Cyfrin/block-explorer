@@ -350,22 +350,21 @@ onMounted(async () => {
   // Skip wallet initialization if using overrides (Storybook mode)
   if (props.overrideIsAuthorizedForAll !== undefined) return;
 
-  walletModule = await import("@/composables/useWallet").then((m) => {
+  const wm = await import("@/composables/useWallet").then((m) => {
     return m.default({
-      isReady: context.isReady,
       currentNetwork: computed(() => ({
         ...context.currentNetwork.value,
         explorerUrl: context.currentNetwork.value.rpcUrl,
         chainName: context.currentNetwork.value.l2NetworkName,
         l1ChainId: null as unknown as number,
       })),
-      networks: context.networks,
       getL2Provider: () => context.getL2Provider(),
     });
   });
+  walletModule = wm;
 
-  walletModule.initialize();
-  walletAddress.value = walletModule.address.value;
+  wm.initialize();
+  walletAddress.value = wm.address.value;
 
   // Watch for wallet changes
   watch(

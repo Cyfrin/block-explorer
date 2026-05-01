@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, type SpyInstance, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 
 import { $fetch, FetchError } from "ohmyfetch";
 
@@ -35,7 +35,7 @@ vi.mock("ohmyfetch", () => {
       links: {},
     })
   );
-  (fetchSpy as unknown as { create: SpyInstance }).create = vi.fn(() => fetchSpy);
+  (fetchSpy as unknown as { create: MockInstance }).create = vi.fn(() => fetchSpy);
   return {
     $fetch: fetchSpy,
     FetchError: function error() {
@@ -45,7 +45,7 @@ vi.mock("ohmyfetch", () => {
 });
 
 describe("useContractEvents:", () => {
-  let mockContext: SpyInstance;
+  let mockContext: MockInstance;
 
   beforeEach(() => {
     mockContext = useContextMock();
@@ -81,7 +81,7 @@ describe("useContractEvents:", () => {
     expect(isRequestPending.value).toEqual(false);
   });
   it("sets isRequestFailed to true when request is failed", async () => {
-    const mock = ($fetch as unknown as SpyInstance).mockRejectedValue(new FetchError("An error occurred"));
+    const mock = ($fetch as unknown as MockInstance).mockRejectedValue(new FetchError("An error occurred"));
     const { isRequestFailed, getCollection } = useContractEvents();
     await getCollection(params);
     expect(isRequestFailed.value).toEqual(true);
@@ -116,7 +116,7 @@ describe("useContractEvents:", () => {
   });
 
   it("sets known request params", async () => {
-    ($fetch as unknown as SpyInstance).mockClear();
+    ($fetch as unknown as MockInstance).mockClear();
     const { getCollection } = useContractEvents();
     await getCollection(params);
 

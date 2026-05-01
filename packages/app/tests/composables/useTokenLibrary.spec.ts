@@ -1,6 +1,6 @@
 import { computed } from "vue";
 
-import { afterEach, beforeEach, describe, expect, it, type SpyInstance, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 
 import { $fetch, FetchError } from "ohmyfetch";
 
@@ -11,7 +11,7 @@ import useTokenLibrary from "@/composables/useTokenLibrary";
 vi.mock("ohmyfetch", async () => {
   const mod = await vi.importActual("ohmyfetch");
   const fetchSpy = vi.fn();
-  (fetchSpy as unknown as { create: SpyInstance }).create = vi.fn(() => fetchSpy);
+  (fetchSpy as unknown as { create: MockInstance }).create = vi.fn(() => fetchSpy);
   return {
     ...(mod as object),
     $fetch: fetchSpy,
@@ -19,7 +19,7 @@ vi.mock("ohmyfetch", async () => {
 });
 
 describe("useTokenLibrary:", () => {
-  const fetchSpy = $fetch as unknown as SpyInstance;
+  const fetchSpy = $fetch as unknown as MockInstance;
   beforeEach(() => {
     fetchSpy
       .mockResolvedValueOnce({

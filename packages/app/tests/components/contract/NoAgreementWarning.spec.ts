@@ -29,9 +29,10 @@ vi.mock("@/composables/useContext", () => {
 // Mock useAgreementCreation
 const mockConnect = vi.fn();
 
+const walletAddress = ref<string | null>(null);
 const mockCreationState = {
-  walletAddress: ref<string | null>(null),
-  isWalletConnected: computed(() => !!mockCreationState.walletAddress.value),
+  walletAddress,
+  isWalletConnected: computed(() => !!walletAddress.value),
   isMetamaskInstalled: ref(true),
   isConnectPending: ref(false),
   connect: mockConnect,

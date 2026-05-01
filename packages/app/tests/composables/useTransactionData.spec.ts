@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, type SpyInstance, vi } from "vitest";
+import { beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 
 import { $fetch } from "ohmyfetch";
 
@@ -36,7 +36,7 @@ const ERC20ProxyVerificationInfo = {
 
 vi.mock("ohmyfetch", () => {
   const fetchSpy = vi.fn(() => Promise.resolve(ERC20VerificationInfo));
-  (fetchSpy as unknown as { create: SpyInstance }).create = vi.fn(() => fetchSpy);
+  (fetchSpy as unknown as { create: MockInstance }).create = vi.fn(() => fetchSpy);
   return {
     $fetch: fetchSpy,
     FetchError: function FetchError(message: string) {
@@ -224,8 +224,8 @@ describe("useTransactionData:", () => {
     expect(data.value).toEqual(dataWithNewAddress);
   });
   it("decodes data successfully for a proxy contract", async () => {
-    ($fetch as unknown as SpyInstance).mockResolvedValueOnce(ERC20ProxyVerificationInfo);
-    const mock = ($fetch as unknown as SpyInstance).mockResolvedValueOnce(ERC20VerificationInfo);
+    ($fetch as unknown as MockInstance).mockResolvedValueOnce(ERC20ProxyVerificationInfo);
+    const mock = ($fetch as unknown as MockInstance).mockResolvedValueOnce(ERC20VerificationInfo);
     const { data, isDecodePending, decodingError, decodeTransactionData } = useTransactionData();
     const dataWithNewAddress = {
       ...transactionData,

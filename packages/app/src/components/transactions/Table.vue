@@ -340,7 +340,7 @@ type TransactionListItemMapped = TransactionListItem & {
   methodName: string;
   fromNetwork: NetworkOrigin;
   toNetwork: NetworkOrigin;
-  statusColor: "danger" | "dark-success";
+  statusColor: "error" | "success";
   isContractDeploymentTx: boolean;
   displayedTxReceiver: string | null;
 };
@@ -353,7 +353,7 @@ const transactions = computed<TransactionListItemMapped[] | undefined>(() => {
       methodName: getTransactionMethod(transaction, methodNames.value),
       fromNetwork: transaction.isL1Originated ? "L1" : "L2",
       toNetwork: "L2", // even withdrawals go through L2 addresses (800A or bridge addresses)
-      statusColor: transaction.status === "failed" ? "danger" : "dark-success",
+      statusColor: transaction.status === "failed" ? "error" : "success",
       // replace finality status with execution status here
       status: ["verified", "proved", "committed"].includes(transaction.status) ? "included" : transaction.status,
       isContractDeploymentTx,

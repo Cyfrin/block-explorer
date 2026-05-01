@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, type SpyInstance, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 
 import { $fetch, FetchError } from "ohmyfetch";
 
@@ -246,7 +246,7 @@ vi.mock("ohmyfetch", async () => {
       return Promise.reject(error);
     }
   });
-  (fetchSpy as unknown as { create: SpyInstance }).create = vi.fn(() => fetchSpy);
+  (fetchSpy as unknown as { create: MockInstance }).create = vi.fn(() => fetchSpy);
   return {
     ...mod,
     $fetch: fetchSpy,
@@ -254,7 +254,7 @@ vi.mock("ohmyfetch", async () => {
 });
 
 describe("useTransaction:", () => {
-  let mockContext: SpyInstance;
+  let mockContext: MockInstance;
 
   beforeEach(() => {
     mockContext = useContextMock();

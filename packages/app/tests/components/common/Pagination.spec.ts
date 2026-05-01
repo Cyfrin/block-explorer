@@ -5,6 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent } from "@testing-library/vue";
 import { mount, RouterLinkStub } from "@vue/test-utils";
 
+import { linkTo } from "../../utils/routerLink";
+
 import Pagination from "@/components/common/Pagination.vue";
 
 import enUS from "@/locales/en.json";
@@ -41,9 +43,9 @@ describe("Pagination:", () => {
     const pageLinks = wrapper.findAllComponents(RouterLinkStub).filter((e) => e.classes().includes("page"));
 
     expect(pageLinks.length).toBe(5);
-    expect(pageLinks[0].props().to.query).toEqual({ pageSize: "10" });
+    expect(linkTo(pageLinks[0]!).query).toEqual({ pageSize: "10" });
     for (let a = 2; a < 5; a++) {
-      expect(pageLinks[a - 1].props().to.query.page).toBe(a);
+      expect(linkTo(pageLinks[a - 1]!).query!.page).toBe(a);
     }
     expect(wrapper.find(".pagination-page-button.arrow.left").exists()).toBe(true);
     expect(wrapper.find(".pagination-page-button.arrow.right").exists()).toBe(true);
@@ -148,8 +150,8 @@ describe("Pagination:", () => {
         },
       });
       const pageLinks = wrapper.findAllComponents(RouterLinkStub).filter((e) => e.classes().includes("arrow"));
-      expect(pageLinks[0].props().to.query).toEqual({ pageSize: "10" });
-      expect(pageLinks[0].classes().includes("disabled")).toEqual(true);
+      expect(linkTo(pageLinks[0]!).query).toEqual({ pageSize: "10" });
+      expect(pageLinks[0]!.classes().includes("disabled")).toEqual(true);
     });
     it("next button is disabled if last page is active", () => {
       const wrapper = mount(Pagination, {
@@ -165,8 +167,8 @@ describe("Pagination:", () => {
         },
       });
       const pageLinks = wrapper.findAllComponents(RouterLinkStub).filter((e) => e.classes().includes("arrow"));
-      expect(pageLinks[1].props().to.query.page).toBe(5);
-      expect(pageLinks[1].classes().includes("disabled")).toEqual(true);
+      expect(linkTo(pageLinks[1]!).query!.page).toBe(5);
+      expect(pageLinks[1]!.classes().includes("disabled")).toEqual(true);
     });
     it("back and next button have correct query", () => {
       const wrapper = mount(Pagination, {
@@ -182,10 +184,10 @@ describe("Pagination:", () => {
         },
       });
       const pageLinks = wrapper.findAllComponents(RouterLinkStub).filter((e) => e.classes().includes("arrow"));
-      expect(pageLinks[0].props().to.query.page).toBe(2);
-      expect(pageLinks[0].classes().includes("disabled")).toEqual(false);
-      expect(pageLinks[1].props().to.query.page).toBe(4);
-      expect(pageLinks[1].classes().includes("disabled")).toEqual(false);
+      expect(linkTo(pageLinks[0]!).query!.page).toBe(2);
+      expect(pageLinks[0]!.classes().includes("disabled")).toEqual(false);
+      expect(linkTo(pageLinks[1]!).query!.page).toBe(4);
+      expect(pageLinks[1]!.classes().includes("disabled")).toEqual(false);
     });
   });
   it("renders correct hash for the links if route hash exists", () => {
@@ -203,9 +205,9 @@ describe("Pagination:", () => {
     });
     const pageLinks = wrapper.findAllComponents(RouterLinkStub);
 
-    expect(pageLinks[0].props().to.hash).toBe("events");
-    expect(pageLinks[1].props().to.hash).toBe("events");
-    expect(pageLinks[2].props().to.hash).toBe("events");
-    expect(pageLinks[3].props().to.hash).toBe("events");
+    expect(linkTo(pageLinks[0]!).hash).toBe("events");
+    expect(linkTo(pageLinks[1]!).hash).toBe("events");
+    expect(linkTo(pageLinks[2]!).hash).toBe("events");
+    expect(linkTo(pageLinks[3]!).hash).toBe("events");
   });
 });
