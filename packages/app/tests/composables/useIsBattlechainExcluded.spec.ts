@@ -8,10 +8,10 @@ import * as useContext from "@/composables/useContext";
 import useIsBattlechainExcluded from "@/composables/useIsBattlechainExcluded";
 
 import type { NetworkConfig } from "@/configs";
-import type { SpyInstance } from "vitest";
+import type { MockInstance } from "vitest";
 
 describe("useIsBattlechainExcluded:", () => {
-  let mockContext: SpyInstance;
+  let mockContext: MockInstance;
 
   const createMockContext = (excludedAddresses: string[] = []) => {
     const networkWithExclusions: NetworkConfig = {
@@ -19,7 +19,7 @@ describe("useIsBattlechainExcluded:", () => {
       excludedFromBattlechain: excludedAddresses,
     };
 
-    return vi.spyOn(useContext, "default").mockReturnValue({
+    const mockContextValue = {
       getL2Provider: () => vi.fn(() => null),
       currentNetwork: computed(() => networkWithExclusions),
       user: computed(() => ({
@@ -30,7 +30,9 @@ describe("useIsBattlechainExcluded:", () => {
       isReady: computed(() => true),
       networks: computed(() => [networkWithExclusions]),
       isGatewaySettlementChain: () => false,
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any as ReturnType<typeof useContext.default>;
+    return vi.spyOn(useContext, "default").mockReturnValue(mockContextValue);
   };
 
   afterEach(() => {
@@ -118,7 +120,8 @@ describe("useIsBattlechainExcluded:", () => {
         isReady: computed(() => true),
         networks: computed(() => [TESTNET_NETWORK]),
         isGatewaySettlementChain: () => false,
-      });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any as ReturnType<typeof useContext.default>);
     });
 
     it("returns isExcluded as false for any address", () => {

@@ -269,7 +269,7 @@ describe("SourceViewer:", () => {
     });
 
     vi.spyOn(document.documentElement, "clientHeight", "get").mockReturnValue(100);
-    await wrapper.setProps({ activeStep: { address: "0x01", line: 3, step: {} } });
+    await wrapper.setProps({ activeStep: { address: "0x01", line: 3, step: {} } as ActiveStep });
     await wrapper.find("instruction-list-item");
     expect(spy).toHaveBeenCalledWith(0, -72);
     wrapper.unmount();

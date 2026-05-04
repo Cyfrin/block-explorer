@@ -8,12 +8,13 @@ import { useContextMock } from "../mocks";
 
 import useBattlechainContractState from "@/composables/useBattlechainContractState";
 
-import type { BattlechainContractStateInfo } from "@/composables/useBattlechainContractState";
-import type { SpyInstance } from "vitest";
+import type { MockInstance } from "vitest";
+
+import { ContractState } from "@/types";
 
 vi.mock("ohmyfetch", () => {
   const fetchSpy = vi.fn(() => Promise.resolve({}));
-  (fetchSpy as unknown as { create: SpyInstance }).create = vi.fn(() => fetchSpy);
+  (fetchSpy as unknown as { create: MockInstance }).create = vi.fn(() => fetchSpy);
   return {
     $fetch: fetchSpy,
     FetchError: function error() {
@@ -23,7 +24,7 @@ vi.mock("ohmyfetch", () => {
 });
 
 describe("useBattlechainContractState:", () => {
-  let mockContext: SpyInstance;
+  let mockContext: MockInstance;
 
   beforeEach(() => {
     mockContext = useContextMock();
@@ -75,8 +76,8 @@ describe("useBattlechainContractState:", () => {
 
   describe("fetch - successful responses", () => {
     it("fetches and sets NOT_REGISTERED state", async () => {
-      const mockResponse: BattlechainContractStateInfo = {
-        state: "NOT_REGISTERED",
+      const mockResponse = {
+        state: ContractState.NOT_REGISTERED,
         wasUnderAttack: false,
         registeredAt: null,
         underAttackAt: null,
@@ -99,9 +100,9 @@ describe("useBattlechainContractState:", () => {
       expect(result.error.value).toBeNull();
     });
 
-    it("fetches and sets REGISTERED state with timestamps", async () => {
-      const mockResponse: BattlechainContractStateInfo = {
-        state: "REGISTERED",
+    it("fetches and sets NEW_DEPLOYMENT state with timestamps", async () => {
+      const mockResponse = {
+        state: ContractState.NEW_DEPLOYMENT,
         wasUnderAttack: false,
         registeredAt: 1700000000000,
         underAttackAt: null,
@@ -116,15 +117,15 @@ describe("useBattlechainContractState:", () => {
 
       await result.fetch();
 
-      expect(result.state.value).toBe("REGISTERED");
+      expect(result.state.value).toBe("NEW_DEPLOYMENT");
       expect(result.isNotRegistered.value).toBe(false);
       expect(result.registeredAt.value).toBe(1700000000000);
       expect(result.commitmentLockedUntil.value).toBe(1700604800000);
     });
 
     it("fetches and sets UNDER_ATTACK state with attack details", async () => {
-      const mockResponse: BattlechainContractStateInfo = {
-        state: "UNDER_ATTACK",
+      const mockResponse = {
+        state: ContractState.UNDER_ATTACK,
         wasUnderAttack: true,
         registeredAt: 1700000000000,
         underAttackAt: 1700100000000,
@@ -155,8 +156,8 @@ describe("useBattlechainContractState:", () => {
     });
 
     it("fetches and sets PRODUCTION state", async () => {
-      const mockResponse: BattlechainContractStateInfo = {
-        state: "PRODUCTION",
+      const mockResponse = {
+        state: ContractState.PRODUCTION,
         wasUnderAttack: true,
         registeredAt: 1700000000000,
         underAttackAt: 1700100000000,
@@ -194,7 +195,7 @@ describe("useBattlechainContractState:", () => {
       expect(result.isLoading.value).toBe(true);
 
       resolvePromise!({
-        state: "NOT_REGISTERED",
+        state: ContractState.NOT_REGISTERED,
         wasUnderAttack: false,
         registeredAt: null,
         underAttackAt: null,
@@ -207,8 +208,8 @@ describe("useBattlechainContractState:", () => {
     });
 
     it("sets isLoading to false after request completes", async () => {
-      const mockResponse: BattlechainContractStateInfo = {
-        state: "REGISTERED",
+      const mockResponse = {
+        state: ContractState.NEW_DEPLOYMENT,
         wasUnderAttack: false,
         registeredAt: 1700000000000,
         underAttackAt: null,
@@ -269,8 +270,8 @@ describe("useBattlechainContractState:", () => {
       expect(result.error.value).toBe("First error");
 
       // Second request succeeds
-      const mockResponse: BattlechainContractStateInfo = {
-        state: "REGISTERED",
+      const mockResponse = {
+        state: ContractState.NEW_DEPLOYMENT,
         wasUnderAttack: false,
         registeredAt: 1700000000000,
         underAttackAt: null,
@@ -318,8 +319,8 @@ describe("useBattlechainContractState:", () => {
 
   describe("API endpoint", () => {
     it("calls correct API endpoint with contract address", async () => {
-      const mockResponse: BattlechainContractStateInfo = {
-        state: "REGISTERED",
+      const mockResponse = {
+        state: ContractState.NEW_DEPLOYMENT,
         wasUnderAttack: false,
         registeredAt: null,
         underAttackAt: null,
@@ -338,8 +339,8 @@ describe("useBattlechainContractState:", () => {
     });
 
     it("uses updated contract address on subsequent fetches", async () => {
-      const mockResponse: BattlechainContractStateInfo = {
-        state: "REGISTERED",
+      const mockResponse = {
+        state: ContractState.NEW_DEPLOYMENT,
         wasUnderAttack: false,
         registeredAt: null,
         underAttackAt: null,

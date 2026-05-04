@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from "vite
 import { mount, RouterLinkStub } from "@vue/test-utils";
 import { $fetch } from "ohmyfetch";
 
+import { linkTo } from "../../utils/routerLink";
+
 import TransferInfo from "@/components/transactions/infoTable/TransferInfo.vue";
 
 import enUS from "@/locales/en.json";
@@ -52,8 +54,8 @@ describe("TransferInfo:", () => {
       },
     });
     expect(wrapper.find("span")?.text()).toBe("From");
-    expect(wrapper.findComponent(RouterLinkStub).props().to.name).toBe("address");
-    expect(wrapper.findComponent(RouterLinkStub).props().to.params.address).toBe(
+    expect(linkTo(wrapper.findComponent(RouterLinkStub)).name).toBe("address");
+    expect(linkTo(wrapper.findComponent(RouterLinkStub)).params!.address).toBe(
       "0x6c10d9C1744F149D4B17660E14FaA247964749c7"
     );
     expect(wrapper.find(".copy-btn")).toBeTruthy();

@@ -30,9 +30,10 @@ const mockConnect = vi.fn();
 const mockRegisterDeployment = vi.fn();
 const mockReset = vi.fn();
 
+const walletAddress = ref<string | null>(null);
 const mockWalletState = {
-  walletAddress: ref<string | null>(null),
-  isWalletConnected: computed(() => !!mockWalletState.walletAddress.value),
+  walletAddress,
+  isWalletConnected: computed(() => !!walletAddress.value),
   isMetamaskInstalled: ref(true),
   isConnectPending: ref(false),
   isWalletReady: ref(true),

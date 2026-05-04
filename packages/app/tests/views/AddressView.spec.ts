@@ -1,7 +1,7 @@
 import { ref } from "vue";
 import { createI18n } from "vue-i18n";
 
-import { afterEach, beforeEach, describe, expect, it, type SpyInstance, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 
 import { mount } from "@vue/test-utils";
 import { $fetch, FetchError } from "ohmyfetch";
@@ -68,7 +68,7 @@ describe("AddressView: ", () => {
     },
   });
 
-  let mockContext: SpyInstance;
+  let mockContext: MockInstance;
 
   beforeEach(() => {
     mockContext = useContextMock();

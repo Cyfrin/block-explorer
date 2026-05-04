@@ -6,7 +6,7 @@ import { mount } from "@vue/test-utils";
 
 import enUS from "@/locales/en.json";
 
-import type { SpyInstance } from "vitest";
+import type { MockInstance } from "vitest";
 
 import $testId from "@/plugins/testId";
 import routes from "@/router/routes";
@@ -40,7 +40,7 @@ vi.mock("vue-router", () => ({
 
 vi.mock("ohmyfetch", () => {
   const fetchSpy = vi.fn();
-  (fetchSpy as unknown as { create: SpyInstance }).create = vi.fn(() => fetchSpy);
+  (fetchSpy as unknown as { create: MockInstance }).create = vi.fn(() => fetchSpy);
   return {
     $fetch: fetchSpy,
     FetchError: function error() {

@@ -1,6 +1,6 @@
 import { computed, type ComputedRef } from "vue";
 
-import { afterEach, beforeEach, describe, expect, it, type SpyInstance, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 
 import { $fetch } from "ohmyfetch";
 
@@ -52,7 +52,7 @@ vi.mock("ohmyfetch", () => {
 //
 
 describe("useTransfers:", () => {
-  let mockContext: SpyInstance;
+  let mockContext: MockInstance;
   let address: ComputedRef<string>;
 
   beforeEach(() => {

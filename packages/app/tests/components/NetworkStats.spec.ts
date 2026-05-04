@@ -6,6 +6,8 @@ import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/vue";
 import { mount, RouterLinkStub } from "@vue/test-utils";
 
+import { linkTo } from "../utils/routerLink";
+
 import NetworkStats from "@/components/NetworkStats.vue";
 
 import enUS from "@/locales/en.json";
@@ -104,7 +106,7 @@ describe("NetworkStats:", () => {
       global,
     });
 
-    expect(wrapper.findAllComponents(RouterLinkStub)[0].props().to.name).toBe("blocks");
+    expect(linkTo(wrapper.findAllComponents(RouterLinkStub)[0]!).name).toBe("blocks");
   });
   it("renders 'Verified Blocks' link properly", () => {
     const wrapper = mount(NetworkStats, {
@@ -117,7 +119,7 @@ describe("NetworkStats:", () => {
       global,
     });
 
-    expect(wrapper.findAllComponents(RouterLinkStub)[1].props().to.name).toBe("blocks");
+    expect(linkTo(wrapper.findAllComponents(RouterLinkStub)[1]!).name).toBe("blocks");
   });
   it("renders 'Transactions' link properly", () => {
     const wrapper = mount(NetworkStats, {
@@ -130,7 +132,7 @@ describe("NetworkStats:", () => {
       global,
     });
 
-    expect(wrapper.findAllComponents(RouterLinkStub)[2].props().to.name).toBe("transactions");
+    expect(linkTo(wrapper.findAllComponents(RouterLinkStub)[2]!).name).toBe("transactions");
   });
   it("renders title", () => {
     const wrapper = mount(NetworkStats, {

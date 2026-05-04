@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { afterEach, beforeEach, describe, expect, it, type SpyInstance, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 
 import { useContextMock } from "./../mocks";
 
@@ -31,7 +31,7 @@ vi.mock("ohmyfetch", () => {
 });
 
 describe("useToken:", () => {
-  let mockContext: SpyInstance;
+  let mockContext: MockInstance;
   beforeEach(() => {
     mockContext = useContextMock();
   });

@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import { fireEvent, render } from "@testing-library/vue";
 import { mount, RouterLinkStub } from "@vue/test-utils";
 
+import { linkTo } from "../../utils/routerLink";
+
 import CopyButton from "@/components/common/CopyButton.vue";
 import EventTopics from "@/components/event/EventTopics.vue";
 
@@ -78,10 +80,10 @@ describe("EventTopics", () => {
 
     const routerLinks = wrapper.findAllComponents(RouterLinkStub);
     expect(routerLinks).toHaveLength(2);
-    expect(routerLinks[0].props().to.name).toBe("address");
-    expect(routerLinks[0].props().to.params.address).toBe("0x6cC8cf7f6b488C58AA909B77E6e65c631c204784");
-    expect(routerLinks[1].props().to.name).toBe("address");
-    expect(routerLinks[1].props().to.params.address).toBe("0xa1cf087DB965Ab02Fb3CFaCe1f5c63935815f044");
+    expect(linkTo(routerLinks[0]!).name).toBe("address");
+    expect(linkTo(routerLinks[0]!).params!.address).toBe("0x6cC8cf7f6b488C58AA909B77E6e65c631c204784");
+    expect(linkTo(routerLinks[1]!).name).toBe("address");
+    expect(linkTo(routerLinks[1]!).params!.address).toBe("0xa1cf087DB965Ab02Fb3CFaCe1f5c63935815f044");
 
     wrapper.unmount();
   });

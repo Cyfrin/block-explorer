@@ -6,7 +6,7 @@ import { $fetch } from "ohmyfetch";
 
 import useAddress from "@/composables/useAddress";
 
-import type { SpyInstance } from "vitest";
+import type { MockInstance } from "vitest";
 
 vi.mock("ohmyfetch", () => {
   const fetchSpy = vi.fn(async (url: string) => {
@@ -41,7 +41,7 @@ vi.mock("ohmyfetch", () => {
       type: url.endsWith("a") ? "account" : "contract",
     };
   });
-  (fetchSpy as unknown as { create: SpyInstance }).create = vi.fn(() => fetchSpy);
+  (fetchSpy as unknown as { create: MockInstance }).create = vi.fn(() => fetchSpy);
   return {
     $fetch: fetchSpy,
   };

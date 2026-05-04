@@ -33,6 +33,8 @@ import { PencilIcon, XIcon } from "@heroicons/vue/solid";
 
 import Spinner from "@/components/common/Spinner.vue";
 
+import type { PropType } from "vue";
+
 defineProps({
   title: {
     type: String,
@@ -55,7 +57,7 @@ defineProps({
     default: true,
   },
   error: {
-    type: String,
+    type: String as PropType<string | null>,
     default: null,
   },
 });

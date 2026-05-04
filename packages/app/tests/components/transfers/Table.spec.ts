@@ -1,7 +1,7 @@
 import { computed } from "vue";
 import { createI18n } from "vue-i18n";
 
-import { afterEach, beforeEach, describe, expect, it, type SpyInstance, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 
 import { render, type RenderResult } from "@testing-library/vue";
 import { RouterLinkStub } from "@vue/test-utils";
@@ -76,8 +76,8 @@ describe("Transfers:", () => {
     },
   });
 
-  let mockContext: SpyInstance;
-  let mockTransfers: SpyInstance;
+  let mockContext: MockInstance;
+  let mockTransfers: MockInstance;
 
   beforeEach(() => {
     mockContext = useContextMock();

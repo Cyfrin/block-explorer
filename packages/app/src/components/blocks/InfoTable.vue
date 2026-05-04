@@ -16,8 +16,8 @@ import CopyContent from "@/components/common/table/fields/CopyContent.vue";
 import TimeField from "@/components/common/table/fields/TimeField.vue";
 
 import type { Block } from "@/composables/useBlock";
-import type { Params } from "react-router";
 import type { Component, PropType } from "vue";
+import type { RouteParams } from "vue-router";
 
 import { arrayHalfDivider } from "@/utils/helpers";
 
@@ -48,7 +48,7 @@ const tableInfoItems = computed(() => {
     url?: string;
     route?: {
       name: string;
-      params: Params;
+      params: RouteParams;
       disabled?: boolean;
       disabledTooltip?: string;
     };

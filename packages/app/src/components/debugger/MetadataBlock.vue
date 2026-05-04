@@ -12,7 +12,7 @@
         v-for="flag in ['lt', 'eq', 'gt']"
         :key="flag"
         class="badge-flag"
-        :color="(metadata.set_flags.includes(flag) && 'progress') || 'danger'"
+        :color="(metadata.set_flags.includes(flag) && 'success') || 'error'"
       >
         {{ flag }}
       </Badge>

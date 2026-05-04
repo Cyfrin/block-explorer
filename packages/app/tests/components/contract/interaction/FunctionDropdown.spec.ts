@@ -7,6 +7,7 @@ import { fireEvent, render } from "@testing-library/vue";
 import { mount, RouterLinkStub } from "@vue/test-utils";
 
 import { useContractInteractionMock } from "../../../mocks";
+import { linkTo } from "../../../utils/routerLink";
 
 import FunctionDropdown from "@/components/contract/interaction/FunctionDropdown.vue";
 
@@ -80,8 +81,8 @@ describe("FunctionDropdown", () => {
       },
     });
     await wrapper.find(".function-disclosure-btn").trigger("click");
-    expect(wrapper.findComponent(RouterLinkStub).props().to.name).toBe("transaction");
-    expect(wrapper.findComponent(RouterLinkStub).props().to.params.hash).toBe(
+    expect(linkTo(wrapper.findComponent(RouterLinkStub)).name).toBe("transaction");
+    expect(linkTo(wrapper.findComponent(RouterLinkStub)).params!.hash).toBe(
       "0xfb905312c08c369d2a09860e0268605e08fa409ae11db86050745d67593f04de"
     );
 

@@ -6,6 +6,7 @@ import { render } from "@testing-library/vue";
 import { mount, RouterLinkStub } from "@vue/test-utils";
 
 import { ETH_TOKEN_MOCK } from "../mocks";
+import { linkTo } from "../utils/routerLink";
 
 import TokenIconLabel from "@/components/TokenIconLabel.vue";
 
@@ -81,8 +82,8 @@ describe("TokenIconLabel", () => {
     });
     const tokenPageUrl = wrapper.findAllComponents(RouterLinkStub);
 
-    expect(tokenPageUrl[0].props().to.name).toBe("token");
-    expect(tokenPageUrl[0].props().to.params.address).toBe("0xc2675AE7F35b7d85Ed1E828CCf6D0376B01ADea3");
+    expect(linkTo(tokenPageUrl[0]!).name).toBe("token");
+    expect(linkTo(tokenPageUrl[0]!).params!.address).toBe("0xc2675AE7F35b7d85Ed1E828CCf6D0376B01ADea3");
   });
   it("renders default 'sm' size for icon", () => {
     const { container } = render(TokenIconLabel, {

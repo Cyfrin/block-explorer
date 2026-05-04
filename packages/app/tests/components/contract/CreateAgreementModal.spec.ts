@@ -35,9 +35,10 @@ const mockCreateAgreement = vi.fn();
 const mockAdoptSafeHarbor = vi.fn();
 const mockReset = vi.fn();
 
+const walletAddress = ref<string | null>("0x1234567890123456789012345678901234567890");
 const mockCreationState = {
-  walletAddress: ref<string | null>("0x1234567890123456789012345678901234567890"),
-  isWalletConnected: computed(() => !!mockCreationState.walletAddress.value),
+  walletAddress,
+  isWalletConnected: computed(() => !!walletAddress.value),
   isMetamaskInstalled: ref(true),
   isConnectPending: ref(false),
   connect: vi.fn(),

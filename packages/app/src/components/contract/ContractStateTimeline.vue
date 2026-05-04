@@ -253,7 +253,7 @@ const { t } = useI18n();
 
 const props = defineProps({
   state: {
-    type: String as PropType<ContractState>,
+    type: String as PropType<ContractState | null>,
     required: true,
   },
   wasUnderAttack: {
@@ -261,55 +261,55 @@ const props = defineProps({
     default: false,
   },
   registeredAt: {
-    type: Number,
+    type: Number as PropType<number | null>,
     default: null,
   },
   registeredTxHash: {
-    type: String,
+    type: String as PropType<string | null>,
     default: null,
   },
   underAttackAt: {
-    type: Number,
+    type: Number as PropType<number | null>,
     default: null,
   },
   underAttackTxHash: {
-    type: String,
+    type: String as PropType<string | null>,
     default: null,
   },
   productionAt: {
-    type: Number,
+    type: Number as PropType<number | null>,
     default: null,
   },
   productionTxHash: {
-    type: String,
+    type: String as PropType<string | null>,
     default: null,
   },
   attackRequestedTxHash: {
-    type: String,
+    type: String as PropType<string | null>,
     default: null,
   },
   promotionRequestedAt: {
-    type: Number,
+    type: Number as PropType<number | null>,
     default: null,
   },
   promotionRequestedTxHash: {
-    type: String,
+    type: String as PropType<string | null>,
     default: null,
   },
   corruptedAt: {
-    type: Number,
+    type: Number as PropType<number | null>,
     default: null,
   },
   corruptedTxHash: {
-    type: String,
+    type: String as PropType<string | null>,
     default: null,
   },
   promotionWindowEnds: {
-    type: Number,
+    type: Number as PropType<number | null>,
     default: null,
   },
   commitmentLockedUntil: {
-    type: Number,
+    type: Number as PropType<number | null>,
     default: null,
   },
   attackDetails: {
@@ -552,13 +552,10 @@ const isCompleted = (step: ContractState) => {
   }
 
   // ATTACK_REQUESTED is never truly "completed" in the traditional sense
-  // but we mark it completed if we've moved past it
+  // but we mark it completed if we've moved past it.
+  // (PROMOTION_REQUESTED and CORRUPTED are handled by their own branches above.)
   if (step === ContractState.ATTACK_REQUESTED) {
-    return (
-      props.state === ContractState.UNDER_ATTACK ||
-      props.state === ContractState.PROMOTION_REQUESTED ||
-      props.state === ContractState.PRODUCTION
-    );
+    return props.state === ContractState.UNDER_ATTACK || props.state === ContractState.PRODUCTION;
   }
 
   if (currentIndex === -1 || stepIndex === -1) return false;

@@ -245,14 +245,12 @@ const context = useContext();
 
 // Setup wallet for ownership checks in AgreementDetails
 const walletContext = {
-  isReady: context.isReady,
   currentNetwork: computed(() => ({
     ...context.currentNetwork.value,
     explorerUrl: context.currentNetwork.value.rpcUrl,
     chainName: context.currentNetwork.value.l2NetworkName,
     l1ChainId: null as unknown as number,
   })),
-  networks: context.networks,
   getL2Provider: () => context.getL2Provider(),
 };
 

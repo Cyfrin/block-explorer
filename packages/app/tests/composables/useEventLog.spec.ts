@@ -1,4 +1,4 @@
-import { describe, expect, it, type SpyInstance, vi } from "vitest";
+import { describe, expect, it, type MockInstance, vi } from "vitest";
 
 import { $fetch } from "ohmyfetch";
 
@@ -15,7 +15,7 @@ vi.mock("ohmyfetch", () => {
       result: ERC20VerificationInfo.ABI,
     })
   );
-  (fetchSpy as unknown as { create: SpyInstance }).create = vi.fn(() => fetchSpy);
+  (fetchSpy as unknown as { create: MockInstance }).create = vi.fn(() => fetchSpy);
   return {
     $fetch: fetchSpy,
     FetchError: function error() {
@@ -57,7 +57,7 @@ describe("useEventLog:", () => {
     expect(isDecodePending.value).toEqual(false);
   });
   it("returns raw logs in case account request failed", async () => {
-    const mock = ($fetch as unknown as SpyInstance).mockRejectedValue(new Error("An error occurred"));
+    const mock = ($fetch as unknown as MockInstance).mockRejectedValue(new Error("An error occurred"));
     const { collection, isDecodePending, isDecodeFailed, decodeEventLog } = useEventLog();
     const logWithNewAddress = [
       {
