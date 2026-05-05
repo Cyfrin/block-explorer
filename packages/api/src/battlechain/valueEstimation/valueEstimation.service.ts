@@ -51,6 +51,7 @@ const VALUE_BANDS = [
 export class ValueEstimationService {
   private readonly logger = new Logger(ValueEstimationService.name);
   private readonly rpcProvider: JsonRpcProvider | null = null;
+  private readonly nativeTokenSymbol: string;
 
   constructor(
     private readonly dataSource: DataSource,
@@ -64,6 +65,7 @@ export class ValueEstimationService {
     if (rpcUrl) {
       this.rpcProvider = new JsonRpcProvider(rpcUrl, undefined, { staticNetwork: true });
     }
+    this.nativeTokenSymbol = configService.get<string>("baseToken.symbol") ?? "ETH";
   }
 
   /**
@@ -221,8 +223,9 @@ export class ValueEstimationService {
 
       if (priceInfo != null) {
         totalPricedUsd += priceInfo;
+        const isNative = tokenAddress.toLowerCase() === BASE_TOKEN_L2_ADDRESS.toLowerCase();
         pricedTokens.push({
-          symbol: tb.symbol || tokenAddress.slice(0, 10) + "…",
+          symbol: tb.symbol || (isNative ? this.nativeTokenSymbol : tokenAddress.slice(0, 10) + "…"),
           address: tokenAddress,
           usd: priceInfo,
         });
@@ -232,8 +235,9 @@ export class ValueEstimationService {
           nativeUsd = priceInfo;
         }
       } else {
+        const isNative = tokenAddress.toLowerCase() === BASE_TOKEN_L2_ADDRESS.toLowerCase();
         unpricedTokens.push({
-          symbol: tb.symbol || null,
+          symbol: tb.symbol || (isNative ? this.nativeTokenSymbol : null),
           address: tokenAddress,
         });
       }
