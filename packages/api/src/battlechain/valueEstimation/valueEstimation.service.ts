@@ -7,6 +7,7 @@ import { AgreementCurrentState } from "../agreementCurrentState.entity";
 import { TokenDecomposition } from "../tokenDecomposition.entity";
 import { detectTokenType, refreshRatios } from "./tokenDetectors";
 import { fetchDefillamaPrices, DefillamaPrice } from "./defillamaProvider";
+import { fetchNativeTokenUsdPrice } from "./nativePriceProvider";
 import { BASE_TOKEN_L2_ADDRESS } from "../../common/constants";
 
 interface TokenBalance {
@@ -97,6 +98,10 @@ export class ValueEstimationService {
       }
       const defillamaPrices = await fetchDefillamaPrices(allL1Addresses);
 
+      // ZKsync OS has no contract at BASE_TOKEN_L2_ADDRESS, so the worker can't
+      // populate tokens.usdPrice for it. Fetch the native token's price directly.
+      const nativeUsdPrice = await fetchNativeTokenUsdPrice();
+
       // Estimate each agreement
       for (const agreement of agreements) {
         const balanceMap = allTokenBalances.get(agreement.agreementAddress);
@@ -113,7 +118,7 @@ export class ValueEstimationService {
         }
 
         const coveredSet = new Set((agreement.coveredContracts ?? []).map((c) => c.toLowerCase().trim()));
-        const result = await this.estimateAgreementValue(balanceMap, coveredSet, defillamaPrices);
+        const result = await this.estimateAgreementValue(balanceMap, coveredSet, defillamaPrices, nativeUsdPrice);
         await this.storeResult(agreement.agreementAddress, result);
       }
 
@@ -190,7 +195,8 @@ export class ValueEstimationService {
   private async estimateAgreementValue(
     tokenBalances: Map<string, TokenBalance>,
     coveredContracts: Set<string>,
-    defillamaPrices: Map<string, DefillamaPrice>
+    defillamaPrices: Map<string, DefillamaPrice>,
+    nativeUsdPrice: number | null
   ): Promise<EstimationResult> {
     let totalPricedUsd = 0;
     let nativeUsd = 0;
@@ -205,7 +211,13 @@ export class ValueEstimationService {
       if (balanceBN === BigInt(0)) continue;
 
       // Try to resolve a USD price through the 3-layer cascade
-      const priceInfo = await this.resolveTokenPrice(tokenAddress, tb, defillamaPrices, coveredContracts);
+      const priceInfo = await this.resolveTokenPrice(
+        tokenAddress,
+        tb,
+        defillamaPrices,
+        coveredContracts,
+        nativeUsdPrice
+      );
 
       if (priceInfo != null) {
         totalPricedUsd += priceInfo;
@@ -251,9 +263,19 @@ export class ValueEstimationService {
     tokenAddress: string,
     tb: TokenBalance,
     defillamaPrices: Map<string, DefillamaPrice>,
-    coveredContracts: Set<string>
+    coveredContracts: Set<string>,
+    nativeUsdPrice: number | null
   ): Promise<number | null> {
     const balanceNum = Number(BigInt(tb.balance)) / Math.pow(10, tb.decimals);
+
+    // Native token: priced directly via CoinGecko since ZKsync OS has no
+    // contract at BASE_TOKEN_L2_ADDRESS for the worker to upsert.
+    if (tokenAddress.toLowerCase() === BASE_TOKEN_L2_ADDRESS.toLowerCase()) {
+      if (nativeUsdPrice != null && nativeUsdPrice > 0) {
+        return balanceNum * nativeUsdPrice;
+      }
+      return null;
+    }
 
     // Layer 1: DeFiLlama (primary for bridged tokens)
     const defillamaPrice = defillamaPrices.get(tokenAddress.toLowerCase());
