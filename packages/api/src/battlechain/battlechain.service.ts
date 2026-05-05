@@ -99,6 +99,7 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       BattlechainService.VALUE_ESTIMATION_INTERVAL_MS
     );
     this.logger.log(`Value estimation polling started (every ${BattlechainService.VALUE_ESTIMATION_INTERVAL_MS}ms)`);
+    void this.valueEstimationService.estimateAllAgreements();
   }
 
   onModuleDestroy() {
