@@ -7,6 +7,7 @@ import { ValueEstimationService } from "./valueEstimation.service";
 import { AgreementCurrentState } from "../agreementCurrentState.entity";
 import { TokenDecomposition } from "../tokenDecomposition.entity";
 import * as defillamaProvider from "./defillamaProvider";
+import * as nativePriceProvider from "./nativePriceProvider";
 
 // Every agreement in these tests uses this address.
 const AGREEMENT_ADDR = "0xagreement00000000000000000000000000000000";
@@ -28,6 +29,7 @@ describe("ValueEstimationService", () => {
   let tokenDecompositionRepository: jest.Mocked<Repository<TokenDecomposition>>;
   let configService: jest.Mocked<ConfigService>;
   let fetchDefillamaPricesSpy: jest.SpyInstance;
+  let fetchNativeTokenUsdPriceSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     dataSource = mock<DataSource>();
@@ -40,6 +42,10 @@ describe("ValueEstimationService", () => {
 
     // Default: DeFiLlama returns nothing. Individual tests override.
     fetchDefillamaPricesSpy = jest.spyOn(defillamaProvider, "fetchDefillamaPrices").mockResolvedValue(new Map());
+
+    // Default: native price fetch returns null. Tests that exercise the native
+    // token override this with a concrete USD price.
+    fetchNativeTokenUsdPriceSpy = jest.spyOn(nativePriceProvider, "fetchNativeTokenUsdPrice").mockResolvedValue(null);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -484,6 +490,9 @@ describe("ValueEstimationService", () => {
 
     it("tracks native token USD value separately in valueNativeUsd", async () => {
       const BASE_TOKEN_L2_ADDRESS = "0x000000000000000000000000000000000000800A".toLowerCase();
+      // Native token is priced via the direct CoinGecko fetch, not via the
+      // tokens.usdPrice cache (since ZKsync OS has no contract at 0x...800a).
+      fetchNativeTokenUsdPriceSpy.mockResolvedValue(1000);
       stubBalanceRows([
         [
           {
@@ -491,7 +500,7 @@ describe("ValueEstimationService", () => {
             total_balance: "2",
             decimals: 0,
             symbol: "ETH",
-            usd_price: 1000,
+            usd_price: null,
             l1_address: null,
           },
           {
