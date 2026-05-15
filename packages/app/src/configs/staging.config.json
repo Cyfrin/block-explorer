@@ -2,10 +2,49 @@
   "networks": [
     {
       "groupId": "battlechain",
+      "apiUrl": "https://block-explorer-api.mainnet.battlechain.com",
+      "verificationApiUrl": "https://block-explorer-api.mainnet.battlechain.com/api",
+      "bridgeUrl": "https://portal.battlechain.com/bridge",
+      "hostnames": ["https://explorer.battlechain.com"],
+      "icon": "/images/icons/zksync-arrows.svg",
+      "l1ExplorerUrl": "https://etherscan.io",
+      "settlementChains": [
+        {
+          "explorerUrl": "https://etherscan.io",
+          "name": "Ethereum",
+          "chainId": 1
+        }
+      ],
+      "l2ChainId": 626,
+      "l2NetworkName": "BattleChain",
+      "maintenance": false,
+      "name": "mainnet",
+      "published": true,
+      "rpcUrl": "https://rpc.battlechain.com",
+      "baseTokenAddress": "0x0000000000000000000000000000000000000001",
+      "attackRegistryAddress": "TODO_MAINNET_ATTACK_REGISTRY_ADDRESS",
+      "agreementFactoryAddress": "TODO_MAINNET_AGREEMENT_FACTORY_ADDRESS",
+      "safeHarborRegistryAddress": "TODO_MAINNET_SAFE_HARBOR_REGISTRY_ADDRESS",
+      "excludedFromBattlechain": [
+        "0x000000000000000000000000000000000000800f",
+        "0x0000000000000000000000000000000000010001",
+        "0x0000000000000000000000000000000000010002",
+        "0x0000000000000000000000000000000000010003",
+        "0x0000000000000000000000000000000000010004",
+        "0x0000000000000000000000000000000000010005",
+        "0x0000000000000000000000000000000000010007",
+        "0x000000000000000000000000000000000001000a",
+        "0x000000000000000000000000000000000001000b",
+        "0x000000000000000000000000000000000001000c"
+      ],
+      "defaultAgreementURI": "ipfs://bafkreifgln3ir67woluatpwn3b65gjkrbmoq6jgzzotm3anas3vvq4yp4m"
+    },
+    {
+      "groupId": "battlechain",
       "apiUrl": "https://block-explorer-api.testnet.battlechain.com",
       "verificationApiUrl": "https://block-explorer-api.testnet.battlechain.com/api",
       "bridgeUrl": "https://portal.battlechain.com/bridge/?network=sepolia",
-      "hostnames": ["https://block-explorer.testnet.battlechain.com"],
+      "hostnames": ["https://explorer.testnet.battlechain.com"],
       "icon": "/images/icons/zksync-arrows.svg",
       "l1ExplorerUrl": "https://sepolia.etherscan.io",
       "settlementChains": [

@@ -7,6 +7,9 @@ junit.xml
 e2e-junit.xml
 prividium-e2e-junit.xml
 
+# Rendered from rindexer.yaml.template at indexer startup; not source.
+packages/battlechain-indexer/rindexer.yaml
+
 # compiled output
 yarn.lock
 node_modules
