@@ -35,6 +35,7 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
 
   private readonly rpcProvider: JsonRpcProvider | null = null;
   private readonly inFlightFetches = new Map<string, Promise<void>>();
+  private childResolutionInFlight = false;
   private rpcFetchTimer: NodeJS.Timer = null;
   private childResolutionTimer: NodeJS.Timer = null;
   private static readonly RPC_POLL_INTERVAL_MS = 10_000;
@@ -223,6 +224,11 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
    *         Does a full recomputation for those specific agreements.
    */
   private async resolveChildContracts(): Promise<void> {
+    if (this.childResolutionInFlight) {
+      this.logger.debug("Child contract resolution: previous run still in progress, skipping tick");
+      return;
+    }
+    this.childResolutionInFlight = true;
     try {
       await this.resolveChildContractsPartA();
       await this.resolveChildContractsPartB();
@@ -231,6 +237,8 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
         message: "Child contract resolution: unexpected error",
         stack: (error as Error)?.stack,
       });
+    } finally {
+      this.childResolutionInFlight = false;
     }
   }
 
@@ -255,8 +263,11 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       .getMany();
 
     if (scopedAccounts.length === 0) {
-      // No accounts with child scope — just advance the cursor to avoid unbounded growth
-      await this.advanceChildScopeCursor(lastProcessedBlock);
+      // No accounts with child scope — advance the cursor to the global MAX so we
+      // don't unboundedly re-scan history once accounts are added later.
+      const maxResult = await this.dataSource.query(`SELECT MAX("createdInBlockNumber") AS "maxBlock" FROM addresses`);
+      const maxBlock: number = maxResult?.[0]?.maxBlock ?? lastProcessedBlock;
+      await this.advanceChildScopeCursor(Math.max(lastProcessedBlock, maxBlock));
       return;
     }
 
@@ -290,8 +301,14 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`Part A: resolved ${newDeployments.length} new child contract(s)`);
     }
 
-    // Advance the cursor
-    await this.advanceChildScopeCursor(lastProcessedBlock);
+    // Advance the cursor only to the max block we actually inspected in this run.
+    // Using the global MAX("createdInBlockNumber") would skip child deployments that
+    // landed between our SELECT and this UPDATE.
+    const maxSeenBlock = newDeployments.reduce(
+      (max, d) => (d.block_number > max ? d.block_number : max),
+      lastProcessedBlock
+    );
+    await this.advanceChildScopeCursor(maxSeenBlock);
   }
 
   /**
@@ -502,21 +519,19 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Advance the child scope cursor to the current max createdInBlockNumber in the
-   * addresses table. Only advances forward to handle reorgs gracefully.
+   * Advance the child scope cursor to the supplied block number. The caller is
+   * responsible for ensuring the value reflects blocks actually inspected during
+   * this run (never the global MAX("createdInBlockNumber")), otherwise child
+   * deployments landing between SELECT and UPDATE would be skipped permanently.
+   * The WHERE clause makes this monotonic (forward-only, reorg-safe).
    */
-  private async advanceChildScopeCursor(currentCursor: number): Promise<void> {
-    const result = await this.dataSource.query(`SELECT MAX("createdInBlockNumber") AS "maxBlock" FROM addresses`);
-
-    const maxBlock = result?.[0]?.maxBlock ?? currentCursor;
-    if (maxBlock > currentCursor) {
-      await this.dataSource.query(
-        `UPDATE battlechainindexer_agreement.child_scope_cursor
+  private async advanceChildScopeCursor(newCursor: number): Promise<void> {
+    await this.dataSource.query(
+      `UPDATE battlechainindexer_agreement.child_scope_cursor
          SET last_processed_block = $1
          WHERE id = 1 AND last_processed_block < $1`,
-        [maxBlock]
-      );
-    }
+      [newCursor]
+    );
   }
 
   /**
