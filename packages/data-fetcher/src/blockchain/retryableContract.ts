@@ -32,7 +32,8 @@ const PERMANENT_ERRORS: ErrorCode[] = [
 
 // A reverted call without revert data (e.g. an EOA, a non-ERC20 contract, or a contract
 // that reverts unconditionally) is deterministic and must not be retried — otherwise a
-// single malicious or non-conforming address can stall the worker indefinitely.
+// single malicious or non-conforming address burns retries until the total retry
+// timeout fires, needlessly delaying ingestion.
 const NON_RETRYABLE_CALL_EXCEPTION_PREFIXES = ["execution reverted", "missing revert data"];
 
 const shouldRetry = (error: EthersError): boolean => {
