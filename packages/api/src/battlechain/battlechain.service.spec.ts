@@ -956,6 +956,185 @@ describe("BattlechainService", () => {
     });
   });
 
+  describe("resolveChildContracts", () => {
+    it("skips the tick when a previous run is still in flight", async () => {
+      service["childResolutionInFlight"] = true;
+
+      await service["resolveChildContracts"]();
+
+      expect(dataSource.query).not.toHaveBeenCalled();
+      expect(agreementAccountRepository.createQueryBuilder).not.toHaveBeenCalled();
+      expect(service["childResolutionInFlight"]).toBe(true);
+    });
+
+    it("clears the in-flight flag even when Part A throws", async () => {
+      (dataSource.query as jest.Mock).mockRejectedValue(new Error("cursor read failed"));
+
+      await service["resolveChildContracts"]();
+
+      expect(service["childResolutionInFlight"]).toBe(false);
+    });
+  });
+
+  describe("resolveChildContractsPartA cursor advancement", () => {
+    const cursorUpdateSql = "UPDATE battlechainindexer_agreement.child_scope_cursor";
+
+    it("with no scoped accounts, advances cursor to the global MAX(createdInBlockNumber)", async () => {
+      const mockAccountQb = mock<SelectQueryBuilder<AgreementAccount>>();
+      mockAccountQb.where.mockReturnValue(mockAccountQb);
+      mockAccountQb.getMany.mockResolvedValue([]);
+      (agreementAccountRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockAccountQb);
+
+      (dataSource.query as jest.Mock).mockImplementation((sql: string) => {
+        if (sql.includes("SELECT last_processed_block")) return Promise.resolve([{ last_processed_block: "100" }]);
+        if (sql.includes('MAX("createdInBlockNumber")')) return Promise.resolve([{ maxBlock: "500" }]);
+        if (sql.includes(cursorUpdateSql)) return Promise.resolve([[], 0]);
+        return Promise.resolve([]);
+      });
+
+      await service["resolveChildContractsPartA"]();
+
+      const updateCall = (dataSource.query as jest.Mock).mock.calls.find((c) => c[0].includes(cursorUpdateSql));
+      // BIGINT comes back as string "500"; assertion guards against missing Number() coercion.
+      expect(updateCall[1]).toEqual([500]);
+    });
+
+    it("advances cursor to (snapshot MAX) - 1 and bounds the deployments query by it", async () => {
+      const mockAccountQb = mock<SelectQueryBuilder<AgreementAccount>>();
+      mockAccountQb.where.mockReturnValue(mockAccountQb);
+      mockAccountQb.getMany.mockResolvedValue([
+        {
+          agreementAddress: "0xagreement1234567890123456789012345678901",
+          accountAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          childContractScope: 2,
+        } as AgreementAccount,
+      ]);
+      (agreementAccountRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockAccountQb);
+
+      (dataSource.query as jest.Mock).mockImplementation((sql: string) => {
+        if (sql.includes("SELECT last_processed_block")) return Promise.resolve([{ last_processed_block: "99" }]);
+        if (sql.includes('MAX("createdInBlockNumber")')) return Promise.resolve([{ maxBlock: "500" }]);
+        if (sql.includes("FROM addresses a")) {
+          return Promise.resolve([
+            { deployer_address: "a".repeat(40), child_address: "b".repeat(40), block_number: "150" },
+          ]);
+        }
+        if (sql.includes(cursorUpdateSql)) return Promise.resolve([[], 0]);
+        return Promise.resolve([]);
+      });
+
+      (agreementStateRepository.findOne as jest.Mock).mockResolvedValue(makeAgreementState({ createdAtBlock: 1 }));
+
+      await service["resolveChildContractsPartA"]();
+
+      const updateCall = (dataSource.query as jest.Mock).mock.calls.find((c) => c[0].includes(cursorUpdateSql));
+      // Cursor advances to snapshot (500) - 1 = 499, regardless of the result-set max (150).
+      expect(updateCall[1]).toEqual([499]);
+
+      // Deployments query is bounded by the snapshot — proves anything indexed later waits for the next tick.
+      const deploymentsCall = (dataSource.query as jest.Mock).mock.calls.find((c) => c[0].includes("FROM addresses a"));
+      expect(deploymentsCall[1]).toEqual([99, 500, expect.any(Array)]);
+    });
+
+    it("normalizes string BIGINTs in deployment rows so isChildInScope gets numeric comparisons", async () => {
+      const mockAccountQb = mock<SelectQueryBuilder<AgreementAccount>>();
+      mockAccountQb.where.mockReturnValue(mockAccountQb);
+      mockAccountQb.getMany.mockResolvedValue([
+        {
+          agreementAddress: "0xagreement1234567890123456789012345678901",
+          accountAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          childContractScope: 3, // FUTURE_ONLY: matches when child block > agreement block
+        } as AgreementAccount,
+      ]);
+      (agreementAccountRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockAccountQb);
+
+      // Child block "9" vs agreement createdAtBlock 100: lexicographically "9" > "100" is true,
+      // but numerically 9 > 100 is false. FUTURE_ONLY should reject the child.
+      (dataSource.query as jest.Mock).mockImplementation((sql: string) => {
+        if (sql.includes("SELECT last_processed_block")) return Promise.resolve([{ last_processed_block: "0" }]);
+        if (sql.includes('MAX("createdInBlockNumber")')) return Promise.resolve([{ maxBlock: "1000" }]);
+        if (sql.includes("FROM addresses a")) {
+          return Promise.resolve([
+            { deployer_address: "a".repeat(40), child_address: "b".repeat(40), block_number: "9" },
+          ]);
+        }
+        return Promise.resolve([]);
+      });
+      (agreementStateRepository.findOne as jest.Mock).mockResolvedValue(makeAgreementState({ createdAtBlock: 100 }));
+
+      await service["resolveChildContractsPartA"]();
+
+      // appendChildContracts runs an UPDATE on agreement_current_state; not called → child correctly rejected.
+      const appendCalls = (dataSource.query as jest.Mock).mock.calls.filter((c) =>
+        c[0].includes("UPDATE battlechainindexer_agreement.agreement_current_state")
+      );
+      expect(appendCalls).toHaveLength(0);
+    });
+
+    it("re-scans the trailing block on the next tick (intra-block late-arrival safety)", async () => {
+      const mockAccountQb = mock<SelectQueryBuilder<AgreementAccount>>();
+      mockAccountQb.where.mockReturnValue(mockAccountQb);
+      mockAccountQb.getMany.mockResolvedValue([
+        {
+          agreementAddress: "0xagreement1234567890123456789012345678901",
+          accountAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          childContractScope: 2,
+        } as AgreementAccount,
+      ]);
+      (agreementAccountRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockAccountQb);
+
+      let tick = 0;
+      (dataSource.query as jest.Mock).mockImplementation((sql: string) => {
+        if (sql.includes("SELECT last_processed_block")) {
+          return Promise.resolve([{ last_processed_block: tick === 0 ? "100" : "199" }]);
+        }
+        if (sql.includes('MAX("createdInBlockNumber")')) return Promise.resolve([{ maxBlock: "200" }]);
+        if (sql.includes("FROM addresses a")) {
+          tick++;
+          const child = tick === 1 ? "b".repeat(40) : "c".repeat(40);
+          return Promise.resolve([{ deployer_address: "a".repeat(40), child_address: child, block_number: "200" }]);
+        }
+        if (sql.includes(cursorUpdateSql)) return Promise.resolve([[], 0]);
+        return Promise.resolve([]);
+      });
+      (agreementStateRepository.findOne as jest.Mock).mockResolvedValue(makeAgreementState({ createdAtBlock: 1 }));
+
+      await service["resolveChildContractsPartA"]();
+      const firstUpdate = (dataSource.query as jest.Mock).mock.calls.find((c) => c[0].includes(cursorUpdateSql));
+      expect(firstUpdate[1]).toEqual([199]);
+
+      await service["resolveChildContractsPartA"]();
+      const deploymentsCalls = (dataSource.query as jest.Mock).mock.calls.filter((c) =>
+        c[0].includes("FROM addresses a")
+      );
+      expect(deploymentsCalls).toHaveLength(2);
+      expect(deploymentsCalls[1][1][0]).toBe(199);
+    });
+
+    it("with scoped accounts but no matches, still advances the cursor via the snapshot", async () => {
+      const mockAccountQb = mock<SelectQueryBuilder<AgreementAccount>>();
+      mockAccountQb.where.mockReturnValue(mockAccountQb);
+      mockAccountQb.getMany.mockResolvedValue([
+        { accountAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", childContractScope: 2 } as AgreementAccount,
+      ]);
+      (agreementAccountRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockAccountQb);
+
+      (dataSource.query as jest.Mock).mockImplementation((sql: string) => {
+        if (sql.includes("SELECT last_processed_block")) return Promise.resolve([{ last_processed_block: "250" }]);
+        if (sql.includes('MAX("createdInBlockNumber")')) return Promise.resolve([{ maxBlock: "1000" }]);
+        if (sql.includes("FROM addresses a")) return Promise.resolve([]);
+        if (sql.includes(cursorUpdateSql)) return Promise.resolve([[], 0]);
+        return Promise.resolve([]);
+      });
+
+      await service["resolveChildContractsPartA"]();
+
+      const updateCall = (dataSource.query as jest.Mock).mock.calls.find((c) => c[0].includes(cursorUpdateSql));
+      // Snapshot is 1000, so cursor moves to 999 even though no deployments matched.
+      expect(updateCall[1]).toEqual([999]);
+    });
+  });
+
   describe("polling / onModuleInit", () => {
     it("does not start polling when no RPC URL is configured", () => {
       jest.useFakeTimers();
