@@ -104,7 +104,8 @@ export class TransferService {
           transfers.push({ ...transfer, logIndex: transfers.length + 1 });
         }
       } catch (error) {
-        this.logger.error("Failed to parse transfer, skipping log", {
+        this.logger.error({
+          message: "Failed to parse transfer, skipping log",
           stack: error.stack,
           blockNumber: block.number,
           logIndex: log.index,
