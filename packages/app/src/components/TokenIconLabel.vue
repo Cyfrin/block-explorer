@@ -48,6 +48,8 @@ import Badge from "@/components/common/Badge.vue";
 
 import type { Hash } from "@/types";
 
+import { sanitizeHref } from "@/utils/validators";
+
 export type IconSize = "sm" | "md" | "lg" | "xl";
 
 const { t } = useI18n();
@@ -84,7 +86,7 @@ const props = defineProps({
 });
 
 const imgSource = computed(() => {
-  return props.iconUrl || "/images/currencies/customToken.svg";
+  return sanitizeHref(props.iconUrl ?? "") || "/images/currencies/customToken.svg";
 });
 const { isReady: isImageLoaded } = useImage({ src: imgSource.value });
 </script>
