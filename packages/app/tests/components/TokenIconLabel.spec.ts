@@ -40,6 +40,17 @@ describe("TokenIconLabel", () => {
     });
     expect(wrapper.find("img")?.attributes("src")).toBe("https://test.link");
   });
+  it("falls back to custom token icon when iconUrl uses a disallowed protocol", () => {
+    const wrapper = mount(TokenIconLabel, {
+      global,
+      props: {
+        symbol: ETH_TOKEN_MOCK.symbol,
+        address: ETH_TOKEN_MOCK.l2Address,
+        iconUrl: "javascript:alert(1)",
+      },
+    });
+    expect(wrapper.find("img")?.attributes("src")).toBe("/images/currencies/customToken.svg");
+  });
   it("renders custom token icon if iconUrl is not defined", () => {
     const wrapper = mount(TokenIconLabel, {
       global,
