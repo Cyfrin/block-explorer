@@ -30,6 +30,11 @@ const PERMANENT_ERRORS: ErrorCode[] = [
   "NOT_IMPLEMENTED",
 ];
 
+// A reverted call without revert data (e.g. an EOA, a non-ERC20 contract, or a contract
+// that reverts unconditionally) is deterministic and must not be retried — otherwise a
+// single malicious or non-conforming address can stall the worker indefinitely.
+const NON_RETRYABLE_CALL_EXCEPTION_PREFIXES = ["execution reverted", "missing revert data"];
+
 const shouldRetry = (error: EthersError): boolean => {
   const isPermanentErrorCode = PERMANENT_ERRORS.find((errorCode) => isError(error, errorCode));
   return (
@@ -37,8 +42,8 @@ const shouldRetry = (error: EthersError): boolean => {
     // example block mainnet 47752810
     !(
       ["CALL_EXCEPTION", 3].includes(error.code) &&
-      [error.shortMessage, error.message, error.info?.error?.message].find((msg) =>
-        msg?.startsWith("execution reverted")
+      [error.shortMessage, error.message, error.info?.error?.message].some((msg) =>
+        NON_RETRYABLE_CALL_EXCEPTION_PREFIXES.some((prefix) => msg?.startsWith(prefix))
       )
     ) &&
     // example block mainnet 47819836
