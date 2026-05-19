@@ -250,11 +250,12 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
    * `creatorTxHash` linking back to it. Works on any EVM-compatible chain.
    */
   private async resolveChildContractsPartA(): Promise<void> {
-    // Read the high-water mark
+    // Read the high-water mark. node-postgres returns BIGINT as a string, so
+    // coerce to Number before any JS comparison — '100' > '99' is false.
     const cursorResult = await this.dataSource.query(
       `SELECT last_processed_block FROM battlechainindexer_agreement.child_scope_cursor WHERE id = 1`
     );
-    const lastProcessedBlock: number = cursorResult?.[0]?.last_processed_block ?? 0;
+    const lastProcessedBlock = Number(cursorResult?.[0]?.last_processed_block ?? 0);
 
     // Get all in-scope addresses with child contract scope != None
     const scopedAccounts = await this.agreementAccountRepository
@@ -264,9 +265,10 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
 
     if (scopedAccounts.length === 0) {
       // No accounts with child scope — advance the cursor to the global MAX so we
-      // don't unboundedly re-scan history once accounts are added later.
+      // don't unboundedly re-scan history once accounts are added later. Safe to
+      // skip ahead here precisely because nothing in this range could match.
       const maxResult = await this.dataSource.query(`SELECT MAX("createdInBlockNumber") AS "maxBlock" FROM addresses`);
-      const maxBlock: number = maxResult?.[0]?.maxBlock ?? lastProcessedBlock;
+      const maxBlock = Number(maxResult?.[0]?.maxBlock ?? lastProcessedBlock);
       await this.advanceChildScopeCursor(Math.max(lastProcessedBlock, maxBlock));
       return;
     }
@@ -303,9 +305,10 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
 
     // Advance the cursor only to the max block we actually inspected in this run.
     // Using the global MAX("createdInBlockNumber") would skip child deployments that
-    // landed between our SELECT and this UPDATE.
+    // landed between our SELECT and this UPDATE. Coerce block_number to Number —
+    // node-postgres returns BIGINT as a string, which would break the > comparison.
     const maxSeenBlock = newDeployments.reduce(
-      (max, d) => (d.block_number > max ? d.block_number : max),
+      (max, d) => (Number(d.block_number) > max ? Number(d.block_number) : max),
       lastProcessedBlock
     );
     await this.advanceChildScopeCursor(maxSeenBlock);
@@ -520,9 +523,16 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Advance the child scope cursor to the supplied block number. The caller is
-   * responsible for ensuring the value reflects blocks actually inspected during
-   * this run (never the global MAX("createdInBlockNumber")), otherwise child
-   * deployments landing between SELECT and UPDATE would be skipped permanently.
+   * responsible for choosing a safe value: it must reflect blocks actually
+   * inspected during this run, otherwise child deployments landing between the
+   * SELECT and this UPDATE would be skipped permanently.
+   *
+   * Exception: when there are zero scoped accounts, the global
+   * MAX("createdInBlockNumber") is safe because nothing in the un-scanned range
+   * could match — no factory exists yet for child contracts to point at. This
+   * exception is *only* valid when scopedAccounts is empty; do not generalize
+   * it to other callers.
+   *
    * The WHERE clause makes this monotonic (forward-only, reorg-safe).
    */
   private async advanceChildScopeCursor(newCursor: number): Promise<void> {

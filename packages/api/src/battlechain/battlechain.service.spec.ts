@@ -956,6 +956,122 @@ describe("BattlechainService", () => {
     });
   });
 
+  describe("resolveChildContracts", () => {
+    it("skips the tick when a previous run is still in flight", async () => {
+      service["childResolutionInFlight"] = true;
+
+      await service["resolveChildContracts"]();
+
+      // Guard fires before any DB work; no queries should have been issued.
+      expect(dataSource.query).not.toHaveBeenCalled();
+      expect(agreementAccountRepository.createQueryBuilder).not.toHaveBeenCalled();
+
+      // Flag is left in the held state so we don't clobber the in-flight run.
+      expect(service["childResolutionInFlight"]).toBe(true);
+    });
+
+    it("clears the in-flight flag even when Part A throws", async () => {
+      // Reading the cursor is the first DB call in Part A — fail it.
+      (dataSource.query as jest.Mock).mockRejectedValue(new Error("cursor read failed"));
+
+      await service["resolveChildContracts"]();
+
+      expect(service["childResolutionInFlight"]).toBe(false);
+    });
+  });
+
+  describe("resolveChildContractsPartA cursor advancement", () => {
+    const cursorUpdateSql = "UPDATE battlechainindexer_agreement.child_scope_cursor";
+
+    it("with no scoped accounts, advances cursor to the global MAX(createdInBlockNumber)", async () => {
+      // Empty scoped accounts → the no-accounts branch runs.
+      const mockAccountQb = mock<SelectQueryBuilder<AgreementAccount>>();
+      mockAccountQb.where.mockReturnValue(mockAccountQb);
+      mockAccountQb.getMany.mockResolvedValue([]);
+      (agreementAccountRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockAccountQb);
+
+      (dataSource.query as jest.Mock).mockImplementation((sql: string) => {
+        if (sql.includes("SELECT last_processed_block")) return Promise.resolve([{ last_processed_block: "100" }]);
+        if (sql.includes('MAX("createdInBlockNumber")')) return Promise.resolve([{ maxBlock: "500" }]);
+        if (sql.includes(cursorUpdateSql)) return Promise.resolve([[], 0]);
+        return Promise.resolve([]);
+      });
+
+      await service["resolveChildContractsPartA"]();
+
+      const updateCall = (dataSource.query as jest.Mock).mock.calls.find((c) => c[0].includes(cursorUpdateSql));
+      expect(updateCall).toBeDefined();
+      // BIGINT comes back as a string ("500"); the new code must coerce to Number.
+      expect(updateCall[1]).toEqual([500]);
+    });
+
+    it("advances cursor to the max block_number actually seen in the result set", async () => {
+      // One scoped account so we exercise the main path, not the empty-accounts shortcut.
+      const mockAccountQb = mock<SelectQueryBuilder<AgreementAccount>>();
+      mockAccountQb.where.mockReturnValue(mockAccountQb);
+      mockAccountQb.getMany.mockResolvedValue([
+        {
+          agreementAddress: "0xagreement1234567890123456789012345678901",
+          accountAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          childContractScope: 2,
+        } as AgreementAccount,
+      ]);
+      (agreementAccountRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockAccountQb);
+
+      // No agreement state lookups needed if we keep newDeployments empty in this test.
+      // For the max-seen test we feed BIGINTs back as strings to assert numeric (not lexicographic) max.
+      (dataSource.query as jest.Mock).mockImplementation((sql: string) => {
+        if (sql.includes("SELECT last_processed_block")) return Promise.resolve([{ last_processed_block: "99" }]);
+        if (sql.includes("FROM addresses a")) {
+          // Lexicographically "9" > "100", so any string-based max would return "9".
+          return Promise.resolve([
+            { deployer_address: "a".repeat(40), child_address: "b".repeat(40), block_number: "9" },
+            { deployer_address: "a".repeat(40), child_address: "c".repeat(40), block_number: "150" },
+            { deployer_address: "a".repeat(40), child_address: "d".repeat(40), block_number: "100" },
+          ]);
+        }
+        if (sql.includes(cursorUpdateSql)) return Promise.resolve([[], 0]);
+        // appendChildContracts UPDATE and any other queries
+        return Promise.resolve([]);
+      });
+
+      // agreementStateRepository.findOne is used by computeChildUpdates to look up createdAtBlock.
+      (agreementStateRepository.findOne as jest.Mock).mockResolvedValue(makeAgreementState({ createdAtBlock: 1 }));
+
+      await service["resolveChildContractsPartA"]();
+
+      const updateCall = (dataSource.query as jest.Mock).mock.calls.find((c) => c[0].includes(cursorUpdateSql));
+      expect(updateCall).toBeDefined();
+      // Must be 150, not lex-max "9" and not the cursor floor 99.
+      expect(updateCall[1]).toEqual([150]);
+    });
+
+    it("with empty result set, leaves the cursor at lastProcessedBlock (no spurious advance)", async () => {
+      const mockAccountQb = mock<SelectQueryBuilder<AgreementAccount>>();
+      mockAccountQb.where.mockReturnValue(mockAccountQb);
+      mockAccountQb.getMany.mockResolvedValue([
+        { accountAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", childContractScope: 2 } as AgreementAccount,
+      ]);
+      (agreementAccountRepository.createQueryBuilder as jest.Mock).mockReturnValue(mockAccountQb);
+
+      (dataSource.query as jest.Mock).mockImplementation((sql: string) => {
+        if (sql.includes("SELECT last_processed_block")) return Promise.resolve([{ last_processed_block: "250" }]);
+        if (sql.includes("FROM addresses a")) return Promise.resolve([]);
+        if (sql.includes(cursorUpdateSql)) return Promise.resolve([[], 0]);
+        return Promise.resolve([]);
+      });
+
+      await service["resolveChildContractsPartA"]();
+
+      const updateCall = (dataSource.query as jest.Mock).mock.calls.find((c) => c[0].includes(cursorUpdateSql));
+      expect(updateCall).toBeDefined();
+      // Empty deployments → reduce returns the seed (lastProcessedBlock = 250).
+      // The cursor UPDATE's WHERE last_processed_block < $1 makes this a no-op against itself,
+      // but the call must pass the numeric value, not the string from the cursor read.
+      expect(updateCall[1]).toEqual([250]);
+    });
+  });
+
   describe("polling / onModuleInit", () => {
     it("does not start polling when no RPC URL is configured", () => {
       jest.useFakeTimers();
