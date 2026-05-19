@@ -272,13 +272,22 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
+    // Snapshot the addresses high-water mark up front. The deployments query is bounded
+    // by this value so the cursor can advance to (snapshot - 1) regardless of whether
+    // we matched anything — without it, ticks that find no in-scope deployments would
+    // leave the cursor pinned and re-scan an ever-growing range each interval.
+    const maxResult = await this.dataSource.query(`SELECT MAX("createdInBlockNumber") AS "maxBlock" FROM addresses`);
+    const maxBlockAtStart = Number(maxResult?.[0]?.maxBlock ?? lastProcessedBlock);
+
     // Collect unique in-scope addresses as hex bytea buffers for matching transactions.to
     const inScopeAddresses = [...new Set(scopedAccounts.map((a) => a.accountAddress.toLowerCase()))];
     const inScopeBuffers = inScopeAddresses.map((a) => Buffer.from(a.replace("0x", ""), "hex"));
 
     // Join addresses + transactions to find contracts created by in-scope factories.
     // addresses.creatorTxHash = transactions.hash, and transactions.to = the factory.
-    const newDeployments: { deployer_address: string; child_address: string; block_number: number }[] =
+    // Bound by maxBlockAtStart so anything indexed after this point waits for the next tick.
+    // Coerce block_number to Number at the boundary — node-postgres returns BIGINT as string.
+    const rawDeployments: { deployer_address: string; child_address: string; block_number: string | number }[] =
       await this.dataSource.query(
         `SELECT
           encode(t."to", 'hex') AS deployer_address,
@@ -287,12 +296,13 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
         FROM addresses a
         JOIN transactions t ON a."creatorTxHash" = t.hash
         WHERE a."createdInBlockNumber" > $1
-          AND t."to" = ANY($2)`,
-        [lastProcessedBlock, inScopeBuffers]
+          AND a."createdInBlockNumber" <= $2
+          AND t."to" = ANY($3)`,
+        [lastProcessedBlock, maxBlockAtStart, inScopeBuffers]
       );
+    const newDeployments = rawDeployments.map((d) => ({ ...d, block_number: Number(d.block_number) }));
 
     if (newDeployments.length > 0) {
-      // Group by agreement and apply temporal filtering
       const agreementUpdates = await this.computeChildUpdates(newDeployments, scopedAccounts);
 
       for (const [agreementAddress, childAddresses] of agreementUpdates) {
@@ -302,15 +312,10 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`Part A: resolved ${newDeployments.length} new child contract(s)`);
     }
 
-    // Hold the cursor one block back from the highest we saw. The next tick re-scans
-    // that trailing block (idempotent via UNION + DISTINCT in appendChildContracts),
-    // covering rows the indexer commits for a block across multiple batches.
-    // Number() coerces node-postgres BIGINT strings to avoid lexicographic '9' > '150'.
-    const maxSeenBlock = newDeployments.reduce(
-      (max, d) => (Number(d.block_number) > max ? Number(d.block_number) : max),
-      lastProcessedBlock
-    );
-    await this.advanceChildScopeCursor(Math.max(lastProcessedBlock, maxSeenBlock - 1));
+    // Advance to (snapshot - 1) so the next tick re-scans the trailing block, picking up
+    // any rows the indexer commits for that block across multiple batches. The re-scan is
+    // idempotent via UNION + DISTINCT in appendChildContracts.
+    await this.advanceChildScopeCursor(Math.max(lastProcessedBlock, maxBlockAtStart - 1));
   }
 
   /**
