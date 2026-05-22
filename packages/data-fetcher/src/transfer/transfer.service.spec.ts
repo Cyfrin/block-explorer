@@ -1,8 +1,10 @@
 import { Test } from "@nestjs/testing";
 import { Logger } from "@nestjs/common";
 import { mock } from "jest-mock-extended";
+import { type Block, type Log, type TransactionReceipt } from "ethers";
 //import { types } from "zksync-ethers";
 import { BlockchainService } from "../blockchain/blockchain.service";
+import { LogType } from "../log/logType";
 import { TransferService } from "./transfer.service";
 // import { TokenType } from "../token/token.service";
 
@@ -85,6 +87,83 @@ describe("TransferService", () => {
 
   it("transferService is defined (mock test)", () => {
     expect(transferService).toBeDefined();
+  });
+
+  describe("getTransfers with a malformed Transfer log", () => {
+    // A LOG3 with the ERC-20 Transfer topic but truncated/garbage data — the
+    // shape an attacker can emit via inline assembly to break ABI decoding.
+    const goodLog = {
+      topics: [
+        LogType.Transfer,
+        "0x000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "0x000000000000000000000000bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      ],
+      data: "0x0000000000000000000000000000000000000000000000000000000000000001",
+      address: "0xcccccccccccccccccccccccccccccccccccccccc",
+      blockNumber: 100,
+      transactionHash: "0xgoodtx",
+      transactionIndex: 0,
+      index: 0,
+    } as unknown as Log;
+
+    const poisonedLog = {
+      topics: [
+        LogType.Transfer,
+        "0x000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "0x000000000000000000000000bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      ],
+      // Truncated `value` — fails ABI decoding for `uint256`.
+      data: "0xdeadbeef",
+      address: "0xcccccccccccccccccccccccccccccccccccccccc",
+      blockNumber: 100,
+      transactionHash: "0xpoisontx",
+      transactionIndex: 1,
+      index: 1,
+    } as unknown as Log;
+
+    const block = { number: 100, timestamp: 1700000000 } as Block;
+    // Receipt's `to` field is read by sibling handlers' matches(); supply any
+    // non-deployer address so they fall through to defaultTransferHandler.
+    const txReceipt = {
+      to: "0x0000000000000000000000000000000000000000",
+      type: 0,
+    } as unknown as TransactionReceipt;
+
+    let errorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      errorSpy = jest.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
+    });
+
+    afterEach(() => {
+      errorSpy.mockRestore();
+    });
+
+    it("does not throw and still returns transfers from sibling logs", async () => {
+      const transfers = await transferService.getTransfers([poisonedLog, goodLog], block, [], txReceipt);
+
+      expect(transfers).toHaveLength(1);
+      expect(transfers[0].transactionHash).toBe("0xgoodtx");
+    });
+
+    it("logs the parse failure as a single structured object including stack and tx context", async () => {
+      await transferService.getTransfers([poisonedLog], block, [], txReceipt);
+
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      const [firstArg, ...restArgs] = errorSpy.mock.calls[0];
+      // Must be a single structured object — the Nest Logger treats positional
+      // string args as the trace, so passing the context object positionally
+      // would coerce to "[object Object]" and drop searchable fields.
+      expect(typeof firstArg).toBe("object");
+      expect(restArgs).toHaveLength(0);
+      expect(firstArg).toMatchObject({
+        message: "Failed to parse transfer, skipping log",
+        blockNumber: 100,
+        logIndex: 1,
+        transactionHash: "0xpoisontx",
+      });
+      expect(typeof firstArg.stack).toBe("string");
+    });
   });
   // describe("getTransfers", () => {
   //   const receivedAt = new Date();
