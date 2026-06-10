@@ -238,6 +238,7 @@ describe("TransactionController", () => {
           {
             page: 1,
             limit: 10_000,
+            maxLimit: 10_000,
           }
         );
         expect(serviceMock.isTransactionVisibleByUser).toHaveBeenCalledWith(transaction, transactionLogs.items, user);

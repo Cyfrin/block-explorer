@@ -107,6 +107,7 @@ export class TransactionController {
         {
           page: 1,
           limit: 10_000, // default max limit used in pagination-enabled endpoints
+          maxLimit: 10_000,
         }
       );
       if (!this.transactionService.isTransactionVisibleByUser(transactionDetail, transactionLogs.items, user)) {
@@ -147,6 +148,7 @@ export class TransactionController {
         {
           page: 1,
           limit: 10_000,
+          maxLimit: 10_000,
         }
       );
       if (!this.transactionService.isTransactionVisibleByUser(transaction, transactionLogs.items, user)) {
@@ -193,6 +195,7 @@ export class TransactionController {
         {
           page: 1,
           limit: 10_000,
+          maxLimit: 10_000,
         }
       );
       if (!this.transactionService.isTransactionVisibleByUser(transaction, transactionLogs.items, user)) {
