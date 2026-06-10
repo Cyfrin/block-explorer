@@ -35,6 +35,7 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
 
   private readonly rpcProvider: JsonRpcProvider | null = null;
   private readonly inFlightFetches = new Map<string, Promise<void>>();
+  private childResolutionInFlight = false;
   private rpcFetchTimer: NodeJS.Timer = null;
   private childResolutionTimer: NodeJS.Timer = null;
   private static readonly RPC_POLL_INTERVAL_MS = 10_000;
@@ -223,6 +224,11 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
    *         Does a full recomputation for those specific agreements.
    */
   private async resolveChildContracts(): Promise<void> {
+    if (this.childResolutionInFlight) {
+      this.logger.debug("Child contract resolution: previous run still in progress, skipping tick");
+      return;
+    }
+    this.childResolutionInFlight = true;
     try {
       await this.resolveChildContractsPartA();
       await this.resolveChildContractsPartB();
@@ -231,6 +237,8 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
         message: "Child contract resolution: unexpected error",
         stack: (error as Error)?.stack,
       });
+    } finally {
+      this.childResolutionInFlight = false;
     }
   }
 
@@ -242,11 +250,12 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
    * `creatorTxHash` linking back to it. Works on any EVM-compatible chain.
    */
   private async resolveChildContractsPartA(): Promise<void> {
-    // Read the high-water mark
+    // Read the high-water mark. node-postgres returns BIGINT as a string, so
+    // coerce to Number before any JS comparison — '100' > '99' is false.
     const cursorResult = await this.dataSource.query(
       `SELECT last_processed_block FROM battlechainindexer_agreement.child_scope_cursor WHERE id = 1`
     );
-    const lastProcessedBlock: number = cursorResult?.[0]?.last_processed_block ?? 0;
+    const lastProcessedBlock = Number(cursorResult?.[0]?.last_processed_block ?? 0);
 
     // Get all in-scope addresses with child contract scope != None
     const scopedAccounts = await this.agreementAccountRepository
@@ -255,10 +264,20 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       .getMany();
 
     if (scopedAccounts.length === 0) {
-      // No accounts with child scope — just advance the cursor to avoid unbounded growth
-      await this.advanceChildScopeCursor(lastProcessedBlock);
+      // No accounts with child scope — skip ahead to the global MAX. Safe because
+      // account/scope changes enqueue a Part-B reindex that re-scans history.
+      const maxResult = await this.dataSource.query(`SELECT MAX("createdInBlockNumber") AS "maxBlock" FROM addresses`);
+      const maxBlock = Number(maxResult?.[0]?.maxBlock ?? lastProcessedBlock);
+      await this.advanceChildScopeCursor(Math.max(lastProcessedBlock, maxBlock));
       return;
     }
+
+    // Snapshot the addresses high-water mark up front. The deployments query is bounded
+    // by this value so the cursor can advance to (snapshot - 1) regardless of whether
+    // we matched anything — without it, ticks that find no in-scope deployments would
+    // leave the cursor pinned and re-scan an ever-growing range each interval.
+    const maxResult = await this.dataSource.query(`SELECT MAX("createdInBlockNumber") AS "maxBlock" FROM addresses`);
+    const maxBlockAtStart = Number(maxResult?.[0]?.maxBlock ?? lastProcessedBlock);
 
     // Collect unique in-scope addresses as hex bytea buffers for matching transactions.to
     const inScopeAddresses = [...new Set(scopedAccounts.map((a) => a.accountAddress.toLowerCase()))];
@@ -266,7 +285,9 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
 
     // Join addresses + transactions to find contracts created by in-scope factories.
     // addresses.creatorTxHash = transactions.hash, and transactions.to = the factory.
-    const newDeployments: { deployer_address: string; child_address: string; block_number: number }[] =
+    // Bound by maxBlockAtStart so anything indexed after this point waits for the next tick.
+    // Coerce block_number to Number at the boundary — node-postgres returns BIGINT as string.
+    const rawDeployments: { deployer_address: string; child_address: string; block_number: string | number }[] =
       await this.dataSource.query(
         `SELECT
           encode(t."to", 'hex') AS deployer_address,
@@ -275,12 +296,13 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
         FROM addresses a
         JOIN transactions t ON a."creatorTxHash" = t.hash
         WHERE a."createdInBlockNumber" > $1
-          AND t."to" = ANY($2)`,
-        [lastProcessedBlock, inScopeBuffers]
+          AND a."createdInBlockNumber" <= $2
+          AND t."to" = ANY($3)`,
+        [lastProcessedBlock, maxBlockAtStart, inScopeBuffers]
       );
+    const newDeployments = rawDeployments.map((d) => ({ ...d, block_number: Number(d.block_number) }));
 
     if (newDeployments.length > 0) {
-      // Group by agreement and apply temporal filtering
       const agreementUpdates = await this.computeChildUpdates(newDeployments, scopedAccounts);
 
       for (const [agreementAddress, childAddresses] of agreementUpdates) {
@@ -290,8 +312,10 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`Part A: resolved ${newDeployments.length} new child contract(s)`);
     }
 
-    // Advance the cursor
-    await this.advanceChildScopeCursor(lastProcessedBlock);
+    // Advance to (snapshot - 1) so the next tick re-scans the trailing block, picking up
+    // any rows the indexer commits for that block across multiple batches. The re-scan is
+    // idempotent via UNION + DISTINCT in appendChildContracts.
+    await this.advanceChildScopeCursor(Math.max(lastProcessedBlock, maxBlockAtStart - 1));
   }
 
   /**
@@ -502,21 +526,17 @@ export class BattlechainService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Advance the child scope cursor to the current max createdInBlockNumber in the
-   * addresses table. Only advances forward to handle reorgs gracefully.
+   * Monotonically advance the child scope cursor. Caller picks the value;
+   * passing the global MAX is only safe when scopedAccounts is empty (a
+   * later scope change will enqueue a Part-B reindex that re-scans history).
    */
-  private async advanceChildScopeCursor(currentCursor: number): Promise<void> {
-    const result = await this.dataSource.query(`SELECT MAX("createdInBlockNumber") AS "maxBlock" FROM addresses`);
-
-    const maxBlock = result?.[0]?.maxBlock ?? currentCursor;
-    if (maxBlock > currentCursor) {
-      await this.dataSource.query(
-        `UPDATE battlechainindexer_agreement.child_scope_cursor
+  private async advanceChildScopeCursor(newCursor: number): Promise<void> {
+    await this.dataSource.query(
+      `UPDATE battlechainindexer_agreement.child_scope_cursor
          SET last_processed_block = $1
          WHERE id = 1 AND last_processed_block < $1`,
-        [maxBlock]
-      );
-    }
+      [newCursor]
+    );
   }
 
   /**

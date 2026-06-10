@@ -107,6 +107,7 @@ export class TransactionController {
         {
           page: 1,
           limit: 10_000, // default max limit used in pagination-enabled endpoints
+          maxLimit: 10_000,
         }
       );
       if (!this.transactionService.isTransactionVisibleByUser(transactionDetail, transactionLogs.items, user)) {
@@ -133,10 +134,26 @@ export class TransactionController {
   @ApiNotFoundResponse({ description: "Transaction with the specified hash does not exist" })
   public async getTransactionTransfers(
     @Param("transactionHash", new ParseTransactionHashPipe()) transactionHash: string,
-    @Query() pagingOptions: PagingOptionsWithMaxItemsLimitDto
+    @Query() pagingOptions: PagingOptionsWithMaxItemsLimitDto,
+    @User(AddUserRolesPipe) user: UserWithRoles
   ): Promise<Pagination<TransferDto>> {
-    if (!(await this.transactionService.exists(transactionHash))) {
+    const transaction = await this.transactionService.findOne(transactionHash);
+    if (!transaction) {
       throw new NotFoundException();
+    }
+
+    if (user && !user.isAdmin) {
+      const transactionLogs = await this.logService.findAll(
+        { transactionHash },
+        {
+          page: 1,
+          limit: 10_000,
+          maxLimit: 10_000,
+        }
+      );
+      if (!this.transactionService.isTransactionVisibleByUser(transaction, transactionLogs.items, user)) {
+        throw new NotFoundException();
+      }
     }
 
     const transfers = await this.transferService.findAll(
@@ -164,10 +181,26 @@ export class TransactionController {
   @ApiNotFoundResponse({ description: "Transaction with the specified hash does not exist" })
   public async getTransactionLogs(
     @Param("transactionHash", new ParseTransactionHashPipe()) transactionHash: string,
-    @Query() pagingOptions: PagingOptionsWithMaxItemsLimitDto
+    @Query() pagingOptions: PagingOptionsWithMaxItemsLimitDto,
+    @User(AddUserRolesPipe) user: UserWithRoles
   ): Promise<Pagination<LogDto>> {
-    if (!(await this.transactionService.exists(transactionHash))) {
+    const transaction = await this.transactionService.findOne(transactionHash);
+    if (!transaction) {
       throw new NotFoundException();
+    }
+
+    if (user && !user.isAdmin) {
+      const transactionLogs = await this.logService.findAll(
+        { transactionHash },
+        {
+          page: 1,
+          limit: 10_000,
+          maxLimit: 10_000,
+        }
+      );
+      if (!this.transactionService.isTransactionVisibleByUser(transaction, transactionLogs.items, user)) {
+        throw new NotFoundException();
+      }
     }
 
     return await this.logService.findAll(

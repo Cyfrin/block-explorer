@@ -125,6 +125,33 @@ describe("RetryableContract", () => {
       });
     });
 
+    describe("when throws a permanent missing revert data error", () => {
+      const callExceptionError = {
+        code: "CALL_EXCEPTION",
+        shortMessage: "missing revert data in call exception; Transaction reverted without a reason",
+      };
+
+      beforeEach(() => {
+        (ethers.Contract as any as jest.Mock).mockReturnValue({
+          contractFn: async () => {
+            throw callExceptionError;
+          },
+        });
+
+        contract = new RetryableContract(tokenAddress, CONTRACT_INTERFACES.ERC20.interface, providerMock);
+      });
+
+      it("throws an error", async () => {
+        expect.assertions(1);
+
+        try {
+          await contract.contractFn();
+        } catch (e) {
+          expect(e).toBe(callExceptionError);
+        }
+      });
+    });
+
     describe("when throws a permanent could not decode result data error", () => {
       const callExceptionError = {
         code: "BAD_DATA",
