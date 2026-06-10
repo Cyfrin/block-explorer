@@ -114,6 +114,12 @@ export class ContractSourceCodeDto {
   public readonly ContractName: string;
 
   @ApiProperty({
+    description: "Source file path where the contract is defined (Etherscan-compatible)",
+    example: "contracts/Counter.sol",
+  })
+  public readonly ContractFileName: string;
+
+  @ApiProperty({
     description: "Indicates if optimization was used for the contract. 1 - optimization was used, 0 - otherwise",
     example: "1",
   })

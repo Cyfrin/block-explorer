@@ -8,6 +8,7 @@ describe("SOURCE_CODE_EMPTY_INFO", () => {
       CompilerVersion: "",
       ConstructorArguments: "",
       ContractName: "",
+      ContractFileName: "",
       EVMVersion: "Default",
       Implementation: "",
       Library: "",
@@ -58,6 +59,7 @@ describe("mapContractSourceCode", () => {
       CompilerVersion: "0.8.17",
       ConstructorArguments: "",
       ContractName: "Greeter",
+      ContractFileName: "",
       EVMVersion: "Default",
       Implementation: "",
       Library: "",
@@ -90,6 +92,7 @@ describe("mapContractSourceCode", () => {
       CompilerVersion: "0.3.3",
       ConstructorArguments: "",
       ContractName: "Greeter",
+      ContractFileName: "",
       EVMVersion: "Default",
       Implementation: "",
       Library: "",
@@ -122,6 +125,7 @@ describe("mapContractSourceCode", () => {
       CompilerVersion: "0.3.3",
       ConstructorArguments: "",
       ContractName: "Greeter",
+      ContractFileName: "",
       EVMVersion: "Default",
       Implementation: "",
       Library: "",
@@ -154,6 +158,7 @@ describe("mapContractSourceCode", () => {
       CompilerVersion: "0.8.17",
       ConstructorArguments: "",
       ContractName: "Greeter",
+      ContractFileName: "",
       EVMVersion: "Default",
       Implementation: "",
       Library: "",
@@ -187,6 +192,7 @@ describe("mapContractSourceCode", () => {
       CompilerVersion: "0.8.17",
       ConstructorArguments: "",
       ContractName: "Greeter",
+      ContractFileName: "",
       EVMVersion: "Default",
       Implementation: "",
       Library: "",
@@ -215,6 +221,7 @@ describe("mapContractSourceCode", () => {
       CompilerVersion: "0.8.17",
       ConstructorArguments: "",
       ContractName: "Greeter",
+      ContractFileName: "",
       EVMVersion: "Default",
       Implementation: "",
       Library: "",
@@ -250,6 +257,7 @@ describe("mapContractSourceCode", () => {
       CompilerVersion: "0.8.17",
       ConstructorArguments: "",
       ContractName: "Greeter",
+      ContractFileName: "",
       EVMVersion: "Default",
       Implementation: "",
       Library: "contracts/MiniMath.sol:MiniMath:0x1c1cEFA394748048BE6b04Ea6081fE44B26a5913",
@@ -290,6 +298,7 @@ describe("mapContractSourceCode", () => {
       CompilerVersion: "0.8.17",
       ConstructorArguments: "",
       ContractName: "Greeter",
+      ContractFileName: "",
       EVMVersion: "Default",
       Implementation: "",
       Library:
@@ -304,5 +313,18 @@ describe("mapContractSourceCode", () => {
       Match: "match",
       VerifiedAt: "2023-07-24T10:36:11.121447608Z",
     });
+  });
+
+  it("splits fullyQualifiedName into ContractName and ContractFileName", () => {
+    verificationInfo.compilation = {
+      ...verificationInfo.compilation,
+      ...{
+        fullyQualifiedName: "contracts/Counter.sol:Counter",
+      },
+    };
+
+    const result = mapContractSourceCode(verificationInfo);
+    expect(result.ContractName).toBe("Counter");
+    expect(result.ContractFileName).toBe("contracts/Counter.sol");
   });
 });

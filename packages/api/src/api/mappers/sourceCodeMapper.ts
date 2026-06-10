@@ -6,6 +6,7 @@ export const SOURCE_CODE_EMPTY_INFO: ContractSourceCodeDto = {
   CompilerVersion: "",
   ConstructorArguments: "",
   ContractName: "",
+  ContractFileName: "",
   EVMVersion: "Default",
   Implementation: "",
   Library: "",
@@ -31,6 +32,11 @@ export const mapContractSourceCode = (data: ContractVerificationInfo): ContractS
     libraryString = librariesMapping.join(";");
   }
 
+  const fqn = data.compilation.fullyQualifiedName;
+  const lastColon = fqn.lastIndexOf(":");
+  const contractFileName = lastColon >= 0 ? fqn.slice(0, lastColon) : "";
+  const contractName = lastColon >= 0 ? fqn.slice(lastColon + 1) : fqn;
+
   return {
     ABI: JSON.stringify(data.abi),
     SourceCode: `{${JSON.stringify({
@@ -40,7 +46,8 @@ export const mapContractSourceCode = (data: ContractVerificationInfo): ContractS
     })}}`,
     // TODO: manually extract constructor args as sourcify doesn't have them
     ConstructorArguments: "",
-    ContractName: data.compilation.fullyQualifiedName,
+    ContractName: contractName,
+    ContractFileName: contractFileName,
     EVMVersion: data.compilation.compilerSettings.evmVersion || "Default",
     OptimizationUsed:
       data.compilation.compilerSettings.optimizer?.enabled || data.compilation.compilerSettings.optimize ? "1" : "0",
