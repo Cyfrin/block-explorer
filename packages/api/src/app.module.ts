@@ -20,6 +20,7 @@ import { TransactionModule } from "./transaction/transaction.module";
 import { LogModule } from "./log/log.module";
 import { StatsModule } from "./stats/stats.module";
 import { BattlechainModule } from "./battlechain/battlechain.module";
+import { ConfidencePoolModule } from "./battlechain/confidence-pool/confidencePool.module";
 import { MetricsMiddleware } from "./middlewares/metrics.middleware";
 import { metricProviders } from "./metrics";
 import { DbMetricsService } from "./dbMetrics.service";
@@ -50,6 +51,7 @@ interface AppModuleConfig {
     LogModule,
     StatsModule,
     BattlechainModule,
+    ConfidencePoolModule,
     HealthModule,
     VersionModule,
   ],

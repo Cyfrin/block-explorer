@@ -23,6 +23,7 @@ load_addresses() {
         export ATTACK_REGISTRY_ADDRESS=$(jq -r '.ATTACK_REGISTRY_ADDRESS // empty' "$ADDRESSES_FILE")
         export AGREEMENT_FACTORY_ADDRESS=$(jq -r '.AGREEMENT_FACTORY_ADDRESS // empty' "$ADDRESSES_FILE")
         export SAFE_HARBOR_REGISTRY_ADDRESS=$(jq -r '.SAFE_HARBOR_REGISTRY_ADDRESS // empty' "$ADDRESSES_FILE")
+        export CONFIDENCE_POOL_FACTORY_ADDRESS=$(jq -r '.CONFIDENCE_POOL_FACTORY_ADDRESS // empty' "$ADDRESSES_FILE")
         export BATTLECHAIN_START_BLOCK=$(jq -r '.BATTLECHAIN_START_BLOCK // "0"' "$ADDRESSES_FILE")
         export CHAIN_ID=$(jq -r '.CHAIN_ID // "626"' "$ADDRESSES_FILE")
 
@@ -72,9 +73,14 @@ else
         export ATTACK_REGISTRY_ADDRESS="${ATTACK_REGISTRY_ADDRESS:-0x0000000000000000000000000000000000000000}"
         export AGREEMENT_FACTORY_ADDRESS="${AGREEMENT_FACTORY_ADDRESS:-0x0000000000000000000000000000000000000000}"
         export SAFE_HARBOR_REGISTRY_ADDRESS="${SAFE_HARBOR_REGISTRY_ADDRESS:-0x0000000000000000000000000000000000000000}"
+        export CONFIDENCE_POOL_FACTORY_ADDRESS="${CONFIDENCE_POOL_FACTORY_ADDRESS:-0x0000000000000000000000000000000000000000}"
         export BATTLECHAIN_START_BLOCK="${BATTLECHAIN_START_BLOCK:-0}"
     fi
 fi
+
+# Confidence pool factory address may not be present in older addresses.json files.
+# Fall back to the null address so rindexer's template substitution succeeds.
+export CONFIDENCE_POOL_FACTORY_ADDRESS="${CONFIDENCE_POOL_FACTORY_ADDRESS:-0x0000000000000000000000000000000000000000}"
 
 # Set defaults for any missing values
 export CHAIN_ID="${CHAIN_ID:-626}"
@@ -84,10 +90,11 @@ export BATTLECHAIN_START_BLOCK="${BATTLECHAIN_START_BLOCK:-0}"
 echo "========================================"
 echo "Contract Addresses"
 echo "========================================"
-echo "  ATTACK_REGISTRY_ADDRESS:      $ATTACK_REGISTRY_ADDRESS"
-echo "  AGREEMENT_FACTORY_ADDRESS:    $AGREEMENT_FACTORY_ADDRESS"
-echo "  SAFE_HARBOR_REGISTRY_ADDRESS: $SAFE_HARBOR_REGISTRY_ADDRESS"
-echo "  CHAIN_ID:                     $CHAIN_ID"
+echo "  ATTACK_REGISTRY_ADDRESS:           $ATTACK_REGISTRY_ADDRESS"
+echo "  AGREEMENT_FACTORY_ADDRESS:         $AGREEMENT_FACTORY_ADDRESS"
+echo "  SAFE_HARBOR_REGISTRY_ADDRESS:      $SAFE_HARBOR_REGISTRY_ADDRESS"
+echo "  CONFIDENCE_POOL_FACTORY_ADDRESS:   $CONFIDENCE_POOL_FACTORY_ADDRESS"
+echo "  CHAIN_ID:                          $CHAIN_ID"
 echo "  BATTLECHAIN_START_BLOCK:                  $BATTLECHAIN_START_BLOCK"
 echo "  RPC_URL:                      $BLOCKCHAIN_RPC_URL"
 echo ""
@@ -140,26 +147,32 @@ while [ $attempt -lt $max_attempts ]; do
     factory_ok=false
     agreement_ok=false
     registry_ok=false
+    pool_factory_ok=false
+    pool_ok=false
 
     psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement_factory.agreement_created LIMIT 0" 2>/dev/null && factory_ok=true
     psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_agreement.protocol_name_updated LIMIT 0" 2>/dev/null && agreement_ok=true
     psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_attack_registry.agreement_state_changed LIMIT 0" 2>/dev/null && registry_ok=true
+    psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_confidence_pool_factory.pool_created LIMIT 0" 2>/dev/null && pool_factory_ok=true
+    psql "$DATABASE_URL" -c "SELECT 1 FROM battlechainindexer_confidence_pool.staked LIMIT 0" 2>/dev/null && pool_ok=true
 
-    if [ "$factory_ok" = true ] && [ "$agreement_ok" = true ] && [ "$registry_ok" = true ]; then
+    if [ "$factory_ok" = true ] && [ "$agreement_ok" = true ] && [ "$registry_ok" = true ] && [ "$pool_factory_ok" = true ] && [ "$pool_ok" = true ]; then
         echo "[sql-setup] All event tables exist!"
         break
     fi
 
-    # Once factory exists, only wait 60s more for agreement/registry
+    # Once the agreement factory exists, only wait 60s more for the rest.
+    # Partial setup is acceptable — triggers for missing tables will fail loudly
+    # but won't block the indexer from running for the contracts it does see.
     if [ "$factory_ok" = true ] && [ $attempt -gt 30 ]; then
-        echo "[sql-setup] Factory exists but agreement/registry tables not found after 30 extra attempts."
+        echo "[sql-setup] Agreement factory exists but some tables not found after 30 extra attempts."
         echo "[sql-setup] Proceeding with partial setup (triggers for missing tables will fail)."
         break
     fi
 
     attempt=$((attempt + 1))
     if [ $((attempt % 5)) -eq 0 ]; then
-        echo "[sql-setup] Waiting... ($attempt/$max_attempts) [factory=$factory_ok agreement=$agreement_ok registry=$registry_ok]"
+        echo "[sql-setup] Waiting... ($attempt/$max_attempts) [factory=$factory_ok agreement=$agreement_ok registry=$registry_ok pool_factory=$pool_factory_ok pool=$pool_ok]"
     fi
     sleep 2
 done
@@ -170,7 +183,15 @@ if [ -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql" ]; then
     psql "$DATABASE_URL" -f "${SCRIPT_DIR}/sql/create-agreement-current-state.sql" 2>&1
     echo "[sql-setup] SQL exit code: $?"
 else
-    echo "[sql-setup] ERROR: SQL file not found!"
+    echo "[sql-setup] ERROR: create-agreement-current-state.sql not found!"
+fi
+
+if [ -f "${SCRIPT_DIR}/sql/create-confidence-pool-current-state.sql" ]; then
+    echo "[sql-setup] Running create-confidence-pool-current-state.sql..."
+    psql "$DATABASE_URL" -f "${SCRIPT_DIR}/sql/create-confidence-pool-current-state.sql" 2>&1
+    echo "[sql-setup] SQL exit code: $?"
+else
+    echo "[sql-setup] WARN: create-confidence-pool-current-state.sql not found (confidence pool features disabled)"
 fi
 
 echo "[sql-setup] Done."

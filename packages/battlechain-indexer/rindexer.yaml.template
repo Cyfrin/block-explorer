@@ -73,3 +73,56 @@ contracts:
       - AccountRemoved
       - ChainAddedOrSet
       - ChainRemoved
+
+  # Confidence Pool Factory - tracks new pool deployments and factory config changes
+  - name: ConfidencePoolFactory
+    details:
+      - network: battlechain
+        address: "${CONFIDENCE_POOL_FACTORY_ADDRESS}"
+        start_block: "${BATTLECHAIN_START_BLOCK}"
+    abi: ./abis/ConfidencePoolFactory.abi.json
+    include_events:
+      - PoolCreated
+      - SafeHarborRegistryUpdated
+      - PoolImplementationUpdated
+      - DefaultOutcomeModeratorUpdated
+      - StakeTokenAllowedUpdated
+      - OwnershipTransferred
+      - OwnershipTransferStarted
+      - Paused
+      - Unpaused
+      - Upgraded
+
+  # Individual Confidence Pool clones - indexed via factory pattern
+  - name: ConfidencePool
+    details:
+      - network: battlechain
+        start_block: "${BATTLECHAIN_START_BLOCK}"
+        factory:
+          name: ConfidencePoolFactory
+          address: "${CONFIDENCE_POOL_FACTORY_ADDRESS}"
+          abi: ./abis/ConfidencePoolFactory.abi.json
+          event_name: PoolCreated
+          input_name: "pool"
+    abi: ./abis/ConfidencePool.abi.json
+    include_events:
+      - Staked
+      - BonusContributed
+      - Withdrawn
+      - OutcomeFlagged
+      - ClaimSurvived
+      - ClaimCorrupted
+      - AttackerBountyClaimed
+      - UnclaimedCorruptedSwept
+      - BonusSwept
+      - ClaimExpired
+      - RecoveryAddressUpdated
+      - ExpiryUpdated
+      - ScopeUpdated
+      - ScopeLocked
+      - RiskWindowStarted
+      - RiskWindowEnded
+      - Paused
+      - Unpaused
+      - OwnershipTransferred
+      - OwnershipTransferStarted
