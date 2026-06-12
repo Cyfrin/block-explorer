@@ -5,7 +5,7 @@
       "apiUrl": "https://block-explorer-api.mainnet.battlechain.com",
       "verificationApiUrl": "https://block-explorer-api.mainnet.battlechain.com/api",
       "bridgeUrl": "https://bridge.battlechain.com",
-      "hostnames": ["https://block-explorer.battlechain.com", "https://block-explorer.mainnet.battlechain.com"],
+      "hostnames": ["https://explorer.battlechain.com", "https://explorer.mainnet.battlechain.com"],
       "icon": "/images/icons/zksync-arrows.svg",
       "l1ExplorerUrl": "https://etherscan.io",
       "settlementChains": [
@@ -44,7 +44,7 @@
       "apiUrl": "https://block-explorer-api.testnet.battlechain.com",
       "verificationApiUrl": "https://block-explorer-api.testnet.battlechain.com/api",
       "bridgeUrl": "https://portal.battlechain.com/bridge/?network=sepolia",
-      "hostnames": ["https://block-explorer.testnet.battlechain.com"],
+      "hostnames": ["https://explorer.testnet.battlechain.com"],
       "icon": "/images/icons/zksync-arrows.svg",
       "l1ExplorerUrl": "https://sepolia.etherscan.io",
       "settlementChains": [
