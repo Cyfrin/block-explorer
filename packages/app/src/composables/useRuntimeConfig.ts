@@ -7,7 +7,7 @@ export const DEFAULT_NETWORK: NetworkConfig = {
   apiUrl: "https://block-explorer-api.mainnet.battlechain.com",
   verificationApiUrl: "https://block-explorer-api.mainnet.battlechain.com/api",
   bridgeUrl: "https://bridge.battlechain.com",
-  hostnames: ["https://block-explorer.mainnet.battlechain.com"],
+  hostnames: ["https://block-explorer.battlechain.com", "https://block-explorer.mainnet.battlechain.com"],
   icon: "/images/icons/zksync-arrows.svg",
   l1ExplorerUrl: "https://etherscan.io",
   l2ChainId: 626,
