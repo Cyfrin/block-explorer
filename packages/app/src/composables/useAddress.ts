@@ -131,12 +131,15 @@ export default (context = useContext()) => {
   const getProxyImplementation = async (address: string): Promise<string | null> => {
     const provider = context.getL2Provider();
     const proxyContract = new EthersContract(address, PROXY_CONTRACT_IMPLEMENTATION_ABI, provider);
-    const [implementation, eip1967Implementation, eip1967Beacon, eip1822Implementation] = await Promise.all([
-      getAddressSafe(() => proxyContract.implementation()),
-      getAddressSafe(() => provider.getStorage(address, EIP1967_PROXY_IMPLEMENTATION_SLOT)),
-      getAddressSafe(() => provider.getStorage(address, EIP1967_PROXY_BEACON_SLOT)),
-      getAddressSafe(() => provider.getStorage(address, EIP1822_PROXY_IMPLEMENTATION_SLOT)),
-    ]);
+    const [implementation, eip1967Implementation, eip1967Beacon, eip1822Implementation, masterCopy] = await Promise.all(
+      [
+        getAddressSafe(() => proxyContract.implementation()),
+        getAddressSafe(() => provider.getStorage(address, EIP1967_PROXY_IMPLEMENTATION_SLOT)),
+        getAddressSafe(() => provider.getStorage(address, EIP1967_PROXY_BEACON_SLOT)),
+        getAddressSafe(() => provider.getStorage(address, EIP1822_PROXY_IMPLEMENTATION_SLOT)),
+        getAddressSafe(() => proxyContract.masterCopy()),
+      ]
+    );
     if (implementation) {
       return implementation;
     }
@@ -145,6 +148,9 @@ export default (context = useContext()) => {
     }
     if (eip1822Implementation) {
       return eip1822Implementation;
+    }
+    if (masterCopy) {
+      return masterCopy;
     }
     if (eip1967Beacon) {
       const beaconContract = new EthersContract(eip1967Beacon, PROXY_CONTRACT_IMPLEMENTATION_ABI, provider);
