@@ -151,7 +151,10 @@ export default (context = useContext()) => {
     }
     if (eip1967Beacon) {
       const beaconContract = new EthersContract(eip1967Beacon, PROXY_CONTRACT_IMPLEMENTATION_ABI, provider);
-      return getAddressSafe(() => beaconContract.implementation());
+      const beaconImplementation = await getAddressSafe(() => beaconContract.implementation());
+      if (beaconImplementation) {
+        return beaconImplementation;
+      }
     }
     if (masterCopy) {
       return masterCopy;
