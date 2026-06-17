@@ -15,6 +15,18 @@ export const PROXY_CONTRACT_IMPLEMENTATION_ABI = [
     stateMutability: "view",
     type: "function",
   },
+  {
+    inputs: [],
+    name: "masterCopy",
+    outputs: [
+      {
+        internalType: "address",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
 ];
 export const ERC20_ABI = [
   {
