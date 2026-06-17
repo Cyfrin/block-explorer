@@ -149,12 +149,12 @@ export default (context = useContext()) => {
     if (eip1822Implementation) {
       return eip1822Implementation;
     }
-    if (masterCopy) {
-      return masterCopy;
-    }
     if (eip1967Beacon) {
       const beaconContract = new EthersContract(eip1967Beacon, PROXY_CONTRACT_IMPLEMENTATION_ABI, provider);
       return getAddressSafe(() => beaconContract.implementation());
+    }
+    if (masterCopy) {
+      return masterCopy;
     }
     return null;
   };
