@@ -326,7 +326,8 @@
       "apiDocs": "API Documentation",
       "contractVerification": "Smart Contract Verification",
       "debugger": "zkEVM Debugger",
-      "bridge": "Bridge"
+      "bridge": "Bridge",
+      "approvals": "Approvals"
     }
   },
   "locale": {
@@ -864,6 +865,7 @@
     "defaultTermsTitle": "Default Network Terms",
     "defaultTermsNote": "These are the default terms enforced by the network for contracts without a registered agreement.",
     "agreementContract": "Agreement Contract",
+    "viewOnApprovals": "View status on Approvals",
     "bountyTerms": "Bounty Terms",
     "bountyPercentage": "Bounty Percentage",
     "bountyCap": "Bounty Cap",
