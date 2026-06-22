@@ -143,6 +143,7 @@ import NetworkSwitch from "@/components/NetworkSwitch.vue";
 import ThemeToggle from "@/components/ThemeToggle.vue";
 
 import useContext from "@/composables/useContext";
+import { APPROVALS_URL } from "@/configs";
 import useRuntimeConfig from "@/composables/useRuntimeConfig";
 
 import type DiscordIcon from "@/components/icons/DiscordIcon.vue";
@@ -199,6 +200,15 @@ if (currentNetwork.value.bridgeUrl) {
     url: computed(() => currentNetwork.value.bridgeUrl!),
   });
 }
+
+// Attack Mode Approvals dashboard. The dashboard is one app serving both
+// networks, so we pass ?chain= to pre-select the network being viewed.
+links.push({
+  label: computed(() => t("header.nav.approvals")),
+  url: computed(
+    () => `${currentNetwork.value.approvalsUrl ?? APPROVALS_URL}/?chain=${currentNetwork.value.l2ChainId}`
+  ),
+});
 
 const toolsLinks = reactive(links);
 
