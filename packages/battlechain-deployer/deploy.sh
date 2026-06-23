@@ -13,6 +13,13 @@ SEED_DATA="${SEED_BATTLECHAIN_DATA:-false}"
 CONTRACTS_SOURCE="${CONTRACTS_DIR:-/app/contracts}"
 CONTRACTS_DIR="/app/contracts-build"
 
+# Confidence pool contracts live in a separate submodule. We default DEPLOY_CONFIDENCE_POOL_FACTORY
+# to true so the address is always written into addresses.json — the indexer falls back to the
+# null address if the var is missing, but for local dev we want the real deployment.
+DEPLOY_CONFIDENCE_POOL_FACTORY="${DEPLOY_CONFIDENCE_POOL_FACTORY:-true}"
+POOL_CONTRACTS_SOURCE="${POOL_CONTRACTS_DIR:-/app/confidence-pool-contracts}"
+POOL_CONTRACTS_DIR="/app/confidence-pool-contracts-build"
+
 echo "========================================"
 echo "BattleChain Contract Deployer"
 echo "========================================"
@@ -36,9 +43,13 @@ echo "Copying contracts to build directory..."
 rm -rf "$CONTRACTS_DIR"
 cp -r "$CONTRACTS_SOURCE" "$CONTRACTS_DIR"
 
-# Copy local deployment scripts into the contracts script directory
+# Copy agreement-contract deployment scripts into the contracts script directory.
+# DeployConfidencePool.s.sol is excluded here — it lives in the bc-confidence-pools
+# contracts dir, not the agreement-contracts dir, and is copied separately below.
 echo "Copying local deployment scripts..."
-cp /app/scripts/*.sol "$CONTRACTS_DIR/script/"
+cp /app/scripts/DeployLocal.s.sol "$CONTRACTS_DIR/script/"
+cp /app/scripts/DeployAttackRegistryLocal.s.sol "$CONTRACTS_DIR/script/"
+cp /app/scripts/CreateTestAgreement.s.sol "$CONTRACTS_DIR/script/"
 
 # Check if lib directory has content (git submodules may not be initialized in volume)
 if [ ! -d "$CONTRACTS_DIR/lib/forge-std/src" ]; then
@@ -190,6 +201,82 @@ BATTLECHAIN_START_BLOCK=$(curl -s -X POST "$RPC_URL" \
     -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' | \
     grep -oE '"result":"0x[a-fA-F0-9]+"' | grep -oE '0x[a-fA-F0-9]+' | xargs printf "%d" 2>/dev/null || echo "0")
 
+# ============================================
+# Step 5: Deploy ConfidencePool stack (impl + factory proxy)
+# ============================================
+# Built from a separate submodule (Cyfrin/bc-confidence-pools) mounted at
+# /app/confidence-pool-contracts. Skipped if DEPLOY_CONFIDENCE_POOL_FACTORY=false
+# OR if the source directory isn't mounted (graceful degradation when running
+# the deployer against a stack without the submodule initialized).
+CONFIDENCE_POOL_IMPLEMENTATION=""
+CONFIDENCE_POOL_FACTORY_ADDRESS=""
+
+if [ "$DEPLOY_CONFIDENCE_POOL_FACTORY" = "true" ] && [ -d "$POOL_CONTRACTS_SOURCE/src" ]; then
+    echo ""
+    echo "========================================"
+    echo "Step 5: Deploy ConfidencePool stack"
+    echo "========================================"
+    echo ""
+
+    # Copy to writable build dir (volume mount may be read-only)
+    rm -rf "$POOL_CONTRACTS_DIR"
+    cp -r "$POOL_CONTRACTS_SOURCE" "$POOL_CONTRACTS_DIR"
+
+    # Copy our deploy script into the pool contracts' script/ dir so it can resolve src/ imports
+    cp /app/scripts/DeployConfidencePool.s.sol "$POOL_CONTRACTS_DIR/script/"
+
+    # Install lib deps if missing (mirrors the agreement-contracts path above).
+    if [ ! -d "$POOL_CONTRACTS_DIR/lib/forge-std/src" ]; then
+        echo "Installing Foundry dependencies for pool contracts..."
+        cd "$POOL_CONTRACTS_DIR"
+        forge install --no-git 2>/dev/null || {
+            echo "ERROR: Failed to install pool contract dependencies."
+            exit 1
+        }
+    fi
+
+    cd "$POOL_CONTRACTS_DIR"
+
+    echo "Building ConfidencePool contracts for zkSync..."
+    forge build --zksync || {
+        echo "ERROR: forge build failed for ConfidencePool contracts"
+        exit 1
+    }
+
+    # Run the deploy script. SAFE_HARBOR_REGISTRY_ADDRESS is read via vm.envAddress.
+    POOL_DEPLOY_OUTPUT=$(SAFE_HARBOR_REGISTRY_ADDRESS="$SAFE_HARBOR_REGISTRY_ADDRESS" \
+        forge script script/DeployConfidencePool.s.sol:DeployConfidencePool \
+        --rpc-url "$RPC_URL" \
+        --private-key "$PRIVATE_KEY" \
+        --broadcast \
+        --zksync \
+        --legacy \
+        -vvv 2>&1) || {
+        echo "ERROR: ConfidencePool deploy script failed"
+        echo "$POOL_DEPLOY_OUTPUT"
+        exit 1
+    }
+
+    echo "$POOL_DEPLOY_OUTPUT"
+
+    CONFIDENCE_POOL_IMPLEMENTATION=$(echo "$POOL_DEPLOY_OUTPUT" | grep "ConfidencePool implementation deployed at:" | awk '{print $NF}')
+    CONFIDENCE_POOL_FACTORY_ADDRESS=$(echo "$POOL_DEPLOY_OUTPUT" | grep "ConfidencePoolFactory proxy deployed at:" | awk '{print $NF}')
+
+    if [ -z "$CONFIDENCE_POOL_FACTORY_ADDRESS" ]; then
+        echo "ERROR: Failed to extract ConfidencePool factory address from deploy output"
+        exit 1
+    fi
+
+    echo ""
+    echo "ConfidencePool implementation: $CONFIDENCE_POOL_IMPLEMENTATION"
+    echo "ConfidencePoolFactory proxy:   $CONFIDENCE_POOL_FACTORY_ADDRESS"
+elif [ "$DEPLOY_CONFIDENCE_POOL_FACTORY" = "true" ]; then
+    echo ""
+    echo "WARNING: DEPLOY_CONFIDENCE_POOL_FACTORY=true but $POOL_CONTRACTS_SOURCE not found."
+    echo "         Skipping ConfidencePool deployment. Run 'git submodule update --init --recursive' on the host."
+    echo ""
+fi
+
 echo ""
 echo "========================================"
 echo "Deployment Complete!"
@@ -197,27 +284,43 @@ echo "========================================"
 echo ""
 echo "Contract Addresses:"
 echo "  SAFE_HARBOR_REGISTRY_ADDRESS: $SAFE_HARBOR_REGISTRY_ADDRESS"
-echo "  AGREEMENT_FACTORY_ADDRESS:    $AGREEMENT_FACTORY_ADDRESS"
-echo "  ATTACK_REGISTRY_ADDRESS:      $ATTACK_REGISTRY_ADDRESS"
-echo "  BATTLECHAIN_DEPLOYER_ADDRESS: $BATTLECHAIN_DEPLOYER_ADDRESS"
-echo "  BATTLECHAIN_START_BLOCK:                  $BATTLECHAIN_START_BLOCK"
+echo "  AGREEMENT_FACTORY_ADDRESS:          $AGREEMENT_FACTORY_ADDRESS"
+echo "  ATTACK_REGISTRY_ADDRESS:            $ATTACK_REGISTRY_ADDRESS"
+echo "  BATTLECHAIN_DEPLOYER_ADDRESS:       $BATTLECHAIN_DEPLOYER_ADDRESS"
+echo "  CONFIDENCE_POOL_FACTORY_ADDRESS:    ${CONFIDENCE_POOL_FACTORY_ADDRESS:-<not deployed>}"
+echo "  CONFIDENCE_POOL_IMPLEMENTATION:     ${CONFIDENCE_POOL_IMPLEMENTATION:-<not deployed>}"
+echo "  BATTLECHAIN_START_BLOCK:            $BATTLECHAIN_START_BLOCK"
 echo ""
 
 # Write addresses to shared volume
 mkdir -p "$OUTPUT_DIR"
 
-# JSON format for programmatic access
-cat > "$OUTPUT_DIR/addresses.json" << EOF
-{
-  "SAFE_HARBOR_REGISTRY_ADDRESS": "$SAFE_HARBOR_REGISTRY_ADDRESS",
-  "AGREEMENT_FACTORY_ADDRESS": "$AGREEMENT_FACTORY_ADDRESS",
-  "ATTACK_REGISTRY_ADDRESS": "$ATTACK_REGISTRY_ADDRESS",
-  "BATTLECHAIN_DEPLOYER_ADDRESS": "$BATTLECHAIN_DEPLOYER_ADDRESS",
-  "BATTLECHAIN_START_BLOCK": "$BATTLECHAIN_START_BLOCK",
-  "CHAIN_ID": "$CHAIN_ID",
-  "DEPLOYED_AT": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-}
-EOF
+# Build the JSON. We use jq to produce a clean object so we can conditionally
+# include the confidence pool fields (omitting them rather than emitting empty
+# strings would make the indexer's load_addresses() see "empty" and fall back
+# to the null-address path, which is what we want when the deploy was skipped).
+jq -n \
+    --arg safeHarbor "$SAFE_HARBOR_REGISTRY_ADDRESS" \
+    --arg agreementFactory "$AGREEMENT_FACTORY_ADDRESS" \
+    --arg attackRegistry "$ATTACK_REGISTRY_ADDRESS" \
+    --arg battleChainDeployer "$BATTLECHAIN_DEPLOYER_ADDRESS" \
+    --arg poolFactory "$CONFIDENCE_POOL_FACTORY_ADDRESS" \
+    --arg poolImpl "$CONFIDENCE_POOL_IMPLEMENTATION" \
+    --arg startBlock "$BATTLECHAIN_START_BLOCK" \
+    --arg chainId "$CHAIN_ID" \
+    --arg deployedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '{
+        SAFE_HARBOR_REGISTRY_ADDRESS: $safeHarbor,
+        AGREEMENT_FACTORY_ADDRESS: $agreementFactory,
+        ATTACK_REGISTRY_ADDRESS: $attackRegistry,
+        BATTLECHAIN_DEPLOYER_ADDRESS: $battleChainDeployer,
+        BATTLECHAIN_START_BLOCK: $startBlock,
+        CHAIN_ID: $chainId,
+        DEPLOYED_AT: $deployedAt
+    }
+    + (if $poolFactory != "" then {CONFIDENCE_POOL_FACTORY_ADDRESS: $poolFactory} else {} end)
+    + (if $poolImpl != "" then {CONFIDENCE_POOL_IMPLEMENTATION: $poolImpl} else {} end)' \
+    > "$OUTPUT_DIR/addresses.json"
 
 # Shell-sourceable format
 cat > "$OUTPUT_DIR/addresses.env" << EOF
@@ -228,6 +331,12 @@ BATTLECHAIN_DEPLOYER_ADDRESS=$BATTLECHAIN_DEPLOYER_ADDRESS
 BATTLECHAIN_START_BLOCK=$BATTLECHAIN_START_BLOCK
 CHAIN_ID=$CHAIN_ID
 EOF
+if [ -n "$CONFIDENCE_POOL_FACTORY_ADDRESS" ]; then
+    echo "CONFIDENCE_POOL_FACTORY_ADDRESS=$CONFIDENCE_POOL_FACTORY_ADDRESS" >> "$OUTPUT_DIR/addresses.env"
+fi
+if [ -n "$CONFIDENCE_POOL_IMPLEMENTATION" ]; then
+    echo "CONFIDENCE_POOL_IMPLEMENTATION=$CONFIDENCE_POOL_IMPLEMENTATION" >> "$OUTPUT_DIR/addresses.env"
+fi
 
 echo "Addresses written to:"
 echo "  $OUTPUT_DIR/addresses.json"
@@ -279,6 +388,10 @@ if [ "$CREATE_TEST_AGREEMENT" = "true" ]; then
     done
 
     echo "Creating test agreement..."
+
+    # Restore the agreement contracts cwd — Step 5 (ConfidencePool deploy) may have
+    # changed cwd to $POOL_CONTRACTS_DIR, which doesn't contain CreateTestAgreement.s.sol.
+    cd "$CONTRACTS_DIR"
 
     AGREEMENT_OUTPUT=$(forge script script/CreateTestAgreement.s.sol:CreateTestAgreement \
         --rpc-url "$RPC_URL" \
@@ -348,6 +461,117 @@ if [ "$CREATE_TEST_AGREEMENT" = "true" ]; then
             "$COMMITMENT_END" \
             >/dev/null 2>&1 && echo "Commitment window extended" || echo "WARNING: extendCommitmentWindow failed"
     fi
+fi
+
+# ============================================
+# Step 7: Create test ConfidencePool (gated on CREATE_TEST_CONFIDENCE_POOL=true)
+# ============================================
+# Requires:
+#   - A deployed ConfidencePoolFactory (Step 5)
+#   - A deployed test agreement that the deployer's key owns (CREATE_TEST_AGREEMENT=true)
+#   - A stake token that's allowlisted on the factory (we deploy a MockERC20 here)
+#
+# Deploys MockERC20 -> allowlists it -> creates a pool bound to the test agreement with
+# the test agreement's BattleChain-scope account address as the pool's single scope account.
+# The resulting test pool exercises the indexer's PoolCreated trigger end-to-end and
+# verifies the address[]::TEXT[] cast against real rindexer output (the smoke test
+# asserts scope_accounts is populated on the materialized state row).
+CREATE_TEST_CONFIDENCE_POOL="${CREATE_TEST_CONFIDENCE_POOL:-false}"
+TEST_STAKE_TOKEN_ADDRESS=""
+TEST_CONFIDENCE_POOL_ADDRESS=""
+
+if [ "$CREATE_TEST_CONFIDENCE_POOL" = "true" ] && [ -n "$CONFIDENCE_POOL_FACTORY_ADDRESS" ] && [ -n "$TEST_AGREEMENT_ADDRESS" ]; then
+    echo ""
+    echo "========================================"
+    echo "Step 7: Create Test ConfidencePool"
+    echo "========================================"
+    echo ""
+
+    # The test agreement's BattleChain scope contains 0x1234...7890 (set by CreateTestAgreement.s.sol).
+    # We use that as the pool's scope account so initialize()'s isContractInScope check passes.
+    TEST_SCOPE_ACCOUNT="0x1234567890123456789012345678901234567890"
+
+    cd "$POOL_CONTRACTS_DIR"
+
+    # Deploy MockERC20 from the pool contracts' test/mocks dir
+    echo "Deploying MockERC20 stake token..."
+    MOCK_TOKEN_OUTPUT=$(forge create --zksync --legacy --rpc-url "$RPC_URL" \
+        --private-key "$PRIVATE_KEY" \
+        --broadcast \
+        test/mocks/MockERC20.sol:MockERC20 2>&1)
+
+    TEST_STAKE_TOKEN_ADDRESS=$(echo "$MOCK_TOKEN_OUTPUT" | grep -oE "Deployed to: 0x[a-fA-F0-9]{40}" | grep -oE "0x[a-fA-F0-9]{40}" | head -1)
+    if [ -z "$TEST_STAKE_TOKEN_ADDRESS" ]; then
+        echo "ERROR: Failed to deploy MockERC20"
+        echo "$MOCK_TOKEN_OUTPUT"
+        exit 1
+    fi
+    echo "MockERC20 deployed at: $TEST_STAKE_TOKEN_ADDRESS"
+
+    # Allowlist the stake token on the factory
+    echo "Allowlisting MockERC20 on factory..."
+    cast send --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" --legacy \
+        "$CONFIDENCE_POOL_FACTORY_ADDRESS" \
+        "setStakeTokenAllowed(address,bool)" \
+        "$TEST_STAKE_TOKEN_ADDRESS" \
+        "true" \
+        >/dev/null 2>&1 && echo "Allowlisted" || { echo "ERROR: setStakeTokenAllowed failed"; exit 1; }
+
+    # Create pool: expiry = now + 31 days (factory enforces 30-day min lead),
+    # minStake = 1 wei, recovery = deployer, accounts = [test scope account].
+    POOL_EXPIRY=$(($(date +%s) + 2678400))  # 31 days in seconds
+    DEPLOYER_OWNER="0x36615Cf349d7F6344891B1e7CA7C72883F5dc049"
+
+    echo "Creating ConfidencePool (agreement=$TEST_AGREEMENT_ADDRESS, expiry=$POOL_EXPIRY)..."
+    CREATE_POOL_TX=$(cast send --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" --legacy \
+        --json \
+        "$CONFIDENCE_POOL_FACTORY_ADDRESS" \
+        "createPool(address,address,uint256,uint256,address,address[])" \
+        "$TEST_AGREEMENT_ADDRESS" \
+        "$TEST_STAKE_TOKEN_ADDRESS" \
+        "$POOL_EXPIRY" \
+        "1" \
+        "$DEPLOYER_OWNER" \
+        "[$TEST_SCOPE_ACCOUNT]" 2>&1) || {
+        echo "ERROR: createPool failed"
+        echo "$CREATE_POOL_TX"
+        exit 1
+    }
+
+    # Read the pool address back from the factory's getPoolsByAgreement (index 0).
+    # Cleaner than parsing the PoolCreated event from the tx receipt — same result either way.
+    POOLS_RAW=$(cast call --rpc-url "$RPC_URL" \
+        "$CONFIDENCE_POOL_FACTORY_ADDRESS" \
+        "getPoolsByAgreement(address)(address[])" \
+        "$TEST_AGREEMENT_ADDRESS" 2>&1)
+    # Output format: "[0xPOOL_ADDR]"
+    TEST_CONFIDENCE_POOL_ADDRESS=$(echo "$POOLS_RAW" | grep -oE "0x[a-fA-F0-9]{40}" | head -1)
+
+    if [ -z "$TEST_CONFIDENCE_POOL_ADDRESS" ]; then
+        echo "ERROR: Failed to read created pool address from factory"
+        echo "Raw output: $POOLS_RAW"
+        exit 1
+    fi
+
+    echo "Test ConfidencePool deployed at: $TEST_CONFIDENCE_POOL_ADDRESS"
+
+    # Append to addresses.json/env so the smoke test and any tooling can find them.
+    TMP_JSON=$(mktemp)
+    jq --arg pool "$TEST_CONFIDENCE_POOL_ADDRESS" \
+       --arg token "$TEST_STAKE_TOKEN_ADDRESS" \
+       '. + {"TEST_CONFIDENCE_POOL_ADDRESS": $pool, "TEST_STAKE_TOKEN_ADDRESS": $token}' \
+       "$OUTPUT_DIR/addresses.json" > "$TMP_JSON"
+    mv "$TMP_JSON" "$OUTPUT_DIR/addresses.json"
+
+    echo "TEST_CONFIDENCE_POOL_ADDRESS=$TEST_CONFIDENCE_POOL_ADDRESS" >> "$OUTPUT_DIR/addresses.env"
+    echo "TEST_STAKE_TOKEN_ADDRESS=$TEST_STAKE_TOKEN_ADDRESS" >> "$OUTPUT_DIR/addresses.env"
+elif [ "$CREATE_TEST_CONFIDENCE_POOL" = "true" ]; then
+    echo ""
+    echo "WARNING: CREATE_TEST_CONFIDENCE_POOL=true but prerequisites missing:"
+    echo "  CONFIDENCE_POOL_FACTORY_ADDRESS: ${CONFIDENCE_POOL_FACTORY_ADDRESS:-<unset>}"
+    echo "  TEST_AGREEMENT_ADDRESS: ${TEST_AGREEMENT_ADDRESS:-<unset>}"
+    echo "  Set CREATE_TEST_AGREEMENT=true and DEPLOY_CONFIDENCE_POOL_FACTORY=true."
+    echo ""
 fi
 
 # Optional: Seed test data

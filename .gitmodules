@@ -1,3 +1,6 @@
 [submodule "packages/battlechain-deployer/contracts"]
 	path = packages/battlechain-deployer/contracts
 	url = https://github.com/Cyfrin/battlechain-safe-harbor-contracts
+[submodule "packages/battlechain-deployer/confidence-pool-contracts"]
+	path = packages/battlechain-deployer/confidence-pool-contracts
+	url = https://github.com/Cyfrin/bc-confidence-pools.git

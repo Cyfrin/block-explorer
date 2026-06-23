@@ -136,9 +136,12 @@ services:
       - DEPLOYER_PRIVATE_KEY=${DEPLOYER_PRIVATE_KEY:-0x7726827caac94a7f9e1b160f7ea819f172f7b6f9d2a97f992c38edeab82d4110}
       - SEED_BATTLECHAIN_DATA=${SEED_BATTLECHAIN_DATA:-false}
       - CREATE_TEST_AGREEMENT=${CREATE_TEST_AGREEMENT:-false}
+      - DEPLOY_CONFIDENCE_POOL_FACTORY=${DEPLOY_CONFIDENCE_POOL_FACTORY:-true}
+      - CREATE_TEST_CONFIDENCE_POOL=${CREATE_TEST_CONFIDENCE_POOL:-false}
     volumes:
       - battlechain-shared:/shared
       - ./packages/battlechain-deployer/contracts:/app/contracts:ro
+      - ./packages/battlechain-deployer/confidence-pool-contracts:/app/confidence-pool-contracts:ro
     depends_on:
       zksync:
         condition: service_healthy
@@ -158,6 +161,7 @@ services:
       - ATTACK_REGISTRY_ADDRESS=${ATTACK_REGISTRY_ADDRESS:-}
       - AGREEMENT_FACTORY_ADDRESS=${AGREEMENT_FACTORY_ADDRESS:-}
       - SAFE_HARBOR_REGISTRY_ADDRESS=${SAFE_HARBOR_REGISTRY_ADDRESS:-}
+      - CONFIDENCE_POOL_FACTORY_ADDRESS=${CONFIDENCE_POOL_FACTORY_ADDRESS:-}
       - BATTLECHAIN_START_BLOCK=${BATTLECHAIN_START_BLOCK:-0}
     volumes:
       - battlechain-shared:/shared:ro

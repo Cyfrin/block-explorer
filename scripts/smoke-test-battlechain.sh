@@ -76,7 +76,7 @@ assert() {
 start_docker_stack() {
   log_info "Starting Docker stack..."
   cd "$PROJECT_ROOT"
-  CREATE_TEST_AGREEMENT=true docker compose up -d
+  CREATE_TEST_AGREEMENT=true CREATE_TEST_CONFIDENCE_POOL=true docker compose up -d
   log_info "Waiting for services to initialize..."
 }
 
@@ -172,14 +172,23 @@ get_addresses() {
   SAFE_HARBOR_REGISTRY=$(jq -r '.SAFE_HARBOR_REGISTRY_ADDRESS' "$ADDRESSES_FILE")
   BATTLECHAIN_DEPLOYER=$(jq -r '.BATTLECHAIN_DEPLOYER_ADDRESS' "$ADDRESSES_FILE")
   TEST_AGREEMENT_ADDRESS=$(jq -r '.TEST_AGREEMENT_ADDRESS // empty' "$ADDRESSES_FILE")
+  CONFIDENCE_POOL_FACTORY=$(jq -r '.CONFIDENCE_POOL_FACTORY_ADDRESS // empty' "$ADDRESSES_FILE")
+  TEST_CONFIDENCE_POOL_ADDRESS=$(jq -r '.TEST_CONFIDENCE_POOL_ADDRESS // empty' "$ADDRESSES_FILE")
+  TEST_STAKE_TOKEN_ADDRESS=$(jq -r '.TEST_STAKE_TOKEN_ADDRESS // empty' "$ADDRESSES_FILE")
 
   log_info "Contract Addresses:"
-  echo "  AGREEMENT_FACTORY:    $AGREEMENT_FACTORY"
-  echo "  ATTACK_REGISTRY:      $ATTACK_REGISTRY"
-  echo "  SAFE_HARBOR_REGISTRY: $SAFE_HARBOR_REGISTRY"
-  echo "  BATTLECHAIN_DEPLOYER: $BATTLECHAIN_DEPLOYER"
+  echo "  AGREEMENT_FACTORY:        $AGREEMENT_FACTORY"
+  echo "  ATTACK_REGISTRY:          $ATTACK_REGISTRY"
+  echo "  SAFE_HARBOR_REGISTRY:     $SAFE_HARBOR_REGISTRY"
+  echo "  BATTLECHAIN_DEPLOYER:     $BATTLECHAIN_DEPLOYER"
   if [ -n "$TEST_AGREEMENT_ADDRESS" ]; then
-    echo "  TEST_AGREEMENT:       $TEST_AGREEMENT_ADDRESS"
+    echo "  TEST_AGREEMENT:           $TEST_AGREEMENT_ADDRESS"
+  fi
+  if [ -n "$CONFIDENCE_POOL_FACTORY" ]; then
+    echo "  CONFIDENCE_POOL_FACTORY:  $CONFIDENCE_POOL_FACTORY"
+  fi
+  if [ -n "$TEST_CONFIDENCE_POOL_ADDRESS" ]; then
+    echo "  TEST_CONFIDENCE_POOL:     $TEST_CONFIDENCE_POOL_ADDRESS"
   fi
 }
 
@@ -643,6 +652,115 @@ EOSQL
   fi
 }
 
+test_confidence_pool_indexing() {
+  echo ""
+  log_info "=== Test: ConfidencePool Indexing (CREATE_TEST_CONFIDENCE_POOL=true) ==="
+
+  if [ -z "$TEST_CONFIDENCE_POOL_ADDRESS" ]; then
+    log_info "No test pool deployed (CREATE_TEST_CONFIDENCE_POOL not set) — skipping"
+    return 0
+  fi
+
+  log_info "Test pool address:        $TEST_CONFIDENCE_POOL_ADDRESS"
+  log_info "Test stake token address: $TEST_STAKE_TOKEN_ADDRESS"
+  log_info "Bound to agreement:       $TEST_AGREEMENT_ADDRESS"
+
+  # Wait for the indexer to discover the pool clone via the factory pattern.
+  local max_wait=60
+  local elapsed=0
+  local pool_indexed=false
+
+  while [ $elapsed -lt $max_wait ]; do
+    local pool_count=$(docker compose exec -T postgres \
+      psql -U postgres -d block-explorer -t -A -c \
+      "SELECT COUNT(*) FROM battlechainindexer_confidence_pool_factory.pool_created" 2>/dev/null | tr -d '[:space:]')
+
+    if [ "$pool_count" -ge 1 ] 2>/dev/null; then
+      pool_indexed=true
+      break
+    fi
+
+    elapsed=$((elapsed + 2))
+    sleep 2
+  done
+
+  assert "PoolCreated event indexed by rindexer within ${max_wait}s" '[ "$pool_indexed" = true ]'
+
+  if [ "$pool_indexed" != true ]; then
+    log_error "PoolCreated event not indexed — aborting downstream assertions"
+    return 1
+  fi
+
+  # Confirm the trigger materialized the current_state row with correct identity fields.
+  local pool_lower=$(echo "$TEST_CONFIDENCE_POOL_ADDRESS" | tr '[:upper:]' '[:lower:]')
+  local materialized=$(docker compose exec -T postgres \
+    psql -U postgres -d block-explorer -t -A -F '|' -c \
+    "SELECT pool_address, agreement_address, stake_token, owner, phase, scope_locked, claims_started
+     FROM battlechainindexer_confidence_pool.confidence_pool_current_state
+     WHERE LOWER(pool_address) = LOWER('$TEST_CONFIDENCE_POOL_ADDRESS')" 2>/dev/null)
+
+  log_info "Materialized row: $materialized"
+
+  assert "confidence_pool_current_state row exists for test pool" \
+    '[ -n "$materialized" ]'
+
+  local materialized_pool=$(echo "$materialized" | cut -d'|' -f1 | tr '[:upper:]' '[:lower:]' | xargs)
+  local materialized_agreement=$(echo "$materialized" | cut -d'|' -f2 | tr '[:upper:]' '[:lower:]' | xargs)
+  local materialized_phase=$(echo "$materialized" | cut -d'|' -f5 | xargs)
+  local agreement_lower=$(echo "$TEST_AGREEMENT_ADDRESS" | tr '[:upper:]' '[:lower:]')
+
+  assert "materialized pool_address matches test pool" \
+    '[ "$materialized_pool" = "$pool_lower" ]'
+  assert "materialized agreement_address matches test agreement" \
+    '[ "$materialized_agreement" = "$agreement_lower" ]'
+  # PRE_STAKE is correct: pool created but no stakes taken yet.
+  assert "materialized phase is PRE_STAKE on a freshly-created pool" \
+    '[ "$materialized_phase" = "PRE_STAKE" ]'
+
+  # Verify scope_accounts populated from the ScopeUpdated event emitted by initialize().
+  # This exercises the address[]::TEXT[] cast in update_pool_on_scope_updated against
+  # real rindexer output — proves rindexer stores `address[]` as a TEXT[] column.
+  local scope_count=$(docker compose exec -T postgres \
+    psql -U postgres -d block-explorer -t -A -c \
+    "SELECT array_length(scope_accounts, 1)
+     FROM battlechainindexer_confidence_pool.confidence_pool_current_state
+     WHERE LOWER(pool_address) = LOWER('$TEST_CONFIDENCE_POOL_ADDRESS')" 2>/dev/null | tr -d '[:space:]')
+
+  assert "scope_accounts populated (address[]::TEXT[] cast works against real rindexer)" \
+    '[ "$scope_count" -ge 1 ]'
+
+  # Verify the OwnershipTransferred(0x0 -> owner) trigger set the owner field. Owner is
+  # set to DEFAULT_OWNER = 0x36615Cf349d7F6344891B1e7CA7C72883F5dc049 by createPool.
+  local DEPLOYER_OWNER_LOWER="0x36615cf349d7f6344891b1e7ca7c72883f5dc049"
+  local materialized_owner=$(echo "$materialized" | cut -d'|' -f4 | tr '[:upper:]' '[:lower:]' | xargs)
+  assert "materialized owner set by OwnershipTransferred trigger (proves ensure_pool_row + COALESCE works)" \
+    '[ "$materialized_owner" = "$DEPLOYER_OWNER_LOWER" ]'
+
+  # API: GET /battlechain/confidence-pool/:address
+  local pool_response=$(curl -s "$API_URL/battlechain/confidence-pool/$TEST_CONFIDENCE_POOL_ADDRESS")
+  local api_pool_address=$(echo "$pool_response" | jq -r '.poolAddress // empty' | tr '[:upper:]' '[:lower:]')
+  local api_phase=$(echo "$pool_response" | jq -r '.phase // empty')
+  local api_stake_token=$(echo "$pool_response" | jq -r '.stakeToken // empty' | tr '[:upper:]' '[:lower:]')
+  local stake_token_lower=$(echo "$TEST_STAKE_TOKEN_ADDRESS" | tr '[:upper:]' '[:lower:]')
+
+  assert "GET /battlechain/confidence-pool/:address returns the pool" \
+    '[ "$api_pool_address" = "$pool_lower" ]'
+  assert "API returns phase = PRE_STAKE" \
+    '[ "$api_phase" = "PRE_STAKE" ]'
+  assert "API returns the correct stakeToken" \
+    '[ "$api_stake_token" = "$stake_token_lower" ]'
+
+  # API: GET /battlechain/confidence-pools/by-agreement/:address
+  local by_agreement_response=$(curl -s "$API_URL/battlechain/confidence-pools/by-agreement/$TEST_AGREEMENT_ADDRESS")
+  local pools_listed=$(echo "$by_agreement_response" | jq -r 'length // 0')
+  local first_pool=$(echo "$by_agreement_response" | jq -r '.[0].poolAddress // empty' | tr '[:upper:]' '[:lower:]')
+
+  assert "GET /battlechain/confidence-pools/by-agreement returns >=1 pool" \
+    '[ "$pools_listed" -ge 1 ]'
+  assert "by-agreement returns the test pool" \
+    '[ "$first_pool" = "$pool_lower" ]'
+}
+
 # =============================================================================
 # Main
 # =============================================================================
@@ -682,6 +800,7 @@ main() {
   test_agreement_indexed
   test_commitment_window_indexed
   test_child_contract_scope
+  test_confidence_pool_indexing
 
   # Cleanup
   if [ "$SKIP_CLEANUP" = false ]; then
