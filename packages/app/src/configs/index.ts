@@ -23,7 +23,11 @@ export type NetworkConfig = {
   safeHarborRegistryAddress?: string;
   excludedFromBattlechain?: string[];
   defaultAgreementURI?: string;
+  approvalsUrl?: string;
 };
+
+/** Default base URL for the Attack Mode Approvals dashboard (overridable per-network via `approvalsUrl`). */
+export const APPROVALS_URL = "https://approvals.battlechain.com";
 
 export type SettlementChain = {
   explorerUrl: string;

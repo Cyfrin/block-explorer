@@ -1,4 +1,9 @@
 {
+  "626": {
+    "sourcifyName": "Battlechain Mainnet",
+    "supported": true,
+    "rpc": ["https://mainnet.battlechain.com"]
+  },
   "627": {
     "sourcifyName": "Battlechain Testnet",
     "supported": true,

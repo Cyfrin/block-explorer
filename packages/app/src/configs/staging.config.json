@@ -2,10 +2,49 @@
   "networks": [
     {
       "groupId": "battlechain",
+      "apiUrl": "https://block-explorer-api.mainnet.battlechain.com",
+      "verificationApiUrl": "https://block-explorer-api.mainnet.battlechain.com/api",
+      "bridgeUrl": "https://bridge.battlechain.com",
+      "hostnames": ["https://explorer.battlechain.com", "https://explorer.mainnet.battlechain.com"],
+      "icon": "/images/icons/zksync-arrows.svg",
+      "l1ExplorerUrl": "https://etherscan.io",
+      "settlementChains": [
+        {
+          "explorerUrl": "https://etherscan.io",
+          "name": "Ethereum",
+          "chainId": 1
+        }
+      ],
+      "l2ChainId": 626,
+      "l2NetworkName": "BattleChain Mainnet",
+      "maintenance": false,
+      "name": "mainnet",
+      "published": true,
+      "rpcUrl": "https://mainnet.battlechain.com",
+      "baseTokenAddress": "0x0000000000000000000000000000000000000001",
+      "attackRegistryAddress": "0x24876e481eC7198CAC95af739Df2a852CE65A415",
+      "agreementFactoryAddress": "0xCdB7F5C0F708baBaabE82afE1DbA8362023AcFdd",
+      "safeHarborRegistryAddress": "0xd229f4EE1bAE432010b72a9d1bD682570F4C6eBe",
+      "excludedFromBattlechain": [
+        "0x000000000000000000000000000000000000800f",
+        "0x0000000000000000000000000000000000010001",
+        "0x0000000000000000000000000000000000010002",
+        "0x0000000000000000000000000000000000010003",
+        "0x0000000000000000000000000000000000010004",
+        "0x0000000000000000000000000000000000010005",
+        "0x0000000000000000000000000000000000010007",
+        "0x000000000000000000000000000000000001000a",
+        "0x000000000000000000000000000000000001000b",
+        "0x000000000000000000000000000000000001000c"
+      ],
+      "defaultAgreementURI": "ipfs://bafkreidiuca42hvcafivs6ctpcpzfxt34n74qqz76cbo3mnmyuvbtxf6ly"
+    },
+    {
+      "groupId": "battlechain",
       "apiUrl": "https://block-explorer-api.testnet.battlechain.com",
       "verificationApiUrl": "https://block-explorer-api.testnet.battlechain.com/api",
       "bridgeUrl": "https://portal.battlechain.com/bridge/?network=sepolia",
-      "hostnames": ["https://block-explorer.testnet.battlechain.com"],
+      "hostnames": ["https://explorer.testnet.battlechain.com"],
       "icon": "/images/icons/zksync-arrows.svg",
       "l1ExplorerUrl": "https://sepolia.etherscan.io",
       "settlementChains": [
@@ -37,7 +76,7 @@
         "0x000000000000000000000000000000000001000b",
         "0x000000000000000000000000000000000001000c"
       ],
-      "defaultAgreementURI": "ipfs://bafkreifgln3ir67woluatpwn3b65gjkrbmoq6jgzzotm3anas3vvq4yp4m"
+      "defaultAgreementURI": "ipfs://bafkreidiuca42hvcafivs6ctpcpzfxt34n74qqz76cbo3mnmyuvbtxf6ly"
     }
   ]
 }

@@ -47,9 +47,10 @@ vi.mock("ohmyfetch", () => {
   };
 });
 
-const { mockContractImplementation } = vi.hoisted(() => {
+const { mockContractImplementation, mockContractMasterCopy } = vi.hoisted(() => {
   return {
     mockContractImplementation: vi.fn().mockResolvedValue("0xc31f9d4cbf557b6cf0ad2af66d44c358f7fa7a10"),
+    mockContractMasterCopy: vi.fn().mockRejectedValue(new Error("function does not exist")),
   };
 });
 
@@ -58,6 +59,7 @@ vi.mock("ethers", async () => {
   // Create a mock class that extends the actual Contract behavior
   class MockContract {
     implementation = () => mockContractImplementation();
+    masterCopy = () => mockContractMasterCopy();
   }
   return {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -245,6 +247,33 @@ describe("useAddresses", () => {
         });
       });
 
+      it("takes proxy implementation contract from masterCopy function when it exists", async () => {
+        mockContractImplementation.mockRejectedValueOnce(new Error("function does not exist"));
+        mockContractMasterCopy.mockResolvedValueOnce("0xc31f9d4cbf557b6cf0ad2af66d44c358f7fa7a15");
+        mockGetStorage
+          .mockResolvedValueOnce("0x000000000000000000000000000000000000000000000000000000000000")
+          .mockResolvedValueOnce("0x000000000000000000000000000000000000000000000000000000000000")
+          .mockResolvedValueOnce("0x000000000000000000000000000000000000000000000000000000000000");
+
+        const { item, getByAddress } = useAddress();
+        await getByAddress("0xc31f9d4cbf557b6cf0ad2af66d44c358f7fa7a1c");
+
+        expect(mockContractImplementation).toBeCalledTimes(1);
+        expect(mockContractMasterCopy).toBeCalledTimes(1);
+        expect(item.value).toEqual({
+          address: "0xc31f9d4cbf557b6cf0ad2af66d44c358f7fa7a1c",
+          balances: {},
+          type: "contract",
+          verificationInfo: mappedVerificationInfo,
+          proxyInfo: {
+            implementation: {
+              address: "0xc31f9d4cbf557b6cf0ad2af66d44c358f7fa7a15",
+              verificationInfo: mappedVerificationInfo,
+            },
+          },
+        });
+      });
+
       it("takes proxy implementation contract from beacon contract by eip1967 beacon storage slot when it exists", async () => {
         mockContractImplementation.mockRejectedValueOnce(new Error("function does not exist"));
         mockContractImplementation.mockResolvedValueOnce("0xc31f9d4cbf557b6cf0ad2af66d44c358f7fa7a14");
@@ -265,6 +294,34 @@ describe("useAddresses", () => {
           proxyInfo: {
             implementation: {
               address: "0xc31f9d4cbf557b6cf0ad2af66d44c358f7fa7a14",
+              verificationInfo: mappedVerificationInfo,
+            },
+          },
+        });
+      });
+
+      it("falls back to masterCopy function when beacon slot is set but beacon implementation is empty", async () => {
+        mockContractImplementation.mockRejectedValueOnce(new Error("function does not exist"));
+        mockContractImplementation.mockResolvedValueOnce("0x0000000000000000000000000000000000000000");
+        mockContractMasterCopy.mockResolvedValueOnce("0xc31f9d4cbf557b6cf0ad2af66d44c358f7fa7a15");
+        mockGetStorage
+          .mockResolvedValueOnce("0x000000000000000000000000000000000000000000000000000000000000")
+          .mockResolvedValueOnce("0x00000000000000000000c31f9d4cbf557b6cf0ad2af66d44c358f7fa7a13")
+          .mockResolvedValueOnce("0x000000000000000000000000000000000000000000000000000000000000");
+
+        const { item, getByAddress } = useAddress();
+        await getByAddress("0xc31f9d4cbf557b6cf0ad2af66d44c358f7fa7a1c");
+
+        expect(mockContractImplementation).toBeCalledTimes(2);
+        expect(mockContractMasterCopy).toBeCalledTimes(1);
+        expect(item.value).toEqual({
+          address: "0xc31f9d4cbf557b6cf0ad2af66d44c358f7fa7a1c",
+          balances: {},
+          type: "contract",
+          verificationInfo: mappedVerificationInfo,
+          proxyInfo: {
+            implementation: {
+              address: "0xc31f9d4cbf557b6cf0ad2af66d44c358f7fa7a15",
               verificationInfo: mappedVerificationInfo,
             },
           },

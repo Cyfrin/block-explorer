@@ -336,7 +336,7 @@
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct IAttackRegistry.BondDeposit",
+        "internalType": "struct BondDeposit",
         "components": [
           {
             "name": "depositor",

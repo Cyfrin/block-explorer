@@ -45,6 +45,11 @@
               <span class="address-value">{{ shortValue(agreement.agreementAddress) }}</span>
               <ExternalLinkIcon class="link-icon" />
             </AddressLink>
+            <a :href="approvalsLink" target="_blank" rel="noopener noreferrer" class="approvals-link">
+              <ShieldCheckIcon class="approvals-icon" />
+              <span>{{ t("safeHarbor.viewOnApprovals") }}</span>
+              <ExternalLinkIcon class="link-icon" />
+            </a>
           </div>
           <div v-if="saveError && activeSection === 'protocolName'" class="header-error">{{ saveError }}</div>
         </div>
@@ -433,6 +438,8 @@ import EditableSection from "@/components/contract/EditableSection.vue";
 
 import useAgreementEditing, { type EditSection } from "@/composables/useAgreementEditing";
 import useAttackModerator from "@/composables/useAttackModerator";
+import useContext from "@/composables/useContext";
+import { APPROVALS_URL } from "@/configs";
 
 import type { BountyTermsFormData } from "@/components/contract/BountyTermsForm.vue";
 import type { CoveredContractsChange } from "@/components/contract/CoveredContractsForm.vue";
@@ -445,6 +452,7 @@ import { ISOStringFromUnixTimestamp, localDateFromUnixTimestamp } from "@/utils/
 import { sanitizeHref } from "@/utils/validators";
 
 const { t } = useI18n();
+const { currentNetwork } = useContext();
 
 const props = defineProps({
   agreement: {
@@ -781,6 +789,14 @@ const identityRequirementLabel = computed(() => {
     default:
       return t("safeHarbor.anonymousAllowed");
   }
+});
+
+// Deep link to this agreement's state on the Attack Mode Approvals dashboard.
+// The dashboard is one app serving both networks, so pass ?chain= to target the
+// network being viewed here.
+const approvalsLink = computed(() => {
+  const base = currentNetwork.value.approvalsUrl ?? APPROVALS_URL;
+  return `${base}/request/${props.agreement.agreementAddress}?chain=${currentNetwork.value.l2ChainId}`;
 });
 
 const agreementLink = computed(() => {
@@ -1229,6 +1245,25 @@ const getChildScopeTooltip = (scope: number): string => {
 
       .address-value {
         @apply font-mono;
+      }
+
+      .link-icon {
+        @apply h-3 w-3 shrink-0 opacity-60;
+      }
+    }
+
+    .approvals-link {
+      @apply inline-flex items-center gap-1 rounded-md px-2 py-0.5 transition-colors;
+      background-color: var(--accent-muted);
+      color: var(--accent-text);
+
+      &:hover {
+        background-color: var(--bg-hover);
+        text-decoration: underline;
+      }
+
+      .approvals-icon {
+        @apply h-3.5 w-3.5 shrink-0;
       }
 
       .link-icon {
