@@ -1,0 +1,36 @@
+name: Check ABIs
+
+# Verifies that the committed contract ABIs (consumed by the indexer and the app)
+# are in sync with the canonical contracts in the battlechain-safe-harbor-contracts
+# submodule. Runs only when the contracts pointer or the vendored ABIs change, so
+# the forge build cost is not paid on every PR.
+
+on:
+  pull_request:
+    paths:
+      - packages/battlechain-deployer/contracts
+      - packages/battlechain-indexer/abis/**
+      - packages/app/src/abi/**
+      - scripts/sync-abis.sh
+      - scripts/check-abis.sh
+      - .github/workflows/check-abis.yml
+
+jobs:
+  check-abis:
+    name: Check ABIs match canonical contracts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The contracts submodule (and its nested lib/* submodules) must be
+          # present for forge build.
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Check ABIs are in sync
+        run: ./scripts/check-abis.sh
