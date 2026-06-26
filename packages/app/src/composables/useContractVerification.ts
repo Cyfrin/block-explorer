@@ -156,8 +156,13 @@ async function getVyperVersions() {
   try {
     const response = await FetchInstance.withBaseUrl(`https://vyper-releases-mirror.hardhat.org`)("/list.json");
     return response
-      .filter(({ assets }: { assets: unknown[] }) => assets.length)
-      .map(({ tag_name }: { tag_name: string }) => tag_name.replace(/^v/, "")); // e.g. v0.1.0-beta.16 or v0.4.3
+      .map(({ assets }: { assets: { name: string }[] }) => {
+        // Sourcify needs the full version with commit hash to fetch the binary; a bare
+        // "0.4.3" 404s. Derive it from the linux asset: "vyper.0.4.3+commit.bff19ea2.linux".
+        const linuxAsset = assets.find(({ name }) => name.endsWith(".linux"));
+        return linuxAsset?.name.replace(/^vyper\./, "").replace(/\.linux$/, "");
+      })
+      .filter((version: string | undefined): version is string => Boolean(version));
   } catch (e) {
     console.error(`Failed to fetch list of vyper versions: ${e}`);
     return VYPER_VERSIONS;
