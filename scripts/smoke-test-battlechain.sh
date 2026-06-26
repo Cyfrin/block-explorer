@@ -652,12 +652,55 @@ EOSQL
   fi
 }
 
+test_confidence_pool_factory_deployed() {
+  echo ""
+  log_info "=== Test: ConfidencePool Factory Deployed + Indexer Schema Ready ==="
+
+  # The factory should always be deployed when DEPLOY_CONFIDENCE_POOL_FACTORY=true
+  # (default) — its deployment uses standard `new Contract()` which works on every
+  # EVM-like backend, including the local EraVM stack.
+  assert "CONFIDENCE_POOL_FACTORY_ADDRESS populated in addresses.json" \
+    '[ -n "$CONFIDENCE_POOL_FACTORY" ] && [ "$CONFIDENCE_POOL_FACTORY" != "null" ] && [ ${#CONFIDENCE_POOL_FACTORY} -eq 42 ]'
+
+  # rindexer should have created the event tables for the pool factory + pool clone
+  # contracts (even with no events yet — the tables are scaffolded from the ABI on
+  # indexer startup). This is the SQL trigger's prerequisite.
+  local factory_schema_ok=false
+  local pool_schema_ok=false
+  factory_schema_ok=$(docker compose exec -T postgres psql -U postgres -d block-explorer -t -A -c \
+    "SELECT 1 FROM battlechainindexer_confidence_pool_factory.pool_created LIMIT 0; SELECT 'ok'" 2>/dev/null | tail -1)
+  pool_schema_ok=$(docker compose exec -T postgres psql -U postgres -d block-explorer -t -A -c \
+    "SELECT 1 FROM battlechainindexer_confidence_pool.staked LIMIT 0; SELECT 'ok'" 2>/dev/null | tail -1)
+
+  assert "battlechainindexer_confidence_pool_factory.pool_created table exists" \
+    '[ "$factory_schema_ok" = "ok" ]'
+  assert "battlechainindexer_confidence_pool.staked table exists" \
+    '[ "$pool_schema_ok" = "ok" ]'
+
+  # The materialized state table should exist (created by the SQL setup script).
+  local materialized_ok=$(docker compose exec -T postgres psql -U postgres -d block-explorer -t -A -c \
+    "SELECT 1 FROM battlechainindexer_confidence_pool.confidence_pool_current_state LIMIT 0; SELECT 'ok'" 2>/dev/null | tail -1)
+  assert "confidence_pool_current_state materialized table exists" \
+    '[ "$materialized_ok" = "ok" ]'
+
+  # The /battlechain/confidence-pools list endpoint should return an empty page,
+  # not 404. Proves the API module is wired up.
+  local list_response=$(curl -s -w "\n%{http_code}" "$API_URL/battlechain/confidence-pools")
+  local list_status=$(echo "$list_response" | tail -1)
+  assert "GET /battlechain/confidence-pools returns 200" \
+    '[ "$list_status" = "200" ]'
+}
+
 test_confidence_pool_indexing() {
   echo ""
   log_info "=== Test: ConfidencePool Indexing (CREATE_TEST_CONFIDENCE_POOL=true) ==="
 
   if [ -z "$TEST_CONFIDENCE_POOL_ADDRESS" ]; then
-    log_info "No test pool deployed (CREATE_TEST_CONFIDENCE_POOL not set) — skipping"
+    log_info "No test pool deployed — skipping pool-level indexing assertions."
+    log_info "Reason: createPool() is gated by EraVM detection in deploy.sh (the local docker"
+    log_info "        stack runs classic zkSync Era, which doesn't support EIP-1167 minimal"
+    log_info "        proxies). Pool-level end-to-end testing requires an EVM-compatible RPC"
+    log_info "        (BattleChain testnet, anvil, or a zkSync OS node)."
     return 0
   fi
 
@@ -800,6 +843,7 @@ main() {
   test_agreement_indexed
   test_commitment_window_indexed
   test_child_contract_scope
+  test_confidence_pool_factory_deployed
   test_confidence_pool_indexing
 
   # Cleanup

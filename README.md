@@ -88,6 +88,26 @@ To seed BattleChain development data:
 SEED_BATTLECHAIN_DATA=true docker compose up
 ```
 
+### Confidence Pools — local-dev limitation
+
+The deployer builds and deploys the `ConfidencePoolFactory` on startup (via the
+`bc-confidence-pools` submodule), and the indexer surfaces it through the
+`/battlechain/confidence-pool[s]` API endpoints. However, **creating actual pools
+via `createPool()` does not work against the local docker stack** because:
+
+- The local `zksync` service runs classic **zkSync Era (EraVM)**, whose contract
+  deployment is bytecode-hash-based.
+- `ConfidencePoolFactory.createPool` uses OpenZeppelin's `Clones.cloneDeterministic`,
+  which deploys EIP-1167 minimal proxies via raw-bytecode `CREATE2`. EraVM rejects
+  this path with `FailedDeployment` (selector `0xb06ebf3d`).
+- BattleChain itself runs **zkSync OS**, which IS EVM-compatible — `createPool`
+  works there. The mismatch is local-only.
+
+The deployer detects the EraVM RPC at runtime and skips `createPool` with a clear
+warning. To do full end-to-end pool testing, point the deployer at an EVM-compatible
+RPC (BattleChain testnet, anvil, or a zkSync OS local node) — but no such workflow
+exists in this repo yet; it's a follow-up.
+
 ### Rebuilding after code changes
 If you've made changes to the API or indexer code, rebuild the affected images:
 ```bash

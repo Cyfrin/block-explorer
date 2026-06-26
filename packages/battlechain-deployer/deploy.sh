@@ -470,17 +470,43 @@ fi
 #   - A deployed ConfidencePoolFactory (Step 5)
 #   - A deployed test agreement that the deployer's key owns (CREATE_TEST_AGREEMENT=true)
 #   - A stake token that's allowlisted on the factory (we deploy a MockERC20 here)
+#   - An EVM-compatible node (zkSync OS, anvil, reth). Skipped on classic zkSync Era
+#     (EraVM) because OpenZeppelin's Clones.cloneDeterministic uses EIP-1167's raw
+#     CREATE2 bytecode-deploy path, which EraVM doesn't support — it deploys by
+#     bytecode hash. createPool reverts with FailedDeployment (0xb06ebf3d) on EraVM.
+#     BattleChain (zkSync OS) handles this fine; only the local docker EraVM stack
+#     in this repo can't run pool creation.
 #
 # Deploys MockERC20 -> allowlists it -> creates a pool bound to the test agreement with
 # the test agreement's BattleChain-scope account address as the pool's single scope account.
 # The resulting test pool exercises the indexer's PoolCreated trigger end-to-end and
 # verifies the address[]::TEXT[] cast against real rindexer output (the smoke test
 # asserts scope_accounts is populated on the materialized state row).
+
+# Detect EraVM by probing for a zkSync-specific RPC method. zks_L1ChainId is part of
+# the matter-labs Era RPC namespace; zkSync OS and plain EVM nodes return method-not-found.
+is_era_vm=false
+if curl -s -X POST "$RPC_URL" \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","method":"zks_L1ChainId","params":[],"id":1}' 2>/dev/null \
+    | grep -q '"result"'; then
+    is_era_vm=true
+fi
+
 CREATE_TEST_CONFIDENCE_POOL="${CREATE_TEST_CONFIDENCE_POOL:-false}"
 TEST_STAKE_TOKEN_ADDRESS=""
 TEST_CONFIDENCE_POOL_ADDRESS=""
 
-if [ "$CREATE_TEST_CONFIDENCE_POOL" = "true" ] && [ -n "$CONFIDENCE_POOL_FACTORY_ADDRESS" ] && [ -n "$TEST_AGREEMENT_ADDRESS" ]; then
+if [ "$CREATE_TEST_CONFIDENCE_POOL" = "true" ] && [ "$is_era_vm" = "true" ]; then
+    echo ""
+    echo "WARNING: CREATE_TEST_CONFIDENCE_POOL=true but the RPC at $RPC_URL is classic"
+    echo "         zkSync Era (EraVM). EIP-1167 minimal proxies (used by"
+    echo "         Clones.cloneDeterministic in ConfidencePoolFactory.createPool) are"
+    echo "         not supported on EraVM — the call reverts with FailedDeployment."
+    echo "         BattleChain (zkSync OS) and plain EVM nodes handle this normally."
+    echo "         The factory is still deployed; only the test pool creation is skipped."
+    echo ""
+elif [ "$CREATE_TEST_CONFIDENCE_POOL" = "true" ] && [ -n "$CONFIDENCE_POOL_FACTORY_ADDRESS" ] && [ -n "$TEST_AGREEMENT_ADDRESS" ]; then
     echo ""
     echo "========================================"
     echo "Step 7: Create Test ConfidencePool"
