@@ -21,20 +21,19 @@ import useRuntimeConfig from "@/composables/useRuntimeConfig";
 const { t } = useI18n();
 const config = useRuntimeConfig();
 
-// TODO: Update to BattleChain URLs when available
 const navigation = reactive([
   {
     label: computed(() => t("footer.nav.docs")),
     url: "https://docs.battlechain.com/",
   },
-  // {
-  //   label: computed(() => t("footer.nav.terms")),
-  //   url: "https://battlechain.io/terms",
-  // },
-  // {
-  //   label: computed(() => t("footer.nav.contact")),
-  //   url: "https://battlechain.io/contact",
-  // },
+  {
+    label: computed(() => t("footer.nav.terms")),
+    url: "https://battlechain.com/terms",
+  },
+  {
+    label: computed(() => t("footer.nav.privacy")),
+    url: "https://battlechain.com/privacy",
+  },
 ]);
 </script>
 
